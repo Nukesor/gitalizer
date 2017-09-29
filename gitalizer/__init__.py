@@ -6,7 +6,7 @@ This particular file additionally contains the applications factory.
 from flask import Flask
 
 
-def create_app(config_name):
+def create_app(config_name='develop'):
     """Flask app factory function.
 
     It takes a `config_name` of the specific configuration to use for this instantiation.

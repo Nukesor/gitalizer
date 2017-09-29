@@ -1,6 +1,8 @@
 # App
 Flask~=0.12
 Flask-SQLAlchemy==2.1
+flask-script~=2.0.6
+flask-migrate~=2.1.1
 passlib~=1.7.0
 argon2_cffi
 marshmallow~=2.10.4
