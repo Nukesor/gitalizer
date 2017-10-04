@@ -14,3 +14,7 @@ SQLAlchemy~=1.1.4
 sqlalchemy-utils~=0.32.12
 psycopg2
 retry~=0.9.2
+
+# Aggregator
+pygithub~=1.35
+gitpython~=2.1.7

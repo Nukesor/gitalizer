@@ -1,0 +1,3 @@
+
+Graphen darstellung, wer wen followed. folloers -> following
+Je mehr Leute untereinander followen, desto näher sind sie auf der Map. -> Beziehungen zwischen Leuten
