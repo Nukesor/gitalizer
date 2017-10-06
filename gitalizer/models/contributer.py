@@ -1,16 +1,33 @@
-from flask import current_app
+"""Representation of a git repository contributer."""
+
+from sqlalchemy import ForeignKey
 from gitalizer.extensions import db
 
 
-class User(db.Model, Timestamp):
-    """User model."""
+contributer_repositories = db.Table(
+    'contributer_repositories',
+    db.Column('contributer_login', db.String(240), ForeignKey('contributer.login')),
+    db.Column('repository_url', db.String(240), ForeignKey('repository.clone_url')),
+    db.UniqueConstraint('repository_url', 'contributer_login'),
+)
 
-    login = db.Column(String(120), primary_key=True, nullable=False)
+
+class Contributer(db.Model):
+    """Contributer model."""
+
+    __tablename__ = 'contributer'
+    login = db.Column(db.String(120), primary_key=True, nullable=False)
+
+    commits = db.relationship("Commit", back_populates="contributer")
+    repositories = db.relationship(
+        "Repository",
+        secondary=contributer_repositories,
+        back_populates="contributers")
 
     def __init__(self, login):
+        """Constructor."""
         self.login = login
 
     def __repr__(self):
         """Format a `User` object."""
         return f'<User {self.login}>'
-

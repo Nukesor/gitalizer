@@ -1,11 +1,21 @@
-from flask import current_app
+"""Representation of a git repository."""
+
 from gitalizer.extensions import db
+from gitalizer.models.contributer import contributer_repositories
 
 
-class Repository(db.Model, Timestamp):
-    """User model."""
+class Repository(db.Model):
+    """Repository model."""
 
-    clone_url = db.Column(String(240), primary_key=True)
+    __tablename__ = 'repository'
+    clone_url = db.Column(db.String(240), primary_key=True)
+
+    commits = db.relationship("Commit", back_populates="repository")
+    contributers = db.relationship(
+        "Contributer",
+        secondary=contributer_repositories,
+        back_populates="repositories")
 
     def __init__(self, clone_url):
+        """Constructor."""
         self.clone_url = clone_url
