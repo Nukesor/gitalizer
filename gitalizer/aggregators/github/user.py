@@ -1,8 +1,9 @@
 """Data collection from Github."""
 
+import socket
 from github import NamedUser
 from github import Repository as Github_Repository
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import current_app
 
@@ -72,16 +73,16 @@ def register_repository(github_repo: Github_Repository):
 
     # Skip repositories that are too big.
     contributors = github_repo.get_contributors()
-    limit = current_app.config['GITHUB_SKIP']
     count = get_commit_count(contributors)
+
+    current_time = datetime.now().strftime('%H:%M')
+    limit = current_app.config['GITHUB_SKIP']
     if count >= limit:
-        current_time = datetime.now().strftime('%H:%M')
         print(f'\n{current_time}: Skip {repository.clone_url}. It has more than {limit} commits.')
         return
-
-    # Repository isn't too big, start to scan
-    current_time = datetime.now().strftime('%H:%M')
-    print(f'\n{current_time}: Started to scan {repository.clone_url} with {count} commits.')
+    else:
+        # Repository isn't too big, start to scan
+        print(f'\n{current_time}: Started scan {repository.clone_url} with {count} commits.')
 
     # Register all contributors
     for user in contributors:
@@ -92,9 +93,60 @@ def register_repository(github_repo: Github_Repository):
         db.session.add(contributer)
     db.session.commit()
 
-    # Get all commits from this repository
-    # The user is extracted as well as additions, deletions and timestamp
-    commits = github_repo.get_commits()
+    commit_count = get_commits(github_repo, repository, contributer)
+
+    time = datetime.fromtimestamp(github.github.rate_limiting_resettime)
+    time = time.strftime("%H:%M")
+    current_time = datetime.now().strftime('%H:%M')
+    print(f'{current_time}: Scanned {repository.clone_url} with {commit_count} commits')
+    print(f'{github.github.rate_limiting} of 5000 remaining. Reset at {time}')
+
+
+def get_commits(github_repo: Github_Repository,
+                repository: Repository,
+                contributer: Contributer):
+    """Get all commits from this repository.
+
+    The user is extracted as well as additions, deletions and timestamp
+    """
+    # Try to get all commits at once.
+    # If this fails, we need to chunk the data into multiple requests
+    commit_count = 0
+    try:
+        commits = github_repo.get_commits()
+        commit_count = save_commits(commits, repository, contributer)
+    except socket.timeout:
+        # We try to get the commits in 30 day intervals
+        # If this fails again, we continuously subtract one day until it works.
+        # The loop stops if the `until` parameter is before repository creation.
+        interval = timedelta(days=30)
+        print("Using 30 day Interval.")
+        until = datetime.now()
+        since = until - interval
+        failed = False
+        while until > github_repo.created_at and interval.days > 2:
+            if failed:
+                interval -= timedelta(days=1)
+                print(f"Using {interval.days} day interval.")
+                since = until - interval
+                failed = False
+            else:
+                since -= interval
+                until -= interval
+            try:
+                commits = github_repo.get_commits(since=since, until=until)
+                commit_count += save_commits(commits, repository, contributer)
+            except socket.timeout:
+                failed = True
+                pass
+        pass
+    return commit_count
+
+
+def save_commits(commits,
+                 repository: Repository,
+                 contributer: Contributer):
+    """Save the queried commits to the database."""
     commit_count = 0
     for github_commit in commits:
         commit = db.session.query(Commit) \
@@ -110,13 +162,9 @@ def register_repository(github_repo: Github_Repository):
             commit.deletions = github_commit.stats.deletions
             db.session.add(commit)
 
+        # Commit session every 20 commits to avoid loss of all data on crash.
         commit_count += 1
-        if commit_count % 50 == 0:
+        if commit_count % 20 == 0:
             db.session.commit()
     db.session.commit()
-
-    time = datetime.fromtimestamp(github.github.rate_limiting_resettime)
-    time = time.strftime("%H:%M")
-    current_time = datetime.now().strftime('%H:%M')
-    print(f'{current_time}: Scanned {repository.clone_url} with {commit_count} commits')
-    print(f'{github.github.rate_limiting} of 5000 remaining. Reset at {time}')
+    return commit_count
