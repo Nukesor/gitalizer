@@ -111,11 +111,11 @@ def get_commits(github_repo: Github_Repository,
     """
     # Try to get all commits at once.
     # If this fails, we need to chunk the data into multiple requests
-    commit_count = 0
     try:
         commits = github_repo.get_commits()
-        commit_count = save_commits(commits, repository, contributer)
+        return save_commits(commits, repository, contributer)
     except socket.timeout:
+        commit_count = 0
         # We try to get the commits in 30 day intervals
         # If this fails again, we continuously subtract one day until it works.
         # The loop stops if the `until` parameter is before repository creation.
@@ -139,8 +139,7 @@ def get_commits(github_repo: Github_Repository,
             except socket.timeout:
                 failed = True
                 pass
-        pass
-    return commit_count
+        return commit_count
 
 
 def save_commits(commits,
@@ -149,17 +148,30 @@ def save_commits(commits,
     """Save the queried commits to the database."""
     commit_count = 0
     for github_commit in commits:
+
+        # Check if the commit already exists
         commit = db.session.query(Commit) \
             .filter(Commit.sha == github_commit.sha) \
             .filter(Commit.repository_url == repository.clone_url) \
             .one_or_none()
+
         if not commit:
+            # Get the author of the commit
+            author = github_commit.author
+            contributer = db.session.query(Contributer).get(author.login)
+            if not contributer:
+                contributer = Contributer(author.login)
+                contributer.repositories.append(repository)
+                db.session.add(contributer)
+
             # Create a new commit and extract all valuable information
             commit = Commit(github_commit.sha, repository, contributer)
             commit.time = github_commit.commit.author.date
             commit.author_email = github_commit.commit.author.email
-            commit.additions = github_commit.stats.additions
-            commit.deletions = github_commit.stats.deletions
+            stats = github_commit.stats
+            if stats:
+                commit.additions = stats.additions
+                commit.deletions = stats.deletions
             db.session.add(commit)
 
         # Commit session every 20 commits to avoid loss of all data on crash.

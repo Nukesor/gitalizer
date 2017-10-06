@@ -24,7 +24,7 @@ class Commit(db.Model):
     additions = db.Column(db.Integer())
     deletions = db.Column(db.Integer())
     repository_url = db.Column(db.String(240), nullable=False)
-    contributer_login = db.Column(db.String(120), nullable=False)
+    contributer_login = db.Column(db.String(120))
 
     repository = db.relationship("Repository", back_populates="commits")
     contributer = db.relationship("Contributer", back_populates="commits")
