@@ -11,7 +11,7 @@ class Repository(db.Model):
     clone_url = db.Column(db.String(240), primary_key=True)
 
     commits = db.relationship("Commit", back_populates="repository")
-    contributers = db.relationship(
+    contributors = db.relationship(
         "Contributer",
         secondary=contributer_repositories,
         back_populates="repositories")

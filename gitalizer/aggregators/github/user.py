@@ -7,12 +7,23 @@ from datetime import datetime
 from flask import current_app
 
 from gitalizer.extensions import db
-from gitalizer.models.contributer import Contributer, contributer_repositories
+from gitalizer.models.contributer import Contributer
 from gitalizer.models.repository import Repository
 from gitalizer.models.commit import Commit
+from gitalizer.aggregators.github.helper import get_commit_count
 
 
-def get_user(name):
+def get_friends(name: str):
+    """Get all relevant Information about all friends of a specific user.."""
+    github = Github(current_app.config['GITHUB_USER'],
+                    current_app.config['GITHUB_PASSWORD'])
+
+    user = github.get_user(name)
+    followers = user.get_followers()
+    following = user.get_following()
+
+
+def get_user(name: str):
     """Get all relevant Information for a single user."""
     github = Github(current_app.config['GITHUB_USER'],
                     current_app.config['GITHUB_PASSWORD'])
@@ -46,22 +57,29 @@ def register_repository(github_repo: Github_Repository, github: Github):
         db.session.add(repository)
         db.session.commit()
 
-    # Register all contributers
-    contributers = github_repo.get_contributors()
-    for user in contributers:
+    # Skip repositories that are too big.
+    contributors = github_repo.get_contributors()
+    limit = current_app.config['GITHUB_SKIP']
+    if get_commit_count(contributors) >= limit:
+        current_time = datetime.now().strftime('%H:%M')
+        print(f'\n{current_time}: Skip {repository.clone_url}. It has more than {limit} commits.')
+        return
+
+    # Repository isn't too big, start to scan
+    current_time = datetime.now().strftime('%H:%M')
+    print(f'\n{current_time}: Started to scan {repository.clone_url}')
+
+    # Register all contributors
+    for user in contributors:
         contributer = db.session.query(Contributer).get(user.login)
         if not contributer:
             contributer = Contributer(user.login)
-            db.session.add(contributer)
-        match = db.session.query(contributer_repositories) \
-            .filter(contributer_repositories.c.contributer_login == contributer.login) \
-            .filter(contributer_repositories.c.repository_url == repository.clone_url) \
-            .one_or_none()
-        if not match:
-            contributer.repositories.append(repository)
-            db.session.add(contributer)
+        contributer.repositories.append(repository)
+        db.session.add(contributer)
     db.session.commit()
 
+    # Get all commits from this repository
+    # The user is extracted as well as additions, deletions and timestamp
     commits = github_repo.get_commits()
     commit_count = 0
     for github_commit in commits:
@@ -70,14 +88,21 @@ def register_repository(github_repo: Github_Repository, github: Github):
             .filter(Commit.repository_url == repository.clone_url) \
             .one_or_none()
         if not commit:
+            # Create a new commit and extract all valuable information
             commit = Commit(github_commit.sha, repository, contributer)
+            commit.time = github_commit.commit.author.date
+            commit.author_email = github_commit.commit.author.email
             commit.additions = github_commit.stats.additions
             commit.deletions = github_commit.stats.deletions
             db.session.add(commit)
+
         commit_count += 1
+        if commit_count % 50 == 0:
+            db.session.commit()
     db.session.commit()
 
     time = datetime.fromtimestamp(github.rate_limiting_resettime)
     time = time.strftime("%H:%M")
-    print(f'Scanned {repository.clone_url} with {commit_count} commits')
+    current_time = datetime.now().strftime('%H:%M')
+    print(f'{current_time}: Scanned {repository.clone_url} with {commit_count} commits')
     print(f'{github.rate_limiting} of 5000 remaining. Reset at {time}')

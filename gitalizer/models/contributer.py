@@ -22,7 +22,7 @@ class Contributer(db.Model):
     repositories = db.relationship(
         "Repository",
         secondary=contributer_repositories,
-        back_populates="contributers")
+        back_populates="contributors")
 
     def __init__(self, login):
         """Constructor."""
