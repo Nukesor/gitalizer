@@ -17,9 +17,10 @@ def create_app(config_name='develop'):
     app.config.from_object(configs[config_name])
 
     # Initialize extensions
-    from gitalizer.extensions import db, passlib
+    from gitalizer.extensions import db, passlib, github
     db.init_app(app)
     passlib.init_app(app)
+    github.init_app(app)
 
     # Initialize handlers
     from gitalizer.handlers import register_handlers
