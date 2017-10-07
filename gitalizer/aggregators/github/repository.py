@@ -3,24 +3,20 @@
 from datetime import datetime
 from github import Repository as Github_Repository
 
-from flask import current_app
-
 from gitalizer.extensions import db, github
-from gitalizer.models.contributer import Contributer
 from gitalizer.models.repository import Repository
 from gitalizer.aggregators.git.commit import scan_repository
-from gitalizer.aggregators.github.helper import get_commit_count
 from gitalizer.aggregators.git.repository import get_git_repository
 
 
-def get_repository_by_owner_name(owner: str, name: str):
+def get_github_repository_by_owner_name(owner: str, name: str):
     """Get a repository by it's owner and name."""
     full_name = f'{owner}/{name}'
     github_repo = github.github.get_repo(full_name)
-    get_repository(github_repo)
+    get_github_repository(github_repo)
 
 
-def get_repository(github_repo: Github_Repository):
+def get_github_repository(github_repo: Github_Repository):
     """Get all information from a single repository."""
     repository = db.session.query(Repository).get(github_repo.clone_url)
     if not repository:

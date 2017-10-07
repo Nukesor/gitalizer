@@ -28,14 +28,21 @@ def scan_repository(
     # List of commit hashes to check if we already were at this point in the tree.
     commit_hashes = set()
     all_commits = []
+    commit_stats = {}
     while len(queue) > 0:
         commit = queue.pop()
         # Break if we already visited this tree node
         if commit.hex in commit_hashes:
             continue
         commit_hashes.add(commit.hex)
-        all_commits.append(commit)
+        if len(commit.parents) == 1:
+            diff = commit.tree.diff_to_tree(commit.parents[0].tree)
+            commit_stats[commit.hex] = {
+                'additions': diff.stats.insertions,
+                'deletions': diff.stats.deletions,
+            }
         queue.extend(commit.parents)
+        all_commits.append(commit)
 
     # Set the time of the first commit as repository creation time.
     timestamp = all_commits[-1].author.time
@@ -81,14 +88,14 @@ def scan_repository(
 
             # Create a new commit and extract all valuable information
             commit = Commit(git_commit.hex, repository, email)
+            if git_commit.hex in commit_stats:
+                commit.additions = commit_stats[git_commit.hex]['additions']
+                commit.deletions = commit_stats[git_commit.hex]['deletions']
+            # Get timestamp with utc offset
             timestamp = git_commit.author.time
             utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
             commit.time = datetime.fromtimestamp(timestamp, utc_offset)
 
-#            stats = github_commit.stats
-#            if stats:
-#                commit.additions = stats.additions
-#                commit.deletions = stats.deletions
             db.session.add(commit)
 
         # Commit session every 20 commits to avoid loss of all data on crash.

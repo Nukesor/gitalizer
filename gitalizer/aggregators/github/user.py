@@ -2,10 +2,8 @@
 
 from github import NamedUser
 
-from gitalizer.extensions import db, github
-from gitalizer.models.contributer import Contributer
-from gitalizer.aggregators.github.repository import get_repository
-from gitalizer.aggregators.github.contributer import get_contributer
+from gitalizer.extensions import github
+from gitalizer.aggregators.github.repository import get_github_repository
 
 
 def get_friends(name: str):
@@ -45,7 +43,7 @@ def get_user(user: NamedUser):
         contributed = list(filter(lambda x: x.login == user.login, star.get_contributors()))
         if len(contributed) == 0:
             break
-        get_repository(star)
+        get_github_repository(star)
 
     for repo in repos:
-        get_repository(repo)
+        get_github_repository(repo)
