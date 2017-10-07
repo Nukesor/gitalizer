@@ -1,6 +1,5 @@
 """Data collection from Github."""
 
-import socket
 from pygit2 import Repository
 from github import Repository as Github_Repository
 from datetime import datetime, timedelta, timezone
@@ -8,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 from gitalizer.extensions import db
 from gitalizer.models.email import Email
 from gitalizer.models.commit import Commit
-from gitalizer.models.contributer import Contributer
 from gitalizer.models.repository import Repository as RepositoryModel
 from gitalizer.aggregators.github.contributer import get_contributer
 

@@ -1,11 +1,9 @@
 """Data collection from Github."""
 
 from github import NamedUser
-from flask import current_app
-from multiprocessing import Pool
 
 from gitalizer.extensions import github
-from gitalizer.aggregators.github.repository import get_github_repository
+from gitalizer.aggregators.github.repository import get_github_repositories
 
 
 def get_friends(name: str):
@@ -24,25 +22,32 @@ def get_friends(name: str):
         if len(list(exists)) == 0:
             user_list.append(followed)
 
+    # Get all deduplicated github repositories
+    repositories = []
     for user in user_list:
-        print(f'Start scanning user {user.login}:')
-        get_user(user)
+        print(f'Added repositories for user {user.login}:')
+        get_user_repos(user, repositories)
+
+    # Scan all repositories with a worker thread pool
+    get_github_repositories(repositories)
 
 
 def get_user_by_name(user: str):
     """Get a user by his login name."""
     user = github.github.get_user(user)
-    get_user(user)
+    # Scan all repositories with a worker thread pool
+    get_github_repositories(get_user_repos(user, []))
 
 
-def get_user(user: NamedUser):
+def get_user_repos(user: NamedUser, repos_to_scan):
     """Get all relevant Information for a single user."""
     owned_repos = user.get_repos()
     starred = user.get_starred()
-    repos_to_scan = []
 
     for repo in owned_repos:
-        repos_to_scan.append(repo)
+        exists = filter(lambda x: x.clone_url == repo.clone_url, repos_to_scan)
+        if len(list(exists)) == 0:
+            repos_to_scan.append(repo)
 
     for star in starred:
         # Check if user contributed to this repo.
@@ -52,6 +57,3 @@ def get_user(user: NamedUser):
         exists = filter(lambda x: x.clone_url == star.clone_url, repos_to_scan)
         if len(list(exists)) == 0:
             repos_to_scan.append(star)
-
-    pool = Pool(current_app.config['GIT_SCAN_THREADS'])
-    pool.map(get_github_repository, repos_to_scan)
