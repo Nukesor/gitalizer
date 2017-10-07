@@ -8,8 +8,16 @@ from flask import current_app
 from gitalizer.extensions import db, github
 from gitalizer.models.contributer import Contributer
 from gitalizer.models.repository import Repository
-from gitalizer.aggregators.github.commit import get_commits
+from gitalizer.aggregators.git.commit import scan_repository
 from gitalizer.aggregators.github.helper import get_commit_count
+from gitalizer.aggregators.git.repository import get_git_repository
+
+
+def get_repository_by_owner_name(owner: str, name: str):
+    """Get a repository by it's owner and name."""
+    full_name = f'{owner}/{name}'
+    github_repo = github.github.get_repo(full_name)
+    get_repository(github_repo)
 
 
 def get_repository(github_repo: Github_Repository):
@@ -20,29 +28,15 @@ def get_repository(github_repo: Github_Repository):
         db.session.add(repository)
         db.session.commit()
 
-    # Skip repositories that are too big.
-    contributors = github_repo.get_contributors()
-    count = get_commit_count(contributors)
-
     current_time = datetime.now().strftime('%H:%M')
-    limit = current_app.config['GITHUB_SKIP']
-    if count >= limit:
-        print(f'\n{current_time}: Skip {repository.clone_url}. It has more than {limit} commits.')
-        return
-    else:
-        # Repository isn't too big, start to scan
-        print(f'\n{current_time}: Started scan {repository.clone_url} with {count} commits.')
+    print(f'\n{current_time}: Started scan {repository.clone_url}.')
 
-    # Register all contributors
-    for user in contributors:
-        contributer = db.session.query(Contributer).get(user.login)
-        if not contributer:
-            contributer = Contributer(user.login)
-        contributer.repositories.append(repository)
-        db.session.add(contributer)
-    db.session.commit()
-
-    commit_count = get_commits(github_repo, repository, contributer)
+    git_repo = get_git_repository(
+        github_repo.clone_url,
+        github_repo.owner.login,
+        github_repo.name,
+    )
+    commit_count = scan_repository(git_repo, repository, github_repo)
 
     time = datetime.fromtimestamp(github.github.rate_limiting_resettime)
     time = time.strftime("%H:%M")

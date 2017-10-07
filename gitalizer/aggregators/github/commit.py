@@ -15,49 +15,54 @@ from gitalizer.aggregators.github.contributer import get_contributer
 
 def get_commits(github_repo: Github_Repository,
                 repository: Repository,
-                contributer: Contributer):
+                contributer: Contributer,
+                inaccurate_commit_count=0):
     """Get all commits from this repository.
 
     The user is extracted as well as additions, deletions and timestamp
     """
-    # Try to get all commits at once.
+    # Try to get all commits at once if there are less than 1000 commits
     # If this fails, we need to chunk the data into multiple requests
-    try:
-        commits = github_repo.get_commits()
-        return save_commits(commits, repository, contributer)
-    except socket.timeout:
-        commit_count = 0
-        # We try to get the commits in 30 day intervals
-        # If this fails again, we continuously subtract one day until it works.
-        # The loop stops if the `until` parameter is before repository creation.
-        interval = timedelta(days=30)
-        print("Using 30 day Interval.")
-        until = datetime.now()
-        since = until - interval
-        failed = False
-        while until > github_repo.created_at and interval.days > 2:
-            if failed:
-                interval -= timedelta(days=1)
-                print(f"Using {interval.days} day interval.")
-                since = until - interval
-                failed = False
-            else:
-                since -= interval
-                until -= interval
-            try:
-                commits = github_repo.get_commits(since=since, until=until)
-                commit_count += save_commits(commits, repository, contributer)
-            except socket.timeout:
-                failed = True
-                pass
-        return commit_count
+    if inaccurate_commit_count <= 1000:
+        try:
+            commits = github_repo.get_commits()
+            return save_commits(commits, repository, contributer)
+        except socket.timeout:
+            pass
+
+    commit_count = 0
+    # We got too many commits or the request failed.
+    # Thereby we try to get the commits in 90 day intervals
+    # If this fails again, we continuously subtract one day until it works.
+    # The loop stops if the `until` parameter is before repository creation.
+    interval = timedelta(days=90)
+    print(f'Using {interval.days} day Interval.')
+    until = datetime.now()
+    since = until - interval
+    failed = False
+    while until > github_repo.created_at and interval.days > 2:
+        if failed:
+            interval -= timedelta(days=1)
+            print(f"Using {interval.days} day interval.")
+            since = until - interval
+            failed = False
+        else:
+            since -= interval
+            until -= interval
+        try:
+            commits = github_repo.get_commits(since=since, until=until)
+            commit_count += save_commits(commits, repository, contributer, commit_count)
+        except socket.timeout:
+            failed = True
+            pass
+    return commit_count
 
 
 def save_commits(commits,
                  repository: Repository,
-                 contributer: Contributer):
+                 contributer: Contributer,
+                 commit_count=0):
     """Save the queried commits to the database."""
-    commit_count = 0
     for github_commit in commits:
 
         # Check if the commit already exists
@@ -105,5 +110,9 @@ def save_commits(commits,
         commit_count += 1
         if commit_count % 20 == 0:
             db.session.commit()
+        # Print a status every 200 commits to indicate progress.
+        if commit_count % 200 == 0:
+            print(f"{commit_count} commits scanned.")
+
     db.session.commit()
     return commit_count

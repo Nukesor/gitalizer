@@ -9,6 +9,7 @@ class Repository(db.Model):
 
     __tablename__ = 'repository'
     clone_url = db.Column(db.String(240), primary_key=True)
+    created_at = db.Column(db.DateTime(timezone=True))
 
     commits = db.relationship("Commit", back_populates="repository")
     contributors = db.relationship(

@@ -18,7 +18,7 @@ class User(db.Model, Timestamp):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(120), nullable=False)
     current_auth_token = db.Column(db.String(36), index=True)
-    last_action = db.Column(db.DateTime)
+    last_action = db.Column(db.DateTime(timezone=True))
 
     def __init__(self, email, password):
         """Construct a `User`.

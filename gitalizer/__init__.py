@@ -3,6 +3,8 @@
 This particular file additionally contains the applications factory.
 """
 
+import os
+import sys
 from flask import Flask
 
 
@@ -21,6 +23,19 @@ def create_app(config_name='develop'):
     db.init_app(app)
     passlib.init_app(app)
     github.init_app(app)
+
+    # Check if the git clone dir can be created/accessed
+    git_clone_dir = app.config['GIT_CLONE_PATH']
+    if not os.path.exists(git_clone_dir):
+        try:
+            os.makedirs(git_clone_dir)
+        except PermissionError:
+            print(f"Gitalizer needs to have permissions to create the directory specified in 'GIT_CLONE_PATH': {git_clone_dir}")
+            sys.ext(1)
+    else:
+        if not os.access(git_clone_dir, os.W_OK):
+            print(f"Gitalizer needs to have permissions to write to the directory specified in 'GIT_CLONE_PATH': {git_clone_dir}")
+            sys.exit(1)
 
     # Initialize handlers
     from gitalizer.handlers import register_handlers
