@@ -1,6 +1,8 @@
 """Data collection from Github."""
 
 from github import NamedUser
+from flask import current_app
+from multiprocessing import Pool
 
 from gitalizer.extensions import github
 from gitalizer.aggregators.github.repository import get_github_repository
@@ -35,15 +37,21 @@ def get_user_by_name(user: str):
 
 def get_user(user: NamedUser):
     """Get all relevant Information for a single user."""
-    repos = user.get_repos()
+    owned_repos = user.get_repos()
     starred = user.get_starred()
+    repos_to_scan = []
+
+    for repo in owned_repos:
+        repos_to_scan.append(repo)
 
     for star in starred:
         # Check if user contributed to this repo.
         contributed = list(filter(lambda x: x.login == user.login, star.get_contributors()))
         if len(contributed) == 0:
             break
-        get_github_repository(star)
+        exists = filter(lambda x: x.clone_url == star.clone_url, repos_to_scan)
+        if len(list(exists)) == 0:
+            repos_to_scan.append(star)
 
-    for repo in repos:
-        get_github_repository(repo)
+    pool = Pool(current_app.config['GIT_SCAN_THREADS'])
+    pool.map(get_github_repository, repos_to_scan)
