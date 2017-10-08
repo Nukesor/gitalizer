@@ -2,11 +2,17 @@
 
 import click
 import urllib.parse
+from click import Argument
 from flask import url_for
 from sqlalchemy_utils.functions import database_exists, create_database, drop_database
 
 from gitalizer.extensions import db
 from gitalizer.models.user import User
+from gitalizer.aggregators.github.repository import get_github_repository_by_owner_name
+from gitalizer.aggregators.github.user import (
+    get_user_by_name,
+    get_friends as get_friends_by_name,
+)
 
 
 def register_cli(app):  # pragma: no cover
@@ -38,7 +44,7 @@ def register_cli(app):  # pragma: no cover
         """Initialize the database.
 
         This will drop and recreate the actual database if it already exists.
-        The database name from the `SQLALCHEMY_DATABASE_URI` environment
+        The database name from the config is used
         variable is used for this.
         """
         # If there is an existing DB, make sure to drop it and start completely fresh.
@@ -52,3 +58,22 @@ def register_cli(app):  # pragma: no cover
         user = User("test@example.com", "test")
         db.session.add(user)
         db.session.commit()
+
+    @app.cli.command()
+    @click.argument('name')
+    def get_user(name):
+        """Get the repository for a specific github user."""
+        get_user_by_name(name)
+
+    @app.cli.command
+    @click.argument('name')
+    def get_friends(name):
+        """Get the repository for a specific github user."""
+        get_friends_by_name(name)
+
+    @app.cli.command
+    @click.argument('owner')
+    @click.argument('repository')
+    def get_github_repository(owner, repository):
+        """Get the repository for a specific github user."""
+        get_github_repository_by_owner_name(owner, repository)

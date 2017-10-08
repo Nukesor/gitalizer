@@ -57,3 +57,4 @@ def get_user_repos(user: NamedUser, repos_to_scan):
         exists = filter(lambda x: x.clone_url == star.clone_url, repos_to_scan)
         if len(list(exists)) == 0:
             repos_to_scan.append(star)
+    return repos_to_scan
