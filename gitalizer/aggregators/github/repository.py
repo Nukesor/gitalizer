@@ -16,6 +16,7 @@ def get_github_repositories(repositories):
 
     We use a thread pool and one worker per repository.
     """
+    print(f'Scanning {len(repositories)} repositories')
     pool = Pool(current_app.config['GIT_SCAN_THREADS'])
     pool.map(get_github_repository, repositories)
 

@@ -62,18 +62,18 @@ def register_cli(app):  # pragma: no cover
     @app.cli.command()
     @click.argument('name')
     def get_user(name):
-        """Get the repository for a specific github user."""
+        """Get all repositories for a specific github user."""
         get_user_by_name(name)
 
-    @app.cli.command
+    @app.cli.command()
     @click.argument('name')
     def get_friends(name):
-        """Get the repository for a specific github user."""
+        """Get the repositories of a user and all his friends."""
         get_friends_by_name(name)
 
-    @app.cli.command
+    @app.cli.command()
     @click.argument('owner')
     @click.argument('repository')
     def get_github_repository(owner, repository):
-        """Get the repository for a specific github user."""
+        """Get a github repository by owner and name."""
         get_github_repository_by_owner_name(owner, repository)
