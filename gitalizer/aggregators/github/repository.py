@@ -34,7 +34,7 @@ def get_github_repository(github_repo: Github_Repository):
     if not repository:
         repository = Repository(github_repo.clone_url)
         db.session.add(repository)
-        db.session.commit()
+    db.session.commit()
 
     current_time = datetime.now().strftime('%H:%M')
     print(f'\n{current_time}: Started scan {repository.clone_url}.')

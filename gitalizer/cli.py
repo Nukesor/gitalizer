@@ -63,17 +63,29 @@ def register_cli(app):  # pragma: no cover
     @click.argument('name')
     def get_user(name):
         """Get all repositories for a specific github user."""
-        get_user_by_name(name)
+        try:
+            get_user_by_name(name)
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            pass
 
     @app.cli.command()
     @click.argument('name')
     def get_friends(name):
         """Get the repositories of a user and all his friends."""
-        get_friends_by_name(name)
+        try:
+            get_friends_by_name(name)
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            pass
 
     @app.cli.command()
     @click.argument('owner')
     @click.argument('repository')
     def get_github_repository(owner, repository):
         """Get a github repository by owner and name."""
-        get_github_repository_by_owner_name(owner, repository)
+        try:
+            get_github_repository_by_owner_name(owner, repository)
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            pass
