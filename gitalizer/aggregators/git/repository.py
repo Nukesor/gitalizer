@@ -19,12 +19,8 @@ def get_git_repository(url, owner, name):
         repo = Repository(clone_dir)
         repo.remotes['origin'].fetch()
 
-        # Set the reference of current HEAD to remote master
-        master_ref = repo.lookup_reference('refs/heads/master')
-        remote_master_id = repo.lookup_reference('refs/remotes/origin/master').target
-        master_ref.set_target(remote_master_id)
-
+        current_ref = repo.head
         # Hard reset repository to get clean repo
-        repo.reset(master_ref.target, GIT_RESET_HARD)
+        repo.reset(current_ref.target, GIT_RESET_HARD)
 
     return repo

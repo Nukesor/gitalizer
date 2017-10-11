@@ -21,7 +21,7 @@ def scan_repository(
     """
     # Walk through the repository and get all commits
     # that are reachable as parents from master commit
-    master_commit = git_repo.lookup_reference("refs/heads/master").get_object()
+    master_commit = git_repo.head.get_object()
     queue = [master_commit]
     # List of commit hashes to check if we already were at this point in the tree.
     commit_hashes = set()
