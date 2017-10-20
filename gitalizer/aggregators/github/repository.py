@@ -7,7 +7,7 @@ from github import Repository as Github_Repository
 
 from gitalizer.extensions import db, github
 from gitalizer.models.repository import Repository
-from gitalizer.aggregators.git.commit import scan_repository
+from gitalizer.aggregators.git.commit import CommitScanner
 from gitalizer.aggregators.git.repository import get_git_repository
 
 
@@ -44,7 +44,8 @@ def get_github_repository(github_repo: Github_Repository):
         github_repo.owner.login,
         github_repo.name,
     )
-    commit_count = scan_repository(git_repo, repository, github_repo)
+    scanner = CommitScanner(git_repo, repository, github_repo)
+    commit_count = scanner.scan_repository()
 
     time = datetime.fromtimestamp(github.github.rate_limiting_resettime)
     time = time.strftime("%H:%M")
