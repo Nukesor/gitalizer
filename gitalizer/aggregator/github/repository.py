@@ -7,8 +7,8 @@ from github import Repository as Github_Repository
 
 from gitalizer.extensions import db, github
 from gitalizer.models.repository import Repository
-from gitalizer.aggregators.git.commit import CommitScanner
-from gitalizer.aggregators.git.repository import get_git_repository
+from gitalizer.aggregator.git.commit import CommitScanner
+from gitalizer.aggregator.git.repository import get_git_repository
 
 
 def get_github_repositories(repositories):

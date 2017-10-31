@@ -9,7 +9,7 @@ from gitalizer.extensions import db
 from gitalizer.models.email import Email
 from gitalizer.models.commit import Commit
 from gitalizer.models.repository import Repository as RepositoryModel
-from gitalizer.aggregators.github.contributer import get_contributer
+from gitalizer.aggregator.github.contributer import get_contributer
 
 
 class CommitScanner():

@@ -3,7 +3,7 @@
 from github import NamedUser
 
 from gitalizer.extensions import github
-from gitalizer.aggregators.github.repository import get_github_repositories
+from gitalizer.aggregator.github.repository import get_github_repositories
 
 
 def get_friends(name: str):

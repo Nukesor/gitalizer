@@ -8,8 +8,8 @@ from sqlalchemy_utils.functions import database_exists, create_database, drop_da
 
 from gitalizer.extensions import db
 from gitalizer.models.user import User
-from gitalizer.aggregators.github.repository import get_github_repository_by_owner_name
-from gitalizer.aggregators.github.user import (
+from gitalizer.aggregator.github.repository import get_github_repository_by_owner_name
+from gitalizer.aggregator.github.user import (
     get_user_by_name,
     get_friends as get_friends_by_name,
 )
