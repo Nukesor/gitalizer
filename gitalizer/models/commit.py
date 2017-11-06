@@ -25,8 +25,8 @@ class Commit(db.Model):
     sha = db.Column(db.String(40), nullable=False)
     time = db.Column(db.DateTime(timezone=True))
     author_email = db.Column(db.String(240), nullable=False)
-    additions = db.Column(db.Integer(), nullable=False)
-    deletions = db.Column(db.Integer(), nullable=False)
+    additions = db.Column(db.Integer())
+    deletions = db.Column(db.Integer())
     repository_url = db.Column(db.String(240), nullable=False)
 
     email = db.relationship("Email", back_populates="commits")
