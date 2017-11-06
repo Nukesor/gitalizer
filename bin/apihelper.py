@@ -4,15 +4,18 @@
 It does things such as fetching a token for every request with username and
 password.
 """
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import argparse
 import json
-from urllib.parse import urlparse, parse_qs
 import requests
+import argparse
 from pprint import pprint
+from urllib.parse import urlparse, parse_qs
 
-DEFAULT_USERNAME = 'test@example.com'
 DEFAULT_PASSWORD = 'test'
+DEFAULT_USERNAME = 'test@example.com'
 
 
 def _parse_args():
