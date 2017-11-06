@@ -8,8 +8,8 @@ class Repository(db.Model):
     """Repository model."""
 
     __tablename__ = 'repository'
-    name = db.Column(db.String(240), primary_key=True)
     clone_url = db.Column(db.String(240), primary_key=True)
+    name = db.Column(db.String(240))
     created_at = db.Column(db.DateTime(timezone=True))
 
     commits = db.relationship("Commit", back_populates="repository")
