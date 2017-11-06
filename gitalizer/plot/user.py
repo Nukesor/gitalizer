@@ -1,5 +1,6 @@
 """The main module for plotting user related graphs."""
 
+import os
 import math
 import pandas as pd
 from gitalizer.extensions import db
@@ -9,18 +10,22 @@ from gitalizer.models.contributer import Contributer
 from gitalizer.plot.helper import get_user_repositories
 
 
-def plot_user_repositories_changes(name):
+def plot_user_repositories_changes(name, path):
     """Get all commits of repositories of an user."""
     contributer = db.session.query(Contributer) \
         .filter(Contributer.login.ilike(name)) \
         .one()
 
+    path = os.path.join(path, 'repo_changes')
+    if not os.path.exists(path):
+        os.mkdir(path)
+
     repositories = get_user_repositories(contributer)
     for repository in repositories:
-        plot_user_repository_changes(contributer, repository)
+        plot_user_repository_changes(contributer, repository, path)
 
 
-def plot_user_repository_changes(contributer, repo):
+def plot_user_repository_changes(contributer, repo, path):
     """Plot the changes for a specific contributer and repository."""
     commits = db.session.query(Commit) \
         .filter(Commit.repository == repo) \
@@ -45,5 +50,14 @@ def plot_user_repository_changes(contributer, repo):
     df = pd.DataFrame(data=data)
     df = df.sort_values(by='date')
     df = df.set_index('date')
+
+    color = dict(boxes='DarkGreen', whiskers='DarkOrange',
+                 medians='DarkBlue', caps='Gray')
+
+    box = df.plot.box(color, sym='r+')
+    fig = box.get_figure()
+
+    plot_path = os.path.join(path, repo.name)
+    fig.savefig(plot_path)
 
     print(df)

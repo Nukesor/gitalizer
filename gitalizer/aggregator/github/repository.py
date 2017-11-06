@@ -32,7 +32,7 @@ def get_github_repository(github_repo: Github_Repository):
     """Get all information from a single repository."""
     repository = db.session.query(Repository).get(github_repo.clone_url)
     if not repository:
-        repository = Repository(github_repo.clone_url)
+        repository = Repository(github_repo.clone_url, github_repo.name)
         db.session.add(repository)
     db.session.commit()
 
