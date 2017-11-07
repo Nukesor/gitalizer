@@ -3,11 +3,12 @@
 import socket
 
 from gitalizer.extensions import db
-from gitalizer.models.contributer import Contributer
+from gitalizer.models.email import Email
 from gitalizer.models.repository import Repository
+from gitalizer.models.contributer import Contributer
 
 
-def get_contributer(login: str, repository: Repository):
+def get_contributer(login: str):
     """Create new contributer or add repository to it's list."""
     _try = 0
     tries = 3
@@ -16,7 +17,6 @@ def get_contributer(login: str, repository: Repository):
             contributer = db.session.query(Contributer).get(login)
             if not contributer:
                 contributer = Contributer(login)
-            contributer.repositories.append(repository)
             db.session.add(contributer)
             db.session.commit()
             return contributer

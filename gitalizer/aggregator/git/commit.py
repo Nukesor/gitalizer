@@ -9,7 +9,7 @@ from gitalizer.extensions import db
 from gitalizer.models.email import Email
 from gitalizer.models.commit import Commit
 from gitalizer.models.repository import Repository as RepositoryModel
-from gitalizer.aggregator.github.contributer import get_contributer
+from gitalizer.aggregator.github.contributer import get_contributer, get_email
 
 
 class CommitScanner():
@@ -86,49 +86,49 @@ class CommitScanner():
 
         if commit:
             return False
-        else:
-            # Check every email only once to avoid github api calls
+
+        # Check every email only once to avoid github api calls
+        if git_commit.author.email not in self.checked_emails:
             email = db.session.query(Email).get(git_commit.author.email)
-            if git_commit.author.email not in self.checked_emails:
-                # If there is no such email we create a new email and a new contributer,
-                # if the author is known and doesn't exist yet.
-                if not email:
-                    email = Email(git_commit.author.email)
+            # If there is no such email we create a new email and a new contributer,
+            # if the author is known and doesn't exist yet.
+            if not email:
+                email = Email(git_commit.author.email)
 
-                    # Try to get the contributer if we have a github repository
-                    if self.github_repo:
-                        if email.contributer:
-                            email.contributer.repositories.append(self.repository)
+            # Try to get the contributer if we have a github repository
+            if self.github_repo:
+                # We don't know the contributer for this email yet.
+                # If we know the github author of this commit, we add it to this email address.
+                if not email.contributer:
+                    github_commit = self.github_repo.get_commit(git_commit.hex)
+                    if github_commit.author:
+                        contributer = get_contributer(github_commit.author.login)
+                        email.contributer = contributer
 
-                        # We don't know the contributer for this email yet.
-                        # If we know the github author of this commit, we add it to this email address.
-                    else:
-                        github_commit = self.github_repo.get_commit(git_commit.hex)
-                        if github_commit.author:
-                            contributer = get_contributer(github_commit.author.login, self.repository)
-                            email.contributer = contributer
+            if email.contributer:
+                email.contributer.repositories.append(self.repository)
 
-                    db.session.add(email)
-                    db.session.commit()
-                    self.checked_emails.add(git_commit.author.email)
+            db.session.add(email)
+            db.session.commit()
+            self.checked_emails.add(git_commit.author.email)
 
-            # Create a new commit and extract all valuable information
-            commit = Commit(git_commit.hex, self.repository, email)
-            if git_commit.hex in self.commit_stats:
-                commit.additions = self.commit_stats[git_commit.hex]['additions']
-                commit.deletions = self.commit_stats[git_commit.hex]['deletions']
-            # Get timestamp with utc offset
-            timestamp = git_commit.author.time
-            utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
-            commit.time = datetime.fromtimestamp(timestamp, utc_offset)
+        # Create a new commit and extract all valuable information
+        commit = Commit(git_commit.hex, self.repository, email)
+        if git_commit.hex in self.commit_stats:
+            commit.additions = self.commit_stats[git_commit.hex]['additions']
+            commit.deletions = self.commit_stats[git_commit.hex]['deletions']
+        # Get timestamp with utc offset
+        timestamp = git_commit.author.time
+        utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
+        commit.time = datetime.fromtimestamp(timestamp, utc_offset)
 
-            db.session.add(commit)
+        db.session.add(commit)
 
-            # Commit session every 20 commits to avoid loss of all data on crash.
-            self.scanned_commits += 1
-            if self.scanned_commits % 20 == 0:
-                db.session.commit()
-            # Print a status every 1000 commits to indicate progress.
-            if self.scanned_commits % 1000 == 0:
-                print(f"{self.scanned_commits} commits scanned.")
-            return True
+        # Commit session every 20 commits to avoid loss of all data on crash.
+        self.scanned_commits += 1
+        if self.scanned_commits % 20 == 0:
+            db.session.commit()
+        # Print a status every 1000 commits to indicate progress.
+        if self.scanned_commits % 1000 == 0:
+            print(f"{self.scanned_commits} commits scanned.")
+        return True

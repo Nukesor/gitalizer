@@ -14,7 +14,11 @@ def plot_user_repositories_changes(name, path):
     """Get all commits of repositories of an user."""
     contributer = db.session.query(Contributer) \
         .filter(Contributer.login.ilike(name)) \
-        .one()
+        .one_or_none()
+
+    if contributed is None:
+        print(f'No contributer with name {name}')
+        return
 
     path = os.path.join(path, 'repo_changes')
     if not os.path.exists(path):
