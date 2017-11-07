@@ -4,6 +4,7 @@ from collections import deque
 from pygit2 import Repository, GitError
 from github import Repository as Github_Repository
 from datetime import datetime, timedelta, timezone
+from sqlalchemy.exc import IntegrityError
 
 from gitalizer.extensions import db
 from gitalizer.models.email import Email
@@ -108,8 +109,12 @@ class CommitScanner():
             if email.contributer:
                 email.contributer.repositories.append(self.repository)
 
-            db.session.add(email)
-            db.session.commit()
+            try:
+                db.session.add(email)
+                db.session.commit()
+            except IntegrityError:
+                db.session.commit()
+
             self.checked_emails.add(git_commit.author.email)
 
         # Create a new commit and extract all valuable information

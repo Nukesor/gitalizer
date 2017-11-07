@@ -36,6 +36,15 @@ def get_github_repository(github_repo: Github_Repository):
         db.session.add(repository)
     db.session.commit()
 
+    # Handle github_repo forks
+    for fork in github_repo.get_forks():
+        fork_repo = db.session.query(Repository).get(fork.clone_url)
+        if not fork_repo:
+            fork_repo = Repository(fork.clone_url, fork.name)
+        fork_repo.parent = repository
+        db.session.add(fork_repo)
+    db.session.commit()
+
     current_time = datetime.now().strftime('%H:%M')
     print(f'\n{current_time}: Started scan {repository.clone_url}.')
 
