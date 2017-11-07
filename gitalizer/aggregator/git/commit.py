@@ -9,14 +9,15 @@ from gitalizer.extensions import db
 from gitalizer.models.email import Email
 from gitalizer.models.commit import Commit
 from gitalizer.models.repository import Repository as RepositoryModel
-from gitalizer.aggregator.github.contributer import get_contributer, get_email
+from gitalizer.aggregator.github.contributer import get_contributer
 
 
 class CommitScanner():
     """Get features from all commits in a repository."""
 
     def __init__(self, git_repo: Repository,
-                 repository: RepositoryModel, github_repo: Github_Repository=None):
+                 repository: RepositoryModel,
+                 github_repo: Github_Repository=None):
         """Initialize a new CommitChecker."""
         self.repository = repository
         self.git_repo = git_repo
@@ -87,14 +88,13 @@ class CommitScanner():
         if commit:
             return False
 
+        # Get or create new mail
+        email = db.session.query(Email).get(git_commit.author.email)
+        if not email:
+            email = Email(git_commit.author.email)
+
         # Check every email only once to avoid github api calls
         if git_commit.author.email not in self.checked_emails:
-            email = db.session.query(Email).get(git_commit.author.email)
-            # If there is no such email we create a new email and a new contributer,
-            # if the author is known and doesn't exist yet.
-            if not email:
-                email = Email(git_commit.author.email)
-
             # Try to get the contributer if we have a github repository
             if self.github_repo:
                 # We don't know the contributer for this email yet.
