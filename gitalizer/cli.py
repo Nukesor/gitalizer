@@ -11,7 +11,7 @@ from gitalizer.models.user import User
 from gitalizer.aggregator.github.repository import get_github_repository_by_owner_name
 from gitalizer.aggregator.github.user import (
     get_user_by_name,
-    get_friends as get_friends_by_name,
+    get_friends_by_name,
 )
 
 

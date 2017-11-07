@@ -6,7 +6,7 @@ from gitalizer.extensions import github
 from gitalizer.aggregator.github.repository import get_github_repositories
 
 
-def get_friends(name: str):
+def get_friends_by_name(name: str):
     """Get all relevant Information about all friends of a specific user.."""
     user = github.github.get_user(name)
     followers = user.get_followers()

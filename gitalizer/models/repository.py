@@ -11,6 +11,7 @@ class Repository(db.Model):
     clone_url = db.Column(db.String(240), primary_key=True)
     name = db.Column(db.String(240))
     created_at = db.Column(db.DateTime(timezone=True))
+    completely_scanned = db.Column(db.Boolean(), default=False)
 
     commits = db.relationship("Commit", back_populates="repository")
     contributors = db.relationship(
