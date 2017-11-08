@@ -41,6 +41,7 @@ class Email(db.Model):
                     email = Email(email_address)
                     db.session.add(email)
                     db.session.commit()
+                return email
             except IntegrityError as e:
                 print(f'Got an Email IntegrityError, Try {_try} of {tries}')
                 _try += 1
