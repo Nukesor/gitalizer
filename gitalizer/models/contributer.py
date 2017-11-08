@@ -1,6 +1,7 @@
 """Representation of a git repository contributer."""
 
 from sqlalchemy import ForeignKey
+from sqlalchemy.exc import IntegrityError
 from gitalizer.extensions import db
 
 
@@ -31,3 +32,28 @@ class Contributer(db.Model):
     def __repr__(self):
         """Format a `User` object."""
         return f'<User {self.login}>'
+
+    @staticmethod
+    def get_contributer(login: str):
+        """Create new contributer or add repository to it's list.
+
+        Try multiple times, as we can get Multiple additions through threading.
+        """
+        _try = 0
+        tries = 3
+        exception = None
+        while _try <= tries:
+            try:
+                contributer = db.session.query(Contributer).get(login)
+                if not contributer:
+                    contributer = Contributer(login)
+                db.session.add(contributer)
+                db.session.commit()
+                return contributer
+            except IntegrityError as e:
+                print(f'Got an Contributer IntegrityError, Try {_try} of {tries}')
+                _try += 1
+                exception = e
+                pass
+
+        raise exception

@@ -4,13 +4,14 @@ from collections import deque
 from pygit2 import Repository, GitError
 from github import Repository as Github_Repository
 from datetime import datetime, timedelta, timezone
-from sqlalchemy.exc import IntegrityError
 
 from gitalizer.extensions import db
-from gitalizer.models.email import Email
-from gitalizer.models.commit import Commit
-from gitalizer.models.repository import Repository as RepositoryModel
-from gitalizer.aggregator.github.contributer import get_contributer
+from gitalizer.models import (
+    Email,
+    Commit,
+    Contributer,
+    Repository as RepositoryModel,
+)
 
 
 class CommitScanner():
@@ -90,30 +91,24 @@ class CommitScanner():
             return False
 
         # Get or create new mail
-        email = db.session.query(Email).get(git_commit.author.email)
-        if not email:
-            email = Email(git_commit.author.email)
+        email = Email.get_email(git_commit.author.email)
 
         # Check every email only once to avoid github api calls
         if git_commit.author.email not in self.checked_emails:
             # Try to get the contributer if we have a github repository
-            if self.github_repo:
+            if self.github_repo and not email.contributer:
                 # We don't know the contributer for this email yet.
                 # If we know the github author of this commit, we add it to this email address.
-                if not email.contributer:
-                    github_commit = self.github_repo.get_commit(git_commit.hex)
-                    if github_commit.author:
-                        contributer = get_contributer(github_commit.author.login)
-                        email.contributer = contributer
+                github_commit = self.github_repo.get_commit(git_commit.hex)
+                if github_commit.author:
+                    contributer = Contributer.get_contributer(github_commit.author.login)
+                    email.contributer = contributer
 
             if email.contributer:
                 email.contributer.repositories.append(self.repository)
 
-            try:
-                db.session.add(email)
-                db.session.commit()
-            except IntegrityError:
-                db.session.commit()
+            db.session.add(email)
+            db.session.commit()
 
             self.checked_emails.add(git_commit.author.email)
 

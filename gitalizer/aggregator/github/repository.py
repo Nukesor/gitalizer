@@ -11,7 +11,7 @@ from gitalizer.aggregator.git.commit import CommitScanner
 from gitalizer.aggregator.git.repository import get_git_repository
 
 
-def get_github_repositories(repositories):
+def get_github_repositories(repositories: list):
     """Get multiple github repositories.
 
     We use a thread pool and one worker per repository.

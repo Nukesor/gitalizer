@@ -4,7 +4,7 @@ from flask import current_app
 from pygit2 import Repository, clone_repository, GIT_RESET_HARD, GitError
 
 
-def get_git_repository(url, owner, name):
+def get_git_repository(url: str, owner: str, name: str):
     """Clone or update a repository."""
     base_dir = current_app.config['GIT_CLONE_PATH']
     clone_dir = os.path.join(base_dir, owner, name)
