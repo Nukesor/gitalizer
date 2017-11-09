@@ -1,9 +1,13 @@
 """Representation of a git author email."""
 
+import datetime
 from sqlalchemy import ForeignKeyConstraint
 from sqlalchemy.exc import IntegrityError
+from github import Repository as Github_Repository
+from github.GithubException import RateLimitExceededException
 
-from gitalizer.extensions import db
+from gitalizer.extensions import db, github
+from gitalizer.aggregator.github import call_github_function
 
 
 class Email(db.Model):
@@ -49,3 +53,18 @@ class Email(db.Model):
                 pass
 
         raise exception
+
+    def get_github_relation(self, github_repo: Github_Repository)
+    """Get the related github contributer."""
+        # No github repository or contributer already known. Early return.
+        if not github_repo or self.contributer != None:
+            return
+
+        # If we know the github author of this commit
+        # add it to this email address.
+        #github_commit = github_repo.get_commit(git_commit.hex)
+        github_commit = call_github_function(github_repo, 'get_commit', [git_commit.hex])
+        if github_commit.author:
+            contributer = Contributer.get_contributer(github_commit.author.login)
+            email.contributer = contributer
+        return

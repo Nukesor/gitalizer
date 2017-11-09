@@ -97,13 +97,7 @@ class CommitScanner():
         if git_commit.author.email not in self.checked_emails:
             # Try to get the contributer if we have a github repository and
             # don't know the contributer for this email yet.
-            if self.github_repo and not email.contributer:
-                # If we know the github author of this commit, we add it to this email address.
-                # TODO: Socket timeout and rate limiting
-                github_commit = self.github_repo.get_commit(git_commit.hex)
-                if github_commit.author:
-                    contributer = Contributer.get_contributer(github_commit.author.login)
-                    email.contributer = contributer
+            email.get_github_relation(self.github_repo)
 
             if email.contributer:
                 email.contributer.repositories.append(self.repository)
