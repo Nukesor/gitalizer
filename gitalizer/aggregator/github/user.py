@@ -9,7 +9,7 @@ from gitalizer.aggregator.github import call_github_function
 
 def get_friends_by_name(name: str):
     """Get all relevant Information about all friends of a specific user.."""
-    user = github.github.get_user(name)
+    user = call_github_function(github.github, 'get_user', [name])
     followers = call_github_function(user, 'get_followers', [])
     following = call_github_function(user, 'get_following', [])
 

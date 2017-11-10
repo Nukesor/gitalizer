@@ -2,7 +2,7 @@
 from github.GithubException import RateLimitExceededException
 
 import time
-import datetime
+from datetime import datetime, timedelta
 from gitalizer.extensions import github
 
 
@@ -20,12 +20,12 @@ def call_github_function(github_object: object, function_name: str, args: list):
             return retrieved_object
         except RateLimitExceededException as e:
             # Wait until the rate limiting is reset
-            resettime = github.rate_limiting_resettime
-            resettime = datetime.datetime.fromtimestamp(resettime)
+            resettime = github.github.get_rate_limit().rate.reset
             delta = resettime - datetime.now()
-            delta += datetime.timedelta(minutes=1)
+            delta += timedelta(minutes=1)
             total_minutes = int(delta.total_seconds() / 60)
-            print(f'Hit the rate limit. Waiting for {total_minutes} seconds')
+            print('Hit the rate limit.')
+            print(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
             time.sleep(delta.total_seconds())
 
             _try += 1
@@ -50,12 +50,13 @@ def get_github_object(github_object: object, object_name: str):
             return retrieved_object
         except RateLimitExceededException as e:
             # Wait until the rate limiting is reset
-            resettime = github.rate_limiting_resettime
-            resettime = datetime.datetime.fromtimestamp(resettime)
+            resettime = github.github.get_rate_limit().rate.reset
             delta = resettime - datetime.now()
-            delta += datetime.timedelta(minutes=1)
+            delta += timedelta(minutes=1)
             total_minutes = int(delta.total_seconds() / 60)
-            print(f'Hit the rate limit. Waiting for {total_minutes} seconds')
+            print('Hit the rate limit.')
+            print(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
+
             time.sleep(delta.total_seconds())
 
             _try += 1

@@ -1,6 +1,6 @@
 """Representation of a git repository."""
 
-from sqlalchemy import ForeignKeyConstraint
+from sqlalchemy import ForeignKeyConstraint, func
 from sqlalchemy.orm import backref
 
 from gitalizer.extensions import db
@@ -27,6 +27,11 @@ class Repository(db.Model):
         "Contributer",
         secondary=contributer_repositories,
         back_populates="repositories")
+    updated_at = db.Column(
+        db.DateTime, server_default=func.now(),
+        onupdate=func.current_timestamp(),
+        nullable=False,
+    )
 
     def __init__(self, clone_url, name=None):
         """Constructor."""
