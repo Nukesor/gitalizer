@@ -9,6 +9,10 @@ from gitalizer.extensions import db, github
 from gitalizer.models.repository import Repository
 from gitalizer.aggregator.git.commit import CommitScanner
 from gitalizer.aggregator.git.repository import get_git_repository
+from gitalizer.aggregator.github import (
+    call_github_function,
+    get_github_object,
+)
 
 
 def get_github_repositories(repositories: list):
@@ -24,7 +28,7 @@ def get_github_repositories(repositories: list):
 def get_github_repository_by_owner_name(owner: str, name: str):
     """Get a repository by it's owner and name."""
     full_name = f'{owner}/{name}'
-    github_repo = github.github.get_repo(full_name)
+    github_repo = call_github_function(github.github, 'get_repo', [full_name])
     get_github_repository(github_repo)
 
 
@@ -37,7 +41,7 @@ def get_github_repository(github_repo: Github_Repository):
     db.session.commit()
 
     # Handle github_repo forks
-    for fork in github_repo.get_forks():
+    for fork in call_github_function(github_repo, 'get_forks', []):
         fork_repo = db.session.query(Repository).get(fork.clone_url)
         if not fork_repo:
             fork_repo = Repository(fork.clone_url, fork.name)
@@ -48,9 +52,10 @@ def get_github_repository(github_repo: Github_Repository):
     current_time = datetime.now().strftime('%H:%M')
     print(f'\n{current_time}: Started scan {repository.clone_url}.')
 
+    owner = get_github_object(github_repo, 'owner')
     git_repo = get_git_repository(
         github_repo.clone_url,
-        github_repo.owner.login,
+        owner.login,
         github_repo.name,
     )
     scanner = CommitScanner(git_repo, repository, github_repo)

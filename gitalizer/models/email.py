@@ -4,9 +4,9 @@ import datetime
 from sqlalchemy import ForeignKeyConstraint
 from sqlalchemy.exc import IntegrityError
 from github import Repository as Github_Repository
-from github.GithubException import RateLimitExceededException
 
 from gitalizer.extensions import db, github
+from gitalizer.models.contributer import Contributer
 from gitalizer.aggregator.github import call_github_function
 
 
@@ -54,8 +54,8 @@ class Email(db.Model):
 
         raise exception
 
-    def get_github_relation(self, github_repo: Github_Repository)
-    """Get the related github contributer."""
+    def get_github_relation(self, git_commit, github_repo: Github_Repository):
+        """Get the related github contributer."""
         # No github repository or contributer already known. Early return.
         if not github_repo or self.contributer != None:
             return
@@ -66,5 +66,5 @@ class Email(db.Model):
         github_commit = call_github_function(github_repo, 'get_commit', [git_commit.hex])
         if github_commit.author:
             contributer = Contributer.get_contributer(github_commit.author.login)
-            email.contributer = contributer
+            self.contributer = contributer
         return

@@ -9,7 +9,6 @@ from gitalizer.extensions import db
 from gitalizer.models import (
     Email,
     Commit,
-    Contributer,
     Repository as RepositoryModel,
 )
 
@@ -97,7 +96,7 @@ class CommitScanner():
         if git_commit.author.email not in self.checked_emails:
             # Try to get the contributer if we have a github repository and
             # don't know the contributer for this email yet.
-            email.get_github_relation(self.github_repo)
+            email.get_github_relation(git_commit, self.github_repo)
 
             if email.contributer:
                 email.contributer.repositories.append(self.repository)
