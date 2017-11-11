@@ -1,5 +1,6 @@
 """Data collection from Github."""
 
+import sys
 from flask import current_app
 from datetime import datetime, timedelta
 from multiprocessing import Pool
@@ -69,7 +70,9 @@ def get_github_repository(github_repo: Github_Repository):
         current_time = datetime.now().strftime('%H:%M')
         print(f'{current_time}: Scanned {repository.clone_url} with {commit_count} commits')
         print(f'{rate.remaining} of 5000 remaining. Reset at {time}\n')
-    except Exception as e:
+        db.session.commit()
+        db.session.close()
+    except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         print(e)
         raise e
