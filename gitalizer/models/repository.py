@@ -29,7 +29,6 @@ class Repository(db.Model):
         back_populates="repositories")
     updated_at = db.Column(
         db.DateTime, server_default=func.now(),
-        onupdate=func.current_timestamp(),
         nullable=False,
     )
 

@@ -22,7 +22,7 @@ def call_github_function(github_object: object, function_name: str, args: list):
             # Wait until the rate limiting is reset
             resettime = github.github.get_rate_limit().rate.reset
             delta = resettime - datetime.now()
-            delta += timedelta(minutes=1)
+            delta += timedelta(minutes=2)
             total_minutes = int(delta.total_seconds() / 60)
             print('Hit the rate limit.')
             print(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
@@ -52,7 +52,7 @@ def get_github_object(github_object: object, object_name: str):
             # Wait until the rate limiting is reset
             resettime = github.github.get_rate_limit().rate.reset
             delta = resettime - datetime.now()
-            delta += timedelta(minutes=1)
+            delta += timedelta(minutes=2)
             total_minutes = int(delta.total_seconds() / 60)
             print('Hit the rate limit.')
             print(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')

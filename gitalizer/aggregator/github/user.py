@@ -2,7 +2,8 @@
 
 from github import NamedUser
 
-from gitalizer.extensions import github
+from gitalizer.models import Repository
+from gitalizer.extensions import github, db
 from gitalizer.aggregator.github.repository import get_github_repositories
 from gitalizer.aggregator.github import call_github_function
 
@@ -40,7 +41,7 @@ def get_user_by_name(user: str):
     get_github_repositories(get_user_repos(user, []))
 
 
-def get_user_repos(user: NamedUser, repos_to_scan):
+def get_user_repos(user: NamedUser, repos_to_scan: list):
     """Get all relevant Information for a single user."""
     owned_repos = call_github_function(user, 'get_repos', [])
     starred = call_github_function(user, 'get_starred', [])
@@ -59,3 +60,4 @@ def get_user_repos(user: NamedUser, repos_to_scan):
         if len(list(exists)) == 0:
             repos_to_scan.append(star)
     return repos_to_scan
+
