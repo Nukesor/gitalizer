@@ -1,8 +1,7 @@
 """Data collection from Github."""
 
-import sys
 from flask import current_app
-from datetime import datetime, timedelta
+from datetime import datetime
 from multiprocessing import Pool
 from github import Repository as Github_Repository
 
@@ -76,19 +75,3 @@ def get_github_repository(github_repo: Github_Repository):
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         print(e)
         raise e
-
-
-def should_scan_repository(clone_url: str):
-    """Check if the repo has been updated in the last hour.
-
-    If that is the case, we want to skip it.
-    """
-    one_hour_ago = datetime.now() - timedelta(hours=24)
-    repo = db.session.query(Repository) \
-        .filter(Repository.clone_url == clone_url) \
-        .filter(Repository.completely_scanned == True) \
-        .filter(Repository.updated_at >= one_hour_ago) \
-        .one_or_none()
-    if repo:
-        return False
-    return True
