@@ -40,9 +40,12 @@ def get_friends_by_name(name: str):
 def get_user_by_name(user: str):
     """Get a user by his login name."""
     user = call_github_function(github.github, 'get_user', [user])
-    # Scan all repositories with a worker thread pool
+    # Get a new session to prevent spawning a db.session.
+    # Otherwise we get problems as this session is used in each thread as well.
     session = new_session()
     repos = get_user_repos(user, [], session)
+    session.close()
+    # Scan all repositories with a worker thread pool
     get_github_repositories(repos)
 
 

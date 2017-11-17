@@ -1,6 +1,6 @@
 """Representation of a git repository."""
 
-from sqlalchemy import ForeignKeyConstraint, func
+from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import backref
 
 from gitalizer.extensions import db
@@ -11,12 +11,9 @@ class Repository(db.Model):
     """Repository model."""
 
     __tablename__ = 'repository'
-    __table_args__ = (
-        ForeignKeyConstraint(['parent_url'], ['repository.clone_url']),
-    )
 
     clone_url = db.Column(db.String(240), primary_key=True)
-    parent_url = db.Column(db.String(240))
+    parent_url = db.Column(db.String(240), ForeignKey('repository.clone_url'))
     name = db.Column(db.String(240))
     created_at = db.Column(db.DateTime(timezone=True))
     completely_scanned = db.Column(db.Boolean(), default=False)

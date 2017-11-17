@@ -18,6 +18,7 @@ class Contributer(db.Model):
 
     __tablename__ = 'contributer'
     login = db.Column(db.String(240), primary_key=True, nullable=False)
+    organization_id = db.Column(UUID(as_uuid=True), ForeignKey('repository.clone_url'))
 
     emails = db.relationship("Email", back_populates="contributer")
     repositories = db.relationship(

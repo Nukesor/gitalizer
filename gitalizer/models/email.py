@@ -1,7 +1,7 @@
 """Representation of a git author email."""
 
 import datetime
-from sqlalchemy import ForeignKeyConstraint
+from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
 from github import Repository as Github_Repository
 
@@ -14,12 +14,9 @@ class Email(db.Model):
     """Email model."""
 
     __tablename__ = 'email'
-    __table_args__ = (
-        ForeignKeyConstraint(['contributer_login'], ['contributer.login']),
-    )
 
     email = db.Column(db.String(240), primary_key=True)
-    contributer_login = db.Column(db.String(240))
+    contributer_login = db.Column(db.String(240), ForeignKey('contributer.login'))
 
     contributer = db.relationship("Contributer", back_populates="emails")
     commits = db.relationship("Commit", back_populates="email")
