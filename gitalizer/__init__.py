@@ -31,7 +31,7 @@ def create_app(config_name='develop'):
             os.makedirs(git_clone_dir)
         except PermissionError:
             print(f"Gitalizer needs to have permissions to create the directory specified in 'GIT_CLONE_PATH': {git_clone_dir}")
-            sys.ext(1)
+            sys.exit(1)
     else:
         if not os.access(git_clone_dir, os.W_OK):
             print(f"Gitalizer needs to have permissions to write to the directory specified in 'GIT_CLONE_PATH': {git_clone_dir}")
