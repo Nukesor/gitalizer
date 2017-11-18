@@ -60,7 +60,7 @@ def get_user_repos(user: NamedUser, repos_to_scan: list, session):
 
 
 def should_scan_repository(clone_url: str, session):
-    """Check if the repo has been updated in the last hour.
+    """Check if the repo has been scanned in the 24 hours.
 
     If that is the case, we want to skip it.
     """

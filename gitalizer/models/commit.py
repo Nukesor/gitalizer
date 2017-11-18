@@ -15,17 +15,17 @@ class Commit(db.Model):
         UniqueConstraint('sha', 'repository_url'),
         CheckConstraint(
             "(additions is NULL and deletions is NULL) or "
-            "(additions is not NULL and deletions is not NULL)"
+            "(additions is not NULL and deletions is not NULL)",
         ),
     )
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     sha = db.Column(db.String(40), nullable=False)
     time = db.Column(db.DateTime(timezone=True))
-    author_email = db.Column(db.String(240), nullable=False, ForeignKey('email.email'))
+    author_email = db.Column(db.String(240), ForeignKey('email.email'), nullable=False)
     additions = db.Column(db.Integer())
     deletions = db.Column(db.Integer())
-    repository_url = db.Column(db.String(240), nullable=False, ForeignKey('repository.clone_url'))
+    repository_url = db.Column(db.String(240), ForeignKey('repository.clone_url'), nullable=False)
 
     email = db.relationship("Email", back_populates="commits")
     repository = db.relationship("Repository", back_populates="commits")

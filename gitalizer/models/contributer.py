@@ -27,8 +27,8 @@ class Contributer(db.Model):
     """Contributer model."""
 
     __tablename__ = 'contributer'
-    login = db.Column(db.String(240), primary_key=True, nullable=False)
 
+    login = db.Column(db.String(240), primary_key=True, nullable=False)
     emails = db.relationship("Email", back_populates="contributer")
     repositories = db.relationship(
         "Repository",

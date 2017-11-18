@@ -8,6 +8,8 @@ from gitalizer.models.contributer import contributer_organizations
 class Organization(db.Model):
     """Organization model."""
 
+    __tablename__ = 'organization'
+
     login = db.Column(db.String(240), primary_key=True)
     url = db.Column(db.String(240))
 

@@ -1,11 +1,10 @@
 """Representation of a git author email."""
 
-import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
 from github import Repository as Github_Repository
 
-from gitalizer.extensions import db, github
+from gitalizer.extensions import db
 from gitalizer.models.contributer import Contributer
 from gitalizer.aggregator.github import call_github_function
 
