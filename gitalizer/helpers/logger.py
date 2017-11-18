@@ -22,7 +22,7 @@ class Logger():
     3. Initialization of logging to file and stdout for daemon errors and information.
     """
 
-    def __init__(self, root_dir):
+    def __init__(self, root_dir: str):
         """Create log directory and initialize logger."""
         # Create log directory, if it doesn't exist
         self.log_dir = os.path.join(root_dir, '.local/share/pueue')
@@ -50,32 +50,32 @@ class Logger():
         file_handler.setFormatter(log_format)
         self.logger.addHandler(file_handler)
 
-    def debug(self, message):
+    def debug(self, message: str):
         """Debug message."""
         self.logger.debug(message)
 
-    def info(self, message):
+    def info(self, message: str):
         """Info message."""
         self.logger.info(message)
 
-    def warning(self, message):
+    def warning(self, message: str):
         """Warning message."""
         self.logger.warning(message)
 
-    def error(self, message):
+    def error(self, message: str):
         """Error message."""
         self.logger.error(message)
 
-    def exception(self, message=''):
+    def exception(self, message: str=''):
         """Exception message."""
         self.logger.exception(message)
 
-    def rotate(self, log):
+    def rotate(self, log: bool):
         """Move the current log to a new file with timestamp and create a new empty log file."""
         self.write(log, rotate=True)
         self.write({})
 
-    def write(self, log, rotate=False):
+    def write(self, log, rotate: bool=False):
         """Write the output of all finished processes to a compiled log file."""
         # Get path for logfile
         if rotate:
@@ -128,7 +128,7 @@ class Logger():
 
         log_file.close()
 
-    def remove_old(self, max_log_time):
+    def remove_old(self, max_log_time: str):
         """Remove all logs which are older than the specified time."""
         files = glob.glob(f'{self.log_dir}/queue-*')
         files = list(map(lambda x: os.path.basename(x), files))
@@ -140,7 +140,7 @@ class Logger():
 
             # Get datetime from time stamp
             time = datetime.strptime(timestamp, '%Y%m%d-%H%M')
-            now = datetime.now()
+            now = datetime.utcnow()
 
             # Get total delta in seconds
             delta = now - time

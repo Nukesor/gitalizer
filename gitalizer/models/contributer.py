@@ -41,7 +41,7 @@ class Contributer(db.Model):
 
     last_check = db.Column(db.DateTime(timezone=True))
 
-    def __init__(self, login):
+    def __init__(self, login: str):
         """Constructor."""
         self.login = login
 

@@ -24,7 +24,7 @@ class Organization(db.Model):
         self.url = url
 
     @staticmethod
-    def get_organization(login: str, url: str):
+    def get_organization(login: str, url: str, session):
         """Create new organization or add repository to it's list.
 
         Try multiple times, as we can get Multiple additions through threading.
@@ -34,11 +34,11 @@ class Organization(db.Model):
         exception = None
         while _try <= tries:
             try:
-                organization = db.session.query(Organization).get(login)
+                organization = session.query(Organization).get(login)
                 if not organization:
                     organization = Organization(login, url)
-                db.session.add(organization)
-                db.session.commit()
+                session.add(organization)
+                session.commit()
                 return organization
             except IntegrityError as e:
                 print(f'Got an Organization IntegrityError, Try {_try} of {tries}')

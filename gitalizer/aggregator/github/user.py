@@ -4,7 +4,7 @@ from github import NamedUser
 from datetime import datetime, timedelta
 
 from gitalizer.models import Repository
-from gitalizer.extensions import github, db
+from gitalizer.extensions import github
 from gitalizer.aggregator.github.repository import get_github_repositories
 from gitalizer.aggregator.github import call_github_function
 from gitalizer.aggregator.threading import new_session
@@ -44,7 +44,6 @@ def get_user_by_name(user: str):
     # Otherwise we get problems as this session is used in each thread as well.
     session = new_session()
     repos = get_user_repos(user, [], session)
-    session.close()
     # Scan all repositories with a worker thread pool
     get_github_repositories(repos)
 
@@ -79,7 +78,7 @@ def should_scan_repository(clone_url: str, session):
 
     If that is the case, we want to skip it.
     """
-    one_hour_ago = datetime.now() - timedelta(hours=24)
+    one_hour_ago = datetime.utcnow() - timedelta(hours=24)
     repo = session.query(Repository) \
         .filter(Repository.clone_url == clone_url) \
         .filter(Repository.completely_scanned == True) \

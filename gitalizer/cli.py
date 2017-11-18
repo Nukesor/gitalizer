@@ -9,6 +9,7 @@ from gitalizer.plot import plot_user as plot_user_func
 from gitalizer.extensions import db
 from gitalizer.models.user import User
 from gitalizer.aggregator.github.repository import get_github_repository_by_owner_name
+from gitalizer.aggregator.github.organization import get_github_organizations
 from gitalizer.aggregator.github.user import (
     get_user_by_name,
     get_friends_by_name,
@@ -86,6 +87,15 @@ def register_cli(app):  # pragma: no cover
         """Get a github repository by owner and name."""
         try:
             get_github_repository_by_owner_name(owner, repository)
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            pass
+
+    @app.cli.command()
+    def get_organizations():
+        """Get github organizations for all known contributers."""
+        try:
+            get_github_organizations()
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
             pass
