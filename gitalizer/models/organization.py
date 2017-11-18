@@ -1,23 +1,47 @@
 """Module containing the `Organization` model."""
-import uuid
-import hmac
-from datetime import datetime
+from sqlalchemy.exc import IntegrityError
 
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy_utils.models import Timestamp
-
-from flask import current_app
-
-from gitalizer.extensions import db, passlib
+from gitalizer.extensions import db
+from gitalizer.models.contributer import contributer_organizations
 
 
-class Organization(db.Model, Timestamp):
+class Organization(db.Model):
     """Organization model."""
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    emails = db.relationship("Contributer", back_populates="organization")
+    login = db.Column(db.String(240), primary_key=True)
+    url = db.Column(db.String(240))
 
-    def __init__(self, name):
+    contributors = db.relationship(
+        "Contributer",
+        secondary=contributer_organizations,
+        back_populates="organizations")
+
+    def __init__(self, login, url):
         """Construct an `Organization`."""
-        self.name = name
+        self.login = login
+        self.url = url
+
+    @staticmethod
+    def get_organization(login: str, url: str):
+        """Create new organization or add repository to it's list.
+
+        Try multiple times, as we can get Multiple additions through threading.
+        """
+        _try = 0
+        tries = 3
+        exception = None
+        while _try <= tries:
+            try:
+                organization = db.session.query(Organization).get(login)
+                if not organization:
+                    organization = Organization(login, url)
+                db.session.add(organization)
+                db.session.commit()
+                return organization
+            except IntegrityError as e:
+                print(f'Got an Organization IntegrityError, Try {_try} of {tries}')
+                _try += 1
+                exception = e
+                pass
+
+        raise exception

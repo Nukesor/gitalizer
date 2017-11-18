@@ -13,18 +13,33 @@ contributer_repositories = db.Table(
 )
 
 
+contributer_organizations = db.Table(
+    'contributer_organizations',
+    db.Column('contributer_login', db.String(240),
+              ForeignKey('contributer.login')),
+    db.Column('organization_login', db.String(240),
+              ForeignKey('organization.login')),
+    db.UniqueConstraint('contributer_login', 'organization_login'),
+)
+
+
 class Contributer(db.Model):
     """Contributer model."""
 
     __tablename__ = 'contributer'
     login = db.Column(db.String(240), primary_key=True, nullable=False)
-    organization_id = db.Column(UUID(as_uuid=True), ForeignKey('repository.clone_url'))
 
     emails = db.relationship("Email", back_populates="contributer")
     repositories = db.relationship(
         "Repository",
         secondary=contributer_repositories,
         back_populates="contributors")
+    organizations = db.relationship(
+        "Organization",
+        secondary=contributer_organizations,
+        back_populates="contributors")
+
+    last_check = db.Column(db.DateTime(timezone=True))
 
     def __init__(self, login):
         """Constructor."""

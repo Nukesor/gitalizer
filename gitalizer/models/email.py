@@ -59,7 +59,6 @@ class Email(db.Model):
 
         # If we know the github author of this commit
         # add it to this email address.
-        #github_commit = github_repo.get_commit(git_commit.hex)
         github_commit = call_github_function(github_repo, 'get_commit', [git_commit.hex])
         if github_commit.author:
             contributer = Contributer.get_contributer(github_commit.author.login)
