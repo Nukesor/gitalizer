@@ -22,10 +22,10 @@ class Commit(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     sha = db.Column(db.String(40), nullable=False)
     time = db.Column(db.DateTime(timezone=True))
-    author_email = db.Column(db.String(240), ForeignKey('email.email'), nullable=False)
+    author_email = db.Column(db.String(240), ForeignKey('email.email'), index=True, nullable=False)
     additions = db.Column(db.Integer())
     deletions = db.Column(db.Integer())
-    repository_url = db.Column(db.String(240), ForeignKey('repository.clone_url'), nullable=False)
+    repository_url = db.Column(db.String(240), ForeignKey('repository.clone_url'), index=True, nullable=False)
 
     email = db.relationship("Email", back_populates="commits")
     repository = db.relationship("Repository", back_populates="commits")

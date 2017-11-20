@@ -13,7 +13,7 @@ class Repository(db.Model):
     __tablename__ = 'repository'
 
     clone_url = db.Column(db.String(240), primary_key=True)
-    parent_url = db.Column(db.String(240), ForeignKey('repository.clone_url'))
+    parent_url = db.Column(db.String(240), ForeignKey('repository.clone_url'), index=True)
     name = db.Column(db.String(240))
     created_at = db.Column(db.DateTime(timezone=True))
     completely_scanned = db.Column(db.Boolean(), default=False)

@@ -15,7 +15,7 @@ class Email(db.Model):
     __tablename__ = 'email'
 
     email = db.Column(db.String(240), primary_key=True)
-    contributer_login = db.Column(db.String(240), ForeignKey('contributer.login'))
+    contributer_login = db.Column(db.String(240), ForeignKey('contributer.login'), index=True)
 
     contributer = db.relationship("Contributer", back_populates="emails")
     commits = db.relationship("Commit", back_populates="email")
