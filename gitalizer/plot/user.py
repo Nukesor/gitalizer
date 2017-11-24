@@ -16,7 +16,7 @@ def plot_user_repositories_changes(name, path):
         .filter(Contributer.login.ilike(name)) \
         .one_or_none()
 
-    if contributed is None:
+    if contributer is None:
         print(f'No contributer with name {name}')
         return
 
