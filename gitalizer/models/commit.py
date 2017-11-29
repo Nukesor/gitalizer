@@ -22,16 +22,35 @@ class Commit(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     sha = db.Column(db.String(40), nullable=False)
     time = db.Column(db.DateTime(timezone=True))
-    author_email = db.Column(db.String(240), ForeignKey('email.email'), index=True, nullable=False)
     additions = db.Column(db.Integer())
     deletions = db.Column(db.Integer())
-    repository_url = db.Column(db.String(240), ForeignKey('repository.clone_url'), index=True, nullable=False)
 
-    email = db.relationship("Email", back_populates="commits")
+    # Email addresses
+    author_email_address = db.Column(
+        db.String(240), ForeignKey('email.email'),
+        index=True, nullable=False,
+    )
+    committer_email_address = db.Column(
+        db.String(240), ForeignKey('email.email'),
+        index=True, nullable=False,
+    )
+    author_email = db.relationship(
+        "Email", back_populates="author_commits",
+        foreign_keys=[author_email_address],
+    )
+    committer_email = db.relationship(
+        "Email", back_populates="committer_commits",
+        foreign_keys=[committer_email_address],
+    )
+
+    # Repository
+    repository_url = db.Column(db.String(240), ForeignKey('repository.clone_url'),
+                               index=True, nullable=False)
     repository = db.relationship("Repository", back_populates="commits")
 
-    def __init__(self, sha, repository, email):
+    def __init__(self, sha, repository, author_email, committer_email):
         """Constructor."""
         self.sha = sha
-        self.email = email
+        self.author_email = author_email
+        self.committer_email = committer_email
         self.repository = repository

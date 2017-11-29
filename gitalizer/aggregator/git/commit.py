@@ -91,24 +91,48 @@ class CommitScanner():
             return False
 
         # Get or create new mail
-        email = Email.get_email(git_commit.author.email, self.session)
+        committer_email = Email.get_email(git_commit.committer.email, self.session)
+        author_email = Email.get_email(git_commit.author.email, self.session)
 
         # Check every email only once to avoid github api calls
         if git_commit.author.email not in self.checked_emails:
             # Try to get the contributer if we have a github repository and
             # don't know the contributer for this email yet.
-            email.get_github_relation(git_commit, self.github_repo, self.session)
+            author_email.get_github_relation(
+                git_commit,
+                'author',
+                self.session,
+                self.github_repo,
+            )
 
-            if email.contributer:
-                email.contributer.repositories.append(self.repository)
+            if author_email.contributer:
+                author_email.contributer.repositories.append(self.repository)
+            self.session.add(author_email)
+            self.session.commit()
 
-            self.session.add(email)
+            self.checked_emails.add(git_commit.author.email)
+
+        # Check every email only once to avoid github api calls
+        if git_commit.committer.email not in self.checked_emails:
+            # Try to get the contributer if we have a github repository and
+            # don't know the contributer for this email yet.
+            committer_email.get_github_relation(
+                git_commit,
+                'committer',
+                self.session,
+                self.github_repo,
+            )
+
+            if committer_email.contributer:
+                committer_email.contributer.repositories.append(self.repository)
+            self.session.add(committer_email)
             self.session.commit()
 
             self.checked_emails.add(git_commit.author.email)
 
         # Create a new commit and extract all valuable information
-        commit = Commit(git_commit.hex, self.repository, email)
+        commit = Commit(git_commit.hex, self.repository,
+                        author_email, committer_email)
         if git_commit.hex in self.commit_stats:
             commit.additions = self.commit_stats[git_commit.hex]['additions']
             commit.deletions = self.commit_stats[git_commit.hex]['deletions']
