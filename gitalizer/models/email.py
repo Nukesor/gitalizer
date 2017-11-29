@@ -26,7 +26,7 @@ class Email(db.Model):
         self.contributer = contributer
 
     @staticmethod
-    def get_email(email_address: str):
+    def get_email(email_address: str, session):
         """Create new email.
 
         Try multiple times, as we can get Multiple additions through threading.
@@ -36,21 +36,25 @@ class Email(db.Model):
         exception = None
         while _try <= tries:
             try:
-                email = db.session.query(Email).get(email_address)
+                email = session.query(Email).get(email_address)
                 if not email:
+                    # Commit to prevent data loss in case we get an
+                    # integrity error and need to rollback.
+                    session.commit()
                     email = Email(email_address)
-                    db.session.add(email)
-                    db.session.commit()
+                    session.add(email)
+                    session.commit()
                 return email
             except IntegrityError as e:
                 print(f'Got an Email IntegrityError, Try {_try} of {tries}')
+                session.rollback()
                 _try += 1
                 exception = e
                 pass
 
         raise exception
 
-    def get_github_relation(self, git_commit, github_repo: Github_Repository):
+    def get_github_relation(self, git_commit, github_repo: Github_Repository, session):
         """Get the related github contributer."""
         # No github repository or contributer already known. Early return.
         if not github_repo or self.contributer != None:
@@ -60,6 +64,6 @@ class Email(db.Model):
         # add it to this email address.
         github_commit = call_github_function(github_repo, 'get_commit', [git_commit.hex])
         if github_commit.author:
-            contributer = Contributer.get_contributer(github_commit.author.login)
+            contributer = Contributer.get_contributer(github_commit.author.login, session)
             self.contributer = contributer
         return

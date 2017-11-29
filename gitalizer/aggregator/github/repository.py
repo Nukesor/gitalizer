@@ -5,8 +5,9 @@ from datetime import datetime
 from multiprocessing import Pool
 from github import Repository as Github_Repository
 
-from gitalizer.extensions import db, github
+from gitalizer.extensions import github
 from gitalizer.models.repository import Repository
+from gitalizer.aggregator.threading import new_session
 from gitalizer.aggregator.git.commit import CommitScanner
 from gitalizer.aggregator.git.repository import get_git_repository
 from gitalizer.aggregator.github import (
@@ -35,21 +36,22 @@ def get_github_repository_by_owner_name(owner: str, name: str):
 def get_github_repository(github_repo: Github_Repository):
     """Get all information from a single repository."""
     try:
-        repository = db.session.query(Repository).get(github_repo.clone_url)
+        session = new_session()
+        repository = session.query(Repository).get(github_repo.clone_url)
         if not repository:
             repository = Repository(github_repo.clone_url, github_repo.name)
         repository.updated_at = datetime.now()
-        db.session.add(repository)
-        db.session.commit()
+        session.add(repository)
+        session.commit()
 
         # Handle github_repo forks
         for fork in call_github_function(github_repo, 'get_forks', []):
-            fork_repo = db.session.query(Repository).get(fork.clone_url)
+            fork_repo = session.query(Repository).get(fork.clone_url)
             if not fork_repo:
                 fork_repo = Repository(fork.clone_url, fork.name)
             fork_repo.parent = repository
-            db.session.add(fork_repo)
-        db.session.commit()
+            session.add(fork_repo)
+        session.commit()
 
         current_time = datetime.now().strftime('%H:%M')
         print(f'{current_time}: Started scan {repository.clone_url}.')
@@ -60,17 +62,17 @@ def get_github_repository(github_repo: Github_Repository):
             owner.login,
             github_repo.name,
         )
-        scanner = CommitScanner(git_repo, repository, github_repo)
+        scanner = CommitScanner(git_repo, repository, session, github_repo)
         commit_count = scanner.scan_repository()
 
-        repository = db.session.query(Repository).get(github_repo.clone_url)
+        repository = session.query(Repository).get(github_repo.clone_url)
         rate = github.github.get_rate_limit().rate
         time = rate.reset.strftime("%H:%M")
         current_time = datetime.now().strftime('%H:%M')
         print(f'{current_time}: Scanned {repository.clone_url} with {commit_count} commits')
         print(f'{rate.remaining} of 5000 remaining. Reset at {time}\n')
-        db.session.commit()
-        db.session.close()
+        session.commit()
+        session.close()
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         print(e)

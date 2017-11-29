@@ -5,7 +5,6 @@ from pygit2 import Repository, GitError
 from github import Repository as Github_Repository
 from datetime import datetime, timedelta, timezone
 
-from gitalizer.extensions import db
 from gitalizer.models import (
     Email,
     Commit,
@@ -18,8 +17,10 @@ class CommitScanner():
 
     def __init__(self, git_repo: Repository,
                  repository: RepositoryModel,
+                 session,
                  github_repo: Github_Repository=None):
         """Initialize a new CommitChecker."""
+        self.session = session
         self.repository = repository
         self.git_repo = git_repo
         self.github_repo = github_repo
@@ -76,12 +77,12 @@ class CommitScanner():
             utc_offset = timezone(timedelta(minutes=all_commits[-1].author.offset))
             self.repository.created_at = datetime.fromtimestamp(timestamp, utc_offset)
 
-        db.session.commit()
+        self.session.commit()
         return self.scanned_commits
 
     def scan_commit(self, git_commit):
         """Get all features of a specific commit."""
-        commit = db.session.query(Commit) \
+        commit = self.session.query(Commit) \
             .filter(Commit.sha == git_commit.hex) \
             .filter(Commit.repository == self.repository) \
             .one_or_none()
@@ -90,19 +91,19 @@ class CommitScanner():
             return False
 
         # Get or create new mail
-        email = Email.get_email(git_commit.author.email)
+        email = Email.get_email(git_commit.author.email, self.session)
 
         # Check every email only once to avoid github api calls
         if git_commit.author.email not in self.checked_emails:
             # Try to get the contributer if we have a github repository and
             # don't know the contributer for this email yet.
-            email.get_github_relation(git_commit, self.github_repo)
+            email.get_github_relation(git_commit, self.github_repo, self.session)
 
             if email.contributer:
                 email.contributer.repositories.append(self.repository)
 
-            db.session.add(email)
-            db.session.commit()
+            self.session.add(email)
+            self.session.commit()
 
             self.checked_emails.add(git_commit.author.email)
 
@@ -116,12 +117,12 @@ class CommitScanner():
         utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
         commit.time = datetime.fromtimestamp(timestamp, utc_offset)
 
-        db.session.add(commit)
+        self.session.add(commit)
 
         # Commit session every 20 commits to avoid loss of all data on crash.
         self.scanned_commits += 1
         if self.scanned_commits % 20 == 0:
-            db.session.commit()
+            self.session.commit()
         # Print a status every 1000 commits to indicate progress.
         if self.scanned_commits % 1000 == 0:
             print(f"{self.scanned_commits} commits scanned.")
