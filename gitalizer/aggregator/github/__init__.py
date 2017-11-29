@@ -2,6 +2,7 @@
 from github.GithubException import RateLimitExceededException
 
 import time
+from socket import timeout
 from datetime import datetime, timedelta
 from gitalizer.extensions import github
 
@@ -28,6 +29,11 @@ def call_github_function(github_object: object, function_name: str, args: list):
             print(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
             time.sleep(delta.total_seconds())
 
+            _try += 1
+            exception = e
+            pass
+        except timeout as e:
+            print('Hit socket timeout waiting 10 secs.')
             _try += 1
             exception = e
             pass
@@ -59,6 +65,11 @@ def get_github_object(github_object: object, object_name: str):
 
             time.sleep(delta.total_seconds())
 
+            _try += 1
+            exception = e
+            pass
+        except timeout as e:
+            print('Hit socket timeout waiting 10 secs.')
             _try += 1
             exception = e
             pass

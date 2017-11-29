@@ -28,13 +28,14 @@ def get_friends_by_name(name: str):
 
     session = new_session()
     # Get all deduplicated github repositories
-    repositories = []
+    repos = {}
     for user in user_list:
         print(f'Added repositories for user {user.login}:')
-        get_user_repos(user, repositories, session)
+        get_user_repos(user, repos, session)
 
+    repos = [repos[k] for k in repos]
     # Scan all repositories with a worker thread pool
-    get_github_repositories(repositories)
+    get_github_repositories(repos)
 
 
 def get_user_by_name(user: str):
@@ -43,37 +44,46 @@ def get_user_by_name(user: str):
     # Get a new session to prevent spawning a db.session.
     # Otherwise we get problems as this session is used in each thread as well.
     session = new_session()
-    repos = get_user_repos(user, [], session)
+    repos = {}
+    repos = get_user_repos(user, repos, session)
+    repos = [repos[k] for k in repos]
     # Scan all repositories with a worker thread pool
     get_github_repositories(repos)
 
 
-def get_user_repos(user: NamedUser, repos_to_scan: list, session):
+def get_user_repos(user: NamedUser, repos_to_scan, session):
     """Get all relevant Information for a single user."""
     owned_repos = call_github_function(user, 'get_repos', [])
     starred = call_github_function(user, 'get_starred', [])
 
+    # Check own repositories. We assume that we are collaborating in those
     for repo in owned_repos:
-        if not should_scan_repository(repo.clone_url, session):
+        # Don't scan the repo
+        # - Add it if it's not yet added
+        # - If we already scanned it in the last 24 hours
+        if repo.clone_url in repos_to_scan or \
+                should_not_scan_repository(repo.clone_url, session):
             continue
-        exists = filter(lambda x: x.clone_url == repo.clone_url, repos_to_scan)
-        if len(list(exists)) == 0:
-            repos_to_scan.append(repo)
 
+        repos_to_scan[repo.clone_url] = repo
+
+    # Check stars. In here we need to check if the user collaborated in the repo.
     for star in starred:
-        if not should_scan_repository(star.clone_url, session):
+        # Don't scan the repo
+        # - Add it if it's not yet added
+        # - If we already scanned it in the last 24 hours
+        # - If the user is a collaborator in this repo
+        if star.clone_url in repos_to_scan or \
+                should_not_scan_repository(star.clone_url, session) or \
+                not call_github_function(star, 'has_in_collaborators', [user]):
             continue
-        # Check if user contributed to this repo.
-        contributed = list(filter(lambda x: x.login == user.login, star.get_contributors()))
-        if len(contributed) == 0:
-            break
-        exists = filter(lambda x: x.clone_url == star.clone_url, repos_to_scan)
-        if len(list(exists)) == 0:
-            repos_to_scan.append(star)
+
+        repos_to_scan[star.clone_url] = star
+
     return repos_to_scan
 
 
-def should_scan_repository(clone_url: str, session):
+def should_not_scan_repository(clone_url: str, session):
     """Check if the repo has been updated in the last hour.
 
     If that is the case, we want to skip it.
@@ -85,5 +95,5 @@ def should_scan_repository(clone_url: str, session):
         .filter(Repository.updated_at >= one_hour_ago) \
         .one_or_none()
     if repo:
-        return False
-    return True
+        return True
+    return False
