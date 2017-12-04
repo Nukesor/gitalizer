@@ -24,7 +24,8 @@ def get_github_repository(full_name: str):
     """Get all information from a single repository."""
     try:
         session = new_session()
-        github_repo = call_github_function(github.github, 'get_repo', [full_name])
+        github_repo = call_github_function(github.github, 'get_repo',
+                                           [full_name], {'lazy': False})
         repository = session.query(Repository).get(github_repo.clone_url)
         if not repository:
             repository = Repository(github_repo.clone_url, github_repo.name)

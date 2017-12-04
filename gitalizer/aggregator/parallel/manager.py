@@ -61,13 +61,13 @@ class Manager():
             print(f'Waiting: {finished_tasks} of {len(self.tasks)}')
             result = self.result_queue.get()
 
-            if self.sub_manager is not None:
-                print('Add Tasks')
-                self.sub_manager.add_tasks(result['tasks'])
             print(result['message'])
             if 'error' in result:
                 print('Encountered an error:')
                 print(result['error'])
+            elif self.sub_manager is not None:
+                print('Add Tasks')
+                self.sub_manager.add_tasks(result['tasks'])
             finished_tasks += 1
 
         # All sub tasks have been added.

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from gitalizer.extensions import github
 
 
-def call_github_function(github_object: object, function_name: str, args: list):
+def call_github_function(github_object: object, function_name: str, args: list=None, kwargs: dict=None):
     """Call a pygithub object member function.
 
     We need to handle those calls in case we get rate limited.
@@ -17,7 +17,11 @@ def call_github_function(github_object: object, function_name: str, args: list):
     exception = None
     while _try <= tries:
         try:
-            retrieved_object = getattr(github_object, function_name)(*args)
+            if not args:
+                args = []
+            if not kwargs:
+                kwargs = {}
+            retrieved_object = getattr(github_object, function_name)(*args, **kwargs)
             return retrieved_object
         except RateLimitExceededException as e:
             # Wait until the rate limiting is reset
