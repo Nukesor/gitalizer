@@ -26,7 +26,7 @@ def get_github_organizations():
         github_user = call_github_function(github.github, 'get_user',
                                            [contributer.login])
 
-        github_orgs = call_github_function(github_user, 'get_orgs', [])
+        github_orgs = call_github_function(github_user, 'get_orgs')
         for org in github_orgs:
             organization = Organization.get_organization(org.login, org.url, session)
             contributer.organizations.append(organization)

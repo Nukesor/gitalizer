@@ -12,8 +12,8 @@ from gitalizer.aggregator.parallel.manager import Manager
 def get_friends_by_name(name: str):
     """Get all relevant Information about all friends of a specific user.."""
     user = call_github_function(github.github, 'get_user', [name])
-    followers = call_github_function(user, 'get_followers', [])
-    following = call_github_function(user, 'get_following', [])
+    followers = call_github_function(user, 'get_followers')
+    following = call_github_function(user, 'get_following')
 
     # Add all following and followed people into list
     # Deduplicate the list as we have to make as few API calls as possible.
@@ -48,8 +48,8 @@ def get_user_repos(user_login: str):
     try:
         session = new_session()
         user = call_github_function(github.github, 'get_user', [user_login])
-        owned_repos = call_github_function(user, 'get_repos', [])
-        starred = call_github_function(user, 'get_starred', [])
+        owned_repos = call_github_function(user, 'get_repos')
+        starred = call_github_function(user, 'get_starred')
 
         repos_to_scan = []
         # Check own repositories. We assume that we are collaborating in those
