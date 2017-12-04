@@ -1,4 +1,5 @@
 """Module for multiprocessing management."""
+import time
 import multiprocessing
 from flask import current_app
 
@@ -40,7 +41,7 @@ class Manager():
             self.task_queue.put(Task(self.task_type, task))
 
         # Add new tasks to task set.
-        self.tasks += tasks
+        self.tasks |= tasks
 
     def run(self):
         """All tasks are added. Process worker responses and wait for worker to finish."""
@@ -54,17 +55,22 @@ class Manager():
         for _ in range(self.consumer_count):
             self.task_queue.put(None)
 
+        print(f'Processing {len(self.tasks)} tasks')
         finished_tasks = 0
         while finished_tasks < len(self.tasks):
+            print(f'Waiting: {finished_tasks} of {len(self.tasks)}')
             result = self.result_queue.get()
 
             if self.sub_manager is not None:
+                print('Add Tasks')
                 self.sub_manager.add_tasks(result['tasks'])
             print(result['message'])
             if 'error' in result:
                 print('Encountered an error:')
                 print(result['error'])
+            finished_tasks += 1
 
         # All sub tasks have been added.
         # Wait for them to finish.
-        self.sub_manager.run()
+        if self.sub_manager is not None:
+            self.sub_manager.run()

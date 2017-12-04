@@ -42,7 +42,7 @@ class Contributer(db.Model):
         back_populates="contributors")
 
     last_check = db.Column(db.DateTime(timezone=True))
-    last_full_scan = db.Column(db.DateTime(timezone=True))
+    full_scan = db.Column(db.DateTime(timezone=True))
 
     def __init__(self, login: str):
         """Constructor."""
@@ -87,10 +87,10 @@ class Contributer(db.Model):
 
         If that is the case, we want to skip it.
         """
-        one_hour_ago = datetime.utcnow() - timedelta(hours=24)
+        time_boundary = datetime.utcnow() - timedelta(hours=24)
         contributer = session.query(Contributer) \
             .filter(Contributer.login == login) \
-            .filter(Contributer.last_full_scan >= one_hour_ago) \
+            .filter(Contributer.full_scan >= time_boundary) \
             .one_or_none()
         if contributer:
             return False

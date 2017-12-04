@@ -44,10 +44,6 @@ class CommitScanner():
         except GitError as e:
             print(f'\n\nGitError at repo {self.repository.clone_url}\nProbably an empty Repo\n\n')
             return
-        except Exception as e:
-            print(f'\n\nUnknown error at repo {self.repository.clone_url}\n\n')
-            print(e)
-            raise e
 
         # List of commit hashes to check if we already were at this point in the tree.
         all_commits = []

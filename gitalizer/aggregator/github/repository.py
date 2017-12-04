@@ -1,9 +1,6 @@
 """Data collection from Github."""
 
-from flask import current_app
 from datetime import datetime
-from multiprocessing import Pool
-from github import Repository as Github_Repository
 
 from gitalizer.extensions import github
 from gitalizer.models.repository import Repository
@@ -23,16 +20,14 @@ def get_github_repository_by_owner_name(owner: str, name: str):
     get_github_repository(github_repo)
 
 
-def get_github_repository(github_repo: Github_Repository):
+def get_github_repository(full_name: str):
     """Get all information from a single repository."""
     try:
         session = new_session()
+        github_repo = call_github_function(github.github, 'get_repo', [full_name])
         repository = session.query(Repository).get(github_repo.clone_url)
         if not repository:
             repository = Repository(github_repo.clone_url, github_repo.name)
-        repository.updated_at = datetime.now()
-        session.add(repository)
-        session.commit()
 
         # Handle github_repo forks
         for fork in call_github_function(github_repo, 'get_forks', []):
@@ -44,7 +39,6 @@ def get_github_repository(github_repo: Github_Repository):
         session.commit()
 
         current_time = datetime.now().strftime('%H:%M')
-        print(f'{current_time}: Started scan {repository.clone_url}.')
 
         owner = get_github_object(github_repo, 'owner')
         git_repo = get_git_repository(
@@ -68,12 +62,14 @@ def get_github_repository(github_repo: Github_Repository):
             'message': message,
         }
 
+        repository.updated_at = datetime.now()
+        session.add(repository)
         session.commit()
         session.close()
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         response = {
-            'message': f'Error in {github_repo.clone_url}.\n',
+            'message': f'Error in {github_repo.clone_url}:\n',
             'error': str(e),
         }
         pass

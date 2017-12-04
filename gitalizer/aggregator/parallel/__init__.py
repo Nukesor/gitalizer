@@ -1,7 +1,7 @@
 """Helper functions to manage sessions between processes."""
 
 from sqlalchemy.orm import sessionmaker
-from gitalizer.extensions import db  # noqa
+from gitalizer.extensions import db
 
 
 def new_session():
