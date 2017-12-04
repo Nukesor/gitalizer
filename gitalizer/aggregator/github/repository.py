@@ -7,23 +7,13 @@ from github import Repository as Github_Repository
 
 from gitalizer.extensions import github
 from gitalizer.models.repository import Repository
-from gitalizer.aggregator.threading import new_session
+from gitalizer.aggregator.parallel import new_session
 from gitalizer.aggregator.git.commit import CommitScanner
 from gitalizer.aggregator.git.repository import get_git_repository
 from gitalizer.aggregator.github import (
     call_github_function,
     get_github_object,
 )
-
-
-def get_github_repositories(repositories: list):
-    """Get multiple github repositories.
-
-    We use a thread pool and one worker per repository.
-    """
-    print(f'Scanning {len(repositories)} repositories')
-    pool = Pool(current_app.config['GIT_SCAN_THREADS'])
-    pool.map(get_github_repository, repositories)
 
 
 def get_github_repository_by_owner_name(owner: str, name: str):
@@ -69,11 +59,22 @@ def get_github_repository(github_repo: Github_Repository):
         rate = github.github.get_rate_limit().rate
         time = rate.reset.strftime("%H:%M")
         current_time = datetime.now().strftime('%H:%M')
-        print(f'{current_time}: Scanned {repository.clone_url} with {commit_count} commits')
-        print(f'{rate.remaining} of 5000 remaining. Reset at {time}\n')
+
+        message = f'{current_time}: '
+        message += f'Scanned {repository.clone_url} with {commit_count} commits.\n'
+        message += f'{rate.remaining} of 5000 remaining. Reset at {time}\n'
+
+        response = {
+            'message': message,
+        }
+
         session.commit()
         session.close()
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
-        print(e)
-        raise e
+        response = {
+            'message': f'Error in {github_repo.clone_url}.\n',
+            'error': str(e),
+        }
+        pass
+    return response

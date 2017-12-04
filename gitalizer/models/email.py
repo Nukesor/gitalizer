@@ -83,7 +83,7 @@ class Email(db.Model):
             )
             self.contributer = contributer
         elif user_type == 'committer' and github_commit.committer:
-            if github_commit.committer is not None
+            if github_commit.committer is not None:
                 contributer = Contributer.get_contributer(
                     github_commit.committer.login,
                     session,

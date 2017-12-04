@@ -1,5 +1,6 @@
 """Representation of a git repository."""
 
+from datetime import datetime, timedelta
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import backref
 
@@ -33,3 +34,19 @@ class Repository(db.Model):
         """Constructor."""
         self.clone_url = clone_url
         self.name = name
+
+    @staticmethod
+    def should_scan(clone_url: str, session):
+        """Check if the repo has been updated in the last day.
+
+        If that is the case, we want to skip it.
+        """
+        one_hour_ago = datetime.utcnow() - timedelta(hours=24)
+        repo = session.query(Repository) \
+            .filter(Repository.clone_url == clone_url) \
+            .filter(Repository.completely_scanned.is_(True)) \
+            .filter(Repository.updated_at >= one_hour_ago) \
+            .one_or_none()
+        if repo:
+            return False
+        return True

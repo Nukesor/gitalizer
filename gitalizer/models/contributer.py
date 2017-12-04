@@ -1,7 +1,9 @@
 """Representation of a git repository contributer."""
 
+from datetime import datetime, timedelta
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
+
 from gitalizer.extensions import db
 
 
@@ -40,6 +42,7 @@ class Contributer(db.Model):
         back_populates="contributors")
 
     last_check = db.Column(db.DateTime(timezone=True))
+    last_full_scan = db.Column(db.DateTime(timezone=True))
 
     def __init__(self, login: str):
         """Constructor."""
@@ -77,3 +80,18 @@ class Contributer(db.Model):
                 pass
 
         raise exception
+
+    @staticmethod
+    def should_scan(login: str, session):
+        """Check if the user has been scanned in the last day.
+
+        If that is the case, we want to skip it.
+        """
+        one_hour_ago = datetime.utcnow() - timedelta(hours=24)
+        contributer = session.query(Contributer) \
+            .filter(Contributer.login == login) \
+            .filter(Contributer.last_full_scan >= one_hour_ago) \
+            .one_or_none()
+        if contributer:
+            return False
+        return True

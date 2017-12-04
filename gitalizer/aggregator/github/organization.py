@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from gitalizer.extensions import github
 from gitalizer.models import Contributer, Organization
 from gitalizer.aggregator.github import call_github_function
-from gitalizer.aggregator.threading import new_session
+from gitalizer.aggregator.parallel import new_session
 
 
 def get_github_organizations():
