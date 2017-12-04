@@ -143,7 +143,4 @@ class CommitScanner():
         self.scanned_commits += 1
         if self.scanned_commits % 20 == 0:
             self.session.commit()
-        # Print a status every 1000 commits to indicate progress.
-        if self.scanned_commits % 1000 == 0:
-            print(f"{self.scanned_commits} commits scanned.")
         return True

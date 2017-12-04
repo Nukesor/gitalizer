@@ -1,6 +1,5 @@
 """Data collection from Github."""
-
-from github import NamedUser
+import traceback
 
 from gitalizer.models import Repository
 from gitalizer.extensions import github
@@ -81,7 +80,7 @@ def get_user_repos(user_login: str):
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         response = {
             'message': f'Error while getting repos for {user_login}:\n',
-            'error': str(e),
+            'error': traceback.format_exc(),
         }
         pass
     return response

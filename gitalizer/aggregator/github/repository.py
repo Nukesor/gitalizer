@@ -1,5 +1,5 @@
 """Data collection from Github."""
-
+import traceback
 from datetime import datetime
 
 from gitalizer.extensions import github
@@ -71,7 +71,7 @@ def get_github_repository(full_name: str):
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         response = {
             'message': f'Error in {github_repo.clone_url}:\n',
-            'error': str(e),
+            'error': traceback.format_exc(),
         }
         pass
     return response
