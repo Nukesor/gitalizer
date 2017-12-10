@@ -1,4 +1,5 @@
 """Helper for getting specific data sets."""
+import matplotlib.pyplot as plt
 
 from gitalizer.extensions import db
 from gitalizer.models.repository import Repository
@@ -16,3 +17,14 @@ def get_user_repositories(contributer):
         .all()
 
     return repositories
+
+
+def plot_figure(path, ax):
+    """Save a plot to a graph."""
+    plt.xticks(rotation=30)
+    plt.figure(figsize=(20, 10))
+
+    fig = ax.get_figure()
+    fig.savefig(path)
+
+    plt.close(fig)
