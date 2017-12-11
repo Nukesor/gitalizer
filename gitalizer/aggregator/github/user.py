@@ -47,10 +47,12 @@ def get_user_repos(user_login: str):
     try:
         session = new_session()
         user = call_github_function(github.github, 'get_user', [user_login])
-        owned_repos = call_github_function(user, 'get_repos')
-        starred = call_github_function(user, 'get_starred')
+        owned_repos = user.get_repos()
+        starred = user.get_starred()
 
         repos_to_scan = []
+        while owned_repos._couldGrow():
+            call_github_function(owned_repos, '_grow', [])
         # Check own repositories. We assume that we are collaborating in those
         for repo in owned_repos:
             # Don't scan the repo
@@ -60,6 +62,8 @@ def get_user_repos(user_login: str):
                 continue
             repos_to_scan.append(repo)
 
+        while starred._couldGrow():
+            call_github_function(starred, '_grow', [])
         # Check stars. In here we need to check if the user collaborated in the repo.
         for star in starred:
             # Don't scan the repo
