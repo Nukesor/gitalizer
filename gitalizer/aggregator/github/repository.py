@@ -16,8 +16,10 @@ from gitalizer.aggregator.github import (
 def get_github_repository_by_owner_name(owner: str, name: str):
     """Get a repository by it's owner and name."""
     full_name = f'{owner}/{name}'
-    github_repo = call_github_function(github.github, 'get_repo', [full_name])
-    get_github_repository(github_repo)
+    response = get_github_repository(full_name)
+    print(response['message'])
+    if 'error' in response:
+        print(response['error'])
 
 
 def get_github_repository(full_name: str):

@@ -2,6 +2,7 @@
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
+from github.GithubObject import NotSet
 from github import Repository as Github_Repository
 
 from gitalizer.extensions import db
@@ -76,17 +77,24 @@ class Email(db.Model):
         # If we know the github author of this commit
         # add it to this email address.
         github_commit = call_github_function(github_repo, 'get_commit', [git_commit.hex])
-        if user_type == 'author' and github_commit.author:
+        if user_type == 'author' and github_commit.author is not NotSet:
+            # Workaround for issue https://github.com/PyGithub/PyGithub/issues/279
+            if github_commit.author._url.value is None:
+                return
+
             contributer = Contributer.get_contributer(
                 github_commit.author.login,
                 session,
             )
             self.contributer = contributer
-        elif user_type == 'committer' and github_commit.committer:
-            if github_commit.committer is not None:
-                contributer = Contributer.get_contributer(
-                    github_commit.committer.login,
-                    session,
-                )
-                self.contributer = contributer
+        elif user_type == 'committer' and github_commit.committer is not NotSet:
+            # Workaround for issue https://github.com/PyGithub/PyGithub/issues/279
+            if github_commit.commiter._url.value is None:
+                return
+
+            contributer = Contributer.get_contributer(
+                github_commit.committer.login,
+                session,
+            )
+            self.contributer = contributer
         return
