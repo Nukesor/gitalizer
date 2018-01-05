@@ -1,6 +1,8 @@
 """Data collection from Github."""
 import traceback
+from time import sleep
 from datetime import datetime
+from github import GithubException
 
 from gitalizer.extensions import github
 from gitalizer.models.repository import Repository
@@ -26,6 +28,7 @@ def get_github_repository(full_name: str):
     """Get all information from a single repository."""
     try:
         session = new_session()
+        sleep(3)
         github_repo = call_github_function(github.github, 'get_repo',
                                            [full_name], {'lazy': False})
         repository = session.query(Repository).get(github_repo.clone_url)
@@ -68,7 +71,13 @@ def get_github_repository(full_name: str):
         repository.updated_at = datetime.now()
         session.add(repository)
         session.commit()
-        session.close()
+    except GithubException as e:
+        # Catch a github exception.
+        response = {
+            'message': 'Error in get repository:\n',
+            'error': traceback.format_exc(),
+        }
+        pass
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         response = {
@@ -76,4 +85,6 @@ def get_github_repository(full_name: str):
             'error': traceback.format_exc(),
         }
         pass
+    finally:
+        session.close()
     return response

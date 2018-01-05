@@ -77,7 +77,7 @@ class Email(db.Model):
         # If we know the github author of this commit
         # add it to this email address.
         github_commit = call_github_function(github_repo, 'get_commit', [git_commit.hex])
-        if user_type == 'author' and github_commit.author is not NotSet:
+        if user_type == 'author' and github_commit.author and github_commit.author is not NotSet:
             # Workaround for issue https://github.com/PyGithub/PyGithub/issues/279
             if github_commit.author._url.value is None:
                 return
@@ -87,9 +87,9 @@ class Email(db.Model):
                 session,
             )
             self.contributer = contributer
-        elif user_type == 'committer' and github_commit.committer is not NotSet:
+        elif user_type == 'committer' and github_commit.committer and github_commit.committer is not NotSet:
             # Workaround for issue https://github.com/PyGithub/PyGithub/issues/279
-            if github_commit.commiter._url.value is None:
+            if github_commit.committer._url.value is None:
                 return
 
             contributer = Contributer.get_contributer(
