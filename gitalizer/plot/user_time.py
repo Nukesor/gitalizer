@@ -11,7 +11,7 @@ from gitalizer.extensions import db
 from gitalizer.models.email import Email
 from gitalizer.models.commit import Commit
 from gitalizer.models.contributer import Contributer
-from gitalizer.plot.helper import get_user_repositories, plot_figure
+from gitalizer.plot.helper import get_user_repositories
 
 
 def plot_user_punchcard(login, session, time_window=timedelta(days=3)):
@@ -25,12 +25,14 @@ def plot_user_punchcard(login, session, time_window=timedelta(days=3)):
         .all()
 
     plot_dir = current_app.config['PLOT_DIR']
-    if not os.path.exists(plot_dir):
-        os.mkdir(plot_dir)
+    target_dir = os.path.join(plot_dir, login)
+    path = os.path.join(target_dir, 'punchcard')
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
 
     title = f"{login}'s Punchcard"
 
-    plot_punchcard_from_commits(commits, title, plot_dir)
+    plot_punchcard_from_commits(commits, title, path)
 
 
 def plot_punchcard_from_commits(commits, title, path):
@@ -48,36 +50,44 @@ def plot_punchcard_from_commits(commits, title, path):
 
     punchcard = pd.DataFrame(statistic).transpose().stack().reset_index()
     punchcard.columns = ['day', 'hour', 'count']
-    print(punchcard)
+    punchcard['count'] = punchcard['count'] * 5 / punchcard['count'].mean()
 
     # Create figure with axes
-    fig = plt.figure(figsize=(8, title and 3 or 2.5), facecolor='#ffffff')
-    ax = fig.add_subplot('111', axisbg='#ffffff')
+    background = '#ffffff'
+    graph_color = '#333333'
+
+    fig = plt.figure(figsize=(20, 10), facecolor=background)
     fig.subplots_adjust(left=0.06, bottom=0.04, right=0.98, top=0.95)
+    ax = fig.add_subplot('111', axisbg=background)
 
     # Set title
-    ax.set_title(title, y=0.96).set_color('#333333')
+    ax.set_title(title, y=0.96).set_color(graph_color)
     ax.set_frame_on(False)
 
-    ax.scatter(punchcard['hour'], punchcard['day'], s=punchcard['count'], c='#333333', edgecolor='#444444')
-    for line in ax.get_xticklines() + ax.get_yticklines():
-        line.set_alpha(0.0)
+    ax.scatter(punchcard['hour'], punchcard['day'], s=punchcard['count']*10, c='#333333', edgecolor='#444444')
 
     dist = -0.8
     ax.plot([dist, 23.5], [dist, dist], c='#555555')
     ax.plot([dist, dist], [dist, 6.4], c='#555555')
+
     ax.set_xlim(-1, 24)
     ax.set_ylim(-0.9, 6.9)
+
+    # Format y ticks
     ax.set_yticks(range(7))
     for tx in ax.set_yticklabels(['Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun']):
         tx.set_color('#555555')
         tx.set_size('x-small')
+
+    # Format x ticks
     ax.set_xticks(range(24))
     for tx in ax.set_xticklabels(['%02d' % x for x in range(24)]):
         tx.set_color('#555555')
         tx.set_size('x-small')
-    ax.set_aspect('equal')
-    plt.show(block=True)
 
+    ax.set_aspect('equal')
+
+    fig.savefig(path)
+    plt.close(fig)
     import sys
     sys.exit(0)
