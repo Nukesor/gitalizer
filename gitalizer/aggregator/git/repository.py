@@ -11,7 +11,7 @@ def get_git_repository(url: str, owner: str, name: str):
     # Directory doesn't exist, clone it
     if not os.path.exists(clone_dir):
         os.makedirs(clone_dir)
-        repo = clone_repository(url, clone_dir)
+        repo = clone_repository(url, clone_dir, bare=True)
 
     # Repository is already cloned, pull new changes
     else:
