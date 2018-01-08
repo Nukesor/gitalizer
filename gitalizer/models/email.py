@@ -85,6 +85,7 @@ class Email(db.Model):
             if github_commit.author._url.value is None:
                 sentry.sentry.captureMessage(
                     'Author has no _url',
+                    level='info',
                     extra={
                         'clone_url': github_repo.clone_url,
                         'commit_hex': git_commit.hex,
@@ -104,6 +105,7 @@ class Email(db.Model):
             if github_commit.committer._url.value is None:
                 sentry.sentry.captureMessage(
                     'Committer has no _url',
+                    level='info',
                     extra={
                         'clone_url': github_repo.clone_url,
                         'commit_hex': git_commit.hex,
