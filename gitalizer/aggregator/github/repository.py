@@ -1,6 +1,7 @@
 """Data collection from Github."""
 import traceback
 from time import sleep
+from random import randrange
 from datetime import datetime
 from github import GithubException
 
@@ -8,7 +9,7 @@ from gitalizer.extensions import github
 from gitalizer.models.repository import Repository
 from gitalizer.aggregator.parallel import new_session
 from gitalizer.aggregator.git.commit import CommitScanner
-from gitalizer.aggregator.git.repository import get_git_repository
+from gitalizer.aggregator.git.repository import get_git_repository, delete_git_repository
 from gitalizer.aggregator.github import (
     call_github_function,
     get_github_object,
@@ -28,7 +29,8 @@ def get_github_repository(full_name: str):
     """Get all information from a single repository."""
     try:
         session = new_session()
-        sleep(3)
+        sleeptime = randrange(1, 15)
+        sleep(sleeptime)
         github_repo = call_github_function(github.github, 'get_repo',
                                            [full_name], {'lazy': False})
         repository = session.query(Repository).get(github_repo.clone_url)
@@ -88,5 +90,7 @@ def get_github_repository(full_name: str):
         }
         pass
     finally:
+        if 'owner' in locals() and 'github_repo' in locals():
+            delete_git_repository(owner.login, github_repo.name)
         session.close()
     return response
