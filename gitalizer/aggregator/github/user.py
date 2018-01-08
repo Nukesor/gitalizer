@@ -1,8 +1,10 @@
 """Data collection from Github."""
 import traceback
+from raven import breadcrumbs
+
 
 from gitalizer.models import Repository
-from gitalizer.extensions import github
+from gitalizer.extensions import github, sentry
 from gitalizer.aggregator.github import call_github_function
 from gitalizer.aggregator.parallel import new_session
 from gitalizer.aggregator.parallel.manager import Manager
@@ -50,6 +52,14 @@ def get_user_repos(user_login: str):
         owned_repos = user.get_repos()
         starred = user.get_starred()
 
+        breadcrumbs.record(
+            data={
+                'action': 'Get user repositories',
+                'user': user_login,
+            },
+            category='info',
+        )
+
         repos_to_scan = []
         while owned_repos._couldGrow():
             call_github_function(owned_repos, '_grow', [])
@@ -82,6 +92,7 @@ def get_user_repos(user_login: str):
         }
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
+        sentry.sentry.captureException()
         response = {
             'message': f'Error while getting repos for {user_login}:\n',
             'error': traceback.format_exc(),

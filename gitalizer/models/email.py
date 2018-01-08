@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from github.GithubObject import NotSet
 from github import Repository as Github_Repository
 
-from gitalizer.extensions import db
+from gitalizer.extensions import db, sentry
 from gitalizer.models.contributer import Contributer
 from gitalizer.aggregator.github import call_github_function
 
@@ -70,16 +70,26 @@ class Email(db.Model):
     def get_github_relation(self, git_commit, user_type, session,
                             github_repo: Github_Repository):
         """Get the related github contributer."""
-        # No github repository or contributer already known. Early return.
+        # Early return, as we have no github repository or
+        # the contributer is already known.
         if not github_repo or self.contributer is not None:
             return
 
         # If we know the github author of this commit
         # add it to this email address.
         github_commit = call_github_function(github_repo, 'get_commit', [git_commit.hex])
-        if user_type == 'author' and github_commit.author and github_commit.author is not NotSet:
+
+        if user_type == 'author' and github_commit.author \
+                and github_commit.author is not NotSet:
             # Workaround for issue https://github.com/PyGithub/PyGithub/issues/279
             if github_commit.author._url.value is None:
+                sentry.sentry.captureMessage(
+                    'Author has no _url',
+                    extra={
+                        'clone_url': github_repo.clone_url,
+                        'commit_hex': git_commit.hex,
+                    },
+                )
                 return
 
             contributer = Contributer.get_contributer(
@@ -87,9 +97,18 @@ class Email(db.Model):
                 session,
             )
             self.contributer = contributer
-        elif user_type == 'committer' and github_commit.committer and github_commit.committer is not NotSet:
+
+        elif user_type == 'committer' and github_commit.committer \
+                and github_commit.committer is not NotSet:
             # Workaround for issue https://github.com/PyGithub/PyGithub/issues/279
             if github_commit.committer._url.value is None:
+                sentry.sentry.captureMessage(
+                    'Committer has no _url',
+                    extra={
+                        'clone_url': github_repo.clone_url,
+                        'commit_hex': git_commit.hex,
+                    },
+                )
                 return
 
             contributer = Contributer.get_contributer(

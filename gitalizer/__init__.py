@@ -19,10 +19,11 @@ def create_app(config_name='develop'):
     app.config.from_object(configs[config_name])
 
     # Initialize extensions
-    from gitalizer.extensions import db, passlib, github
+    from gitalizer.extensions import db, passlib, github, sentry
     db.init_app(app)
     passlib.init_app(app)
     github.init_app(app)
+    sentry.init_app(app)
 
     # Check if the git clone dir can be created/accessed
     git_clone_dir = app.config['GIT_CLONE_PATH']

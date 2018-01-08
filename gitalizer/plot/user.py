@@ -52,7 +52,7 @@ def plot_user_repositories_changes(contributer, path):
 
 def plot_user_punchcard(contributer, path):
     """Get all commits of repositories of an user."""
-    delta = timedelta(days=900)
+    delta = timedelta(days=364)
     commits = get_user_commits(contributer, delta)
 
     path = os.path.join(path, 'punchcard')

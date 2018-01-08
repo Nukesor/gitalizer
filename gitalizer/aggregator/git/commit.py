@@ -1,10 +1,10 @@
 """Data collection from Github."""
-
 from collections import deque
 from pygit2 import Repository, GitError
 from github import Repository as Github_Repository
 from datetime import datetime, timedelta, timezone
 
+from gitalizer.extensions import sentry
 from gitalizer.models import (
     Email,
     Commit,
@@ -41,8 +41,13 @@ class CommitScanner():
             master_commit = self.git_repo.head.get_object()
             self.queue.appendleft(master_commit)
         except GitError as e:
-            print(f'\n\nGitError at repo {self.repository.clone_url}\nProbably an empty Repo\n\n')
-            return
+            sentry.sentry.captureException(
+                extra={
+                    'message': 'GitError during repo cloning. Probably empty',
+                    'clone_url': self.repository.clone_url,
+                },
+            )
+            return self.scanned_commits
 
         # List of commit hashes to check if we already were at this point in the tree.
         all_commits = []
@@ -125,25 +130,35 @@ class CommitScanner():
 
             self.checked_emails.add(git_commit.author.email)
 
-        # Create a new commit and extract all valuable information
-        commit = Commit(git_commit.hex, self.repository,
-                        author_email, committer_email)
-        if git_commit.hex in self.commit_stats:
-            commit.additions = self.commit_stats[git_commit.hex]['additions']
-            commit.deletions = self.commit_stats[git_commit.hex]['deletions']
+        try:
+            # Create a new commit and extract all valuable information
+            commit = Commit(git_commit.hex, self.repository,
+                            author_email, committer_email)
+            if git_commit.hex in self.commit_stats:
+                commit.additions = self.commit_stats[git_commit.hex]['additions']
+                commit.deletions = self.commit_stats[git_commit.hex]['deletions']
 
-        # Get timestamp with utc offset
-        if git_commit.author:
-            timestamp = git_commit.author.time
-            utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
-            commit.creation_time = datetime.fromtimestamp(timestamp, utc_offset)
+            # Get timestamp with utc offset
+            if git_commit.author:
+                timestamp = git_commit.author.time
+                utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
+                commit.creation_time = datetime.fromtimestamp(timestamp, utc_offset)
 
-        if git_commit.committer:
-            timestamp = git_commit.committer.time
-            utc_offset = timezone(timedelta(minutes=git_commit.committer.offset))
-            commit.commit_time = datetime.fromtimestamp(timestamp, utc_offset)
+            if git_commit.committer:
+                timestamp = git_commit.committer.time
+                utc_offset = timezone(timedelta(minutes=git_commit.committer.offset))
+                commit.commit_time = datetime.fromtimestamp(timestamp, utc_offset)
 
-        self.session.add(commit)
+            self.session.add(commit)
+        except BaseException as e:
+            sentry.sentry.captureException(
+                extra={
+                    'message': 'Error during Commit creation',
+                    'clone_url': self.repository.clone_url,
+                    'hex': git_commit.hex,
+                    'stats': self.commit_stats,
+                },
+            )
 
         # Commit session every 20 commits to avoid loss of all data on crash.
         self.scanned_commits += 1

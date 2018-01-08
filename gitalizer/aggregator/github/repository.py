@@ -4,8 +4,9 @@ from time import sleep
 from random import randrange
 from datetime import datetime
 from github import GithubException
+from raven import breadcrumbs
 
-from gitalizer.extensions import github
+from gitalizer.extensions import github, sentry
 from gitalizer.models.repository import Repository
 from gitalizer.aggregator.parallel import new_session
 from gitalizer.aggregator.git.commit import CommitScanner
@@ -39,6 +40,15 @@ def get_github_repository(full_name: str):
             session.add(repository)
             session.commit()
 
+        breadcrumbs.record(
+            data={
+                'action': 'Get Github repository',
+                'repository': full_name,
+                'clone_url': github_repo.clone_url,
+            },
+            category='info',
+        )
+
         # Handle github_repo forks
         for fork in call_github_function(github_repo, 'get_forks'):
             fork_repo = session.query(Repository).get(fork.clone_url)
@@ -59,6 +69,11 @@ def get_github_repository(full_name: str):
         scanner = CommitScanner(git_repo, session, github_repo)
         commit_count = scanner.scan_repository()
 
+        breadcrumbs.record(
+            data={'action': 'Commits scanned. Set repo metadata and debug output'},
+            category='info',
+        )
+
         repository = session.query(Repository).get(github_repo.clone_url)
         rate = github.github.get_rate_limit().rate
         time = rate.reset.strftime("%H:%M")
@@ -76,7 +91,8 @@ def get_github_repository(full_name: str):
         session.add(repository)
         session.commit()
     except GithubException as e:
-        # Catch a github exception.
+        # Catch a Github exception.
+        sentry.sentry.captureException()
         response = {
             'message': 'Error in get repository:\n',
             'error': traceback.format_exc(),
@@ -84,6 +100,7 @@ def get_github_repository(full_name: str):
         pass
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
+        sentry.sentry.captureException()
         response = {
             'message': f'Error in {github_repo.clone_url}:\n',
             'error': traceback.format_exc(),
