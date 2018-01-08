@@ -16,12 +16,11 @@ class CommitScanner():
     """Get features from all commits in a repository."""
 
     def __init__(self, git_repo: Repository,
-                 repository: RepositoryModel,
                  session,
                  github_repo: Github_Repository=None):
         """Initialize a new CommitChecker."""
         self.session = session
-        self.repository = repository
+        self.repository = session.query(RepositoryModel).get(github_repo.clone_url)
         self.git_repo = git_repo
         self.github_repo = github_repo
         self.queue = deque()

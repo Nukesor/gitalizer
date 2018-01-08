@@ -34,6 +34,8 @@ def get_github_repository(full_name: str):
         repository = session.query(Repository).get(github_repo.clone_url)
         if not repository:
             repository = Repository(github_repo.clone_url, github_repo.name)
+            session.add(repository)
+            session.commit()
 
         # Handle github_repo forks
         for fork in call_github_function(github_repo, 'get_forks'):
@@ -52,7 +54,7 @@ def get_github_repository(full_name: str):
             owner.login,
             github_repo.name,
         )
-        scanner = CommitScanner(git_repo, repository, session, github_repo)
+        scanner = CommitScanner(git_repo, session, github_repo)
         commit_count = scanner.scan_repository()
 
         repository = session.query(Repository).get(github_repo.clone_url)
