@@ -38,7 +38,7 @@ def call_github_function(github_object: object, function_name: str, args: list=N
             exception = e
             pass
         except GithubException as e:
-            seconds = randrange(180, 300)
+            seconds = randrange(180, 480)
             print('GithubException. Probably abuse detection.')
             print(f'Waiting for {seconds} seconds')
             time.sleep(seconds)
