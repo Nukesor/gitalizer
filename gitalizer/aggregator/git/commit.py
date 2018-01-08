@@ -131,10 +131,17 @@ class CommitScanner():
         if git_commit.hex in self.commit_stats:
             commit.additions = self.commit_stats[git_commit.hex]['additions']
             commit.deletions = self.commit_stats[git_commit.hex]['deletions']
+
         # Get timestamp with utc offset
-        timestamp = git_commit.author.time
-        utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
-        commit.time = datetime.fromtimestamp(timestamp, utc_offset)
+        if git_commit.author:
+            timestamp = git_commit.author.time
+            utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
+            commit.creation_time = datetime.fromtimestamp(timestamp, utc_offset)
+
+        if git_commit.committer:
+            timestamp = git_commit.committer.time
+            utc_offset = timezone(timedelta(minutes=git_commit.committer.offset))
+            commit.commit_time = datetime.fromtimestamp(timestamp, utc_offset)
 
         self.session.add(commit)
 
