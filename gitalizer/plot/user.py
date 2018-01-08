@@ -7,6 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.ticker import FixedFormatter
+from sqlalchemy import or_
 
 from gitalizer.extensions import db
 from gitalizer.models.email import Email
@@ -41,7 +42,7 @@ def plot_user_repository_changes(contributer, repo, path):
     """Plot the changes for a specific contributer and repository."""
     commits = db.session.query(Commit) \
         .filter(Commit.repository == repo) \
-        .join(Email, Email.email == Commit.author_email_address) \
+        .join(Email, or_(Email.email == Commit.author_email_address, Email.email == Commit.committer_email_address)) \
         .join(Contributer, Email.contributer_login == Contributer.login) \
         .filter(Contributer.login == contributer.login) \
         .all()

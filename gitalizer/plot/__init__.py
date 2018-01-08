@@ -2,6 +2,7 @@
 
 import os
 from .user import plot_user_repositories_changes
+from .user_time import plot_user_punchcard
 
 
 def plot_user(owner):
@@ -14,4 +15,5 @@ def plot_user(owner):
     if not os.path.exists(user_dir):
         os.mkdir(user_dir)
 
+    plot_user_punchcard(owner, user_dir)
     plot_user_repositories_changes(owner, user_dir)
