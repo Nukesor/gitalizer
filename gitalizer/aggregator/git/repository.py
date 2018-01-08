@@ -1,5 +1,6 @@
 """Clone repositories and get data from it."""
 import os
+import shutil
 from flask import current_app
 from pygit2 import Repository, clone_repository, GIT_RESET_HARD, GitError
 
@@ -27,3 +28,11 @@ def get_git_repository(url: str, owner: str, name: str):
             print(f'GitError at repo {url}')
 
     return repo
+
+
+def delete_git_repository(owner: str, name: str):
+    """Delete a git repository."""
+    base_dir = current_app.config['GIT_CLONE_PATH']
+    clone_dir = os.path.join(base_dir, owner, name)
+    if os.path.exists(clone_dir):
+        shutil.rmtree(clone_dir)
