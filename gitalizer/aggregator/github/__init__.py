@@ -1,7 +1,8 @@
 """Helper functions for github api calls."""
-from github.GithubException import RateLimitExceededException
+from github.GithubException import RateLimitExceededException, GithubException
 
 import time
+from random import randrange
 from socket import timeout
 from datetime import datetime, timedelta
 from gitalizer.extensions import github
@@ -32,6 +33,15 @@ def call_github_function(github_object: object, function_name: str, args: list=N
             print('Hit the rate limit.')
             print(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
             time.sleep(delta.total_seconds())
+
+            _try += 1
+            exception = e
+            pass
+        except GithubException as e:
+            seconds = randrange(180, 300)
+            print('GithubException. Probably abuse detection.')
+            print(f'Waiting for {seconds} seconds')
+            time.sleep(seconds)
 
             _try += 1
             exception = e
