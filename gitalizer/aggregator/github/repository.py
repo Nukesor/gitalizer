@@ -68,6 +68,7 @@ def get_github_repository(full_name: str):
         )
         scanner = CommitScanner(git_repo, session, github_repo)
         commit_count = scanner.scan_repository()
+        session.commit()
 
         breadcrumbs.record(
             data={'action': 'Commits scanned. Set repo metadata and debug output'},
