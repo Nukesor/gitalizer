@@ -1,5 +1,4 @@
 """Module for multiprocessing management."""
-import time
 import multiprocessing
 from flask import current_app
 
@@ -37,7 +36,7 @@ class Manager():
         # Add unique tasks to queue
         tasks = set(tasks)
         for task in (tasks - self.tasks):
-            print(f'Added task {task} for type {self.task_type}')
+            current_app.logger.info(f'Added task {task} for type {self.task_type}')
             self.task_queue.put(Task(self.task_type, task))
 
         # Add new tasks to task set.
@@ -47,26 +46,26 @@ class Manager():
         """All tasks are added. Process worker responses and wait for worker to finish."""
         # Start the sub manager
         if self.sub_manager is not None:
-            print('Start sub manager.')
+            current_app.logger.info('Start sub manager.')
             self.sub_manager.start()
 
         # Poison pill for user scanner
-        print('Add poison pills.')
+        current_app.logger.info('Add poison pills.')
         for _ in range(self.consumer_count):
             self.task_queue.put(None)
 
-        print(f'Processing {len(self.tasks)} tasks')
+        current_app.logger.info(f'Processing {len(self.tasks)} tasks')
         finished_tasks = 0
         while finished_tasks < len(self.tasks):
-            print(f'Waiting: {finished_tasks} of {len(self.tasks)}')
+            current_app.logger.info(f'Waiting: {finished_tasks} of {len(self.tasks)}')
             result = self.result_queue.get()
 
-            print(result['message'])
+            current_app.logger.info(result['message'])
             if 'error' in result:
-                print('Encountered an error:')
-                print(result['error'])
+                current_app.logger.info('Encountered an error:')
+                current_app.logger.info(result['error'])
             elif self.sub_manager is not None:
-                print('Add Tasks')
+                current_app.logger.info('Add Tasks')
                 self.sub_manager.add_tasks(result['tasks'])
             finished_tasks += 1
 

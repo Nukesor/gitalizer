@@ -2,8 +2,9 @@
 from github.GithubException import RateLimitExceededException, GithubException
 
 import time
-from random import randrange
 from socket import timeout
+from random import randrange
+from flask import current_app
 from datetime import datetime, timedelta
 
 from gitalizer.extensions import github
@@ -28,11 +29,11 @@ def call_github_function(github_object: object, function_name: str, args: list=N
         except RateLimitExceededException as e:
             # Wait until the rate limiting is reset
             resettime = github.github.get_rate_limit().rate.reset
-            delta = resettime - datetime.now()
+            delta = resettime - datetime.utcnow()
             delta += timedelta(minutes=2)
             total_minutes = int(delta.total_seconds() / 60)
-            print('Hit the rate limit.')
-            print(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
+            current_app.logger.info('Hit the rate limit.')
+            current_app.logger.info(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
             time.sleep(delta.total_seconds())
 
             _try += 1
@@ -40,15 +41,15 @@ def call_github_function(github_object: object, function_name: str, args: list=N
             pass
         except GithubException as e:
             seconds = randrange(180, 480)
-            print('GithubException. Probably abuse detection.')
-            print(f'Waiting for {seconds} seconds')
+            current_app.logger.info('GithubException. Probably abuse detection.')
+            current_app.logger.info(f'Waiting for {seconds} seconds')
             time.sleep(seconds)
 
             _try += 1
             exception = e
             pass
         except timeout as e:
-            print('Hit socket timeout waiting 10 secs.')
+            current_app.logger.info('Hit socket timeout waiting 10 secs.')
             _try += 1
             exception = e
             pass
@@ -75,8 +76,8 @@ def get_github_object(github_object: object, object_name: str):
             delta = resettime - datetime.now()
             delta += timedelta(minutes=2)
             total_minutes = int(delta.total_seconds() / 60)
-            print('Hit the rate limit.')
-            print(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
+            current_app.logger.info('Hit the rate limit.')
+            current_app.logger.info(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
 
             time.sleep(delta.total_seconds())
 
@@ -84,7 +85,7 @@ def get_github_object(github_object: object, object_name: str):
             exception = e
             pass
         except timeout as e:
-            print('Hit socket timeout waiting 10 secs.')
+            current_app.logger.info('Hit socket timeout waiting 10 secs.')
             _try += 1
             exception = e
             pass

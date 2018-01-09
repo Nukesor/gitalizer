@@ -25,7 +25,7 @@ def get_git_repository(url: str, owner: str, name: str):
             # Hard reset repository to get clean repo
             repo.reset(current_ref.target, GIT_RESET_HARD)
         except GitError as e:
-            print(f'GitError at repo {url}')
+            current_app.logger.info(f'GitError at repo {url}')
 
     return repo
 

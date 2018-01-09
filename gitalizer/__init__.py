@@ -6,6 +6,7 @@ This particular file additionally contains the applications factory.
 import os
 import sys
 from flask import Flask
+from gitalizer.helpers.logger import init_logging
 
 
 def create_app(config_name='develop'):
@@ -17,6 +18,7 @@ def create_app(config_name='develop'):
 
     from gitalizer.config import configs
     app.config.from_object(configs[config_name])
+    init_logging(app)
 
     # Initialize extensions
     from gitalizer.extensions import db, passlib, github, sentry

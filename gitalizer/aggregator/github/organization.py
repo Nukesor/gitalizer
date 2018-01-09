@@ -1,6 +1,7 @@
 """Data collection from Github."""
 
 import pytz
+from flask import current_app
 from datetime import datetime, timedelta
 
 from gitalizer.extensions import github
@@ -21,7 +22,7 @@ def get_github_organizations():
     for contributer in contributers:
         if contributer.last_check and contributer.last_check > now - timedelta(days=2):
             continue
-        print(f'Checking {contributer.login}. {github.github.rate_limiting[0]} remaining.')
+        current_app.logger.info(f'Checking {contributer.login}. {github.github.rate_limiting[0]} remaining.')
 
         github_user = call_github_function(github.github, 'get_user',
                                            [contributer.login])
