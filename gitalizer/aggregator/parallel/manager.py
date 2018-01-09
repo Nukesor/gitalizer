@@ -51,7 +51,7 @@ class Manager():
 
         # Poison pill for user scanner
         current_app.logger.info('Add poison pills.')
-        for _ in range(self.consumer_count):
+        for _ in range(self.consumer_count+1):
             self.task_queue.put(None)
 
         current_app.logger.info(f'Processing {len(self.tasks)} tasks')
