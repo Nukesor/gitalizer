@@ -21,7 +21,8 @@ class Commit(db.Model):
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     sha = db.Column(db.String(40), nullable=False)
-    time = db.Column(db.DateTime(timezone=True))
+    commit_time = db.Column(db.DateTime(timezone=True))
+    creation_time = db.Column(db.DateTime(timezone=True))
     additions = db.Column(db.Integer())
     deletions = db.Column(db.Integer())
 
