@@ -1,6 +1,7 @@
 """Representation of a git repository."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
+from flask import current_app
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import backref
 
@@ -41,7 +42,7 @@ class Repository(db.Model):
 
         If that is the case, we want to skip it.
         """
-        one_hour_ago = datetime.utcnow() - timedelta(hours=24)
+        one_hour_ago = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
         repo = session.query(Repository) \
             .filter(Repository.clone_url == clone_url) \
             .filter(Repository.completely_scanned.is_(True)) \
