@@ -50,7 +50,7 @@ def get_user_repos(user_login: str):
     try:
         session = new_session()
         user = call_github_function(github.github, 'get_user', [user_login])
-        owned_repos = user.get_repos()
+        owned = user.get_repos()
         starred = user.get_starred()
 
         breadcrumbs.record(
@@ -63,16 +63,16 @@ def get_user_repos(user_login: str):
 
         repos_to_scan = []
         owned_repos = 0
-        while owned_repos._couldGrow():
-            call_github_function(owned_repos, '_grow', [])
+        while owned._couldGrow():
+            call_github_function(owned, '_grow', [])
         # Check own repositories. We assume that we are collaborating in those
-        for repo in owned_repos:
+        for repo in owned:
             # Don't scan the repo
             # - Add it if it's not yet added
             # - If we already scanned it in the last 24 hours
             owned_repos += 1
-            if len(owned_repos) % 100 == 0:
-                current_app.logger.info(f'{len(repos_to_scan)} owned repos for user {user_login}.')
+            if owned_repos % 100 == 0:
+                current_app.logger.info(f'{owned_repos} owned repos for user {user_login}.')
             if not Repository.should_scan(repo.clone_url, session):
                 continue
             repos_to_scan.append(repo)
@@ -87,8 +87,8 @@ def get_user_repos(user_login: str):
             # - If we already scanned it in the last 24 hours
             # - If the user is a collaborator in this repo
             starred_repos += 1
-            if len(starred_repos) % 100 == 0:
-                current_app.logger.info(f'{len(repos_to_scan)} starred repos for user {user_login}.')
+            if starred_repos % 100 == 0:
+                current_app.logger.info(f'{starred_repos} starred repos for user {user_login}.')
             if not Repository.should_scan(star.clone_url, session) or \
                     not call_github_function(star, 'has_in_collaborators', [user]):
                 continue

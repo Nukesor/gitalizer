@@ -65,6 +65,7 @@ def register_cli(app):  # pragma: no cover
     def get_user(name):
         """Get all repositories for a specific github user."""
         try:
+            app.logger.info(f'\n\nGet user {name}')
             get_user_by_name(name)
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
@@ -75,6 +76,7 @@ def register_cli(app):  # pragma: no cover
     def get_friends(name):
         """Get the repositories of a user and all his friends."""
         try:
+            app.logger.info(f'\n\nGet friends of user {name}')
             get_friends_by_name(name)
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
@@ -86,6 +88,7 @@ def register_cli(app):  # pragma: no cover
     def get_github_repository(owner, repository):
         """Get a github repository by owner and name."""
         try:
+            app.logger.info(f'\n\nGet {repository} from user {owner}')
             get_github_repository_by_owner_name(owner, repository)
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
