@@ -28,7 +28,7 @@ def get_user_commits(contributer, delta=None):
         delta = timedelta(days=99*365)
     time_span = datetime.now() - delta
     commits = db.session.query(Commit) \
-        .filter(Commit.time >= time_span) \
+        .filter(Commit.commit_time >= time_span) \
         .join(Email, or_(
             Email.email == Commit.author_email_address,
             Email.email == Commit.committer_email_address,

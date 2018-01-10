@@ -1,5 +1,4 @@
 """Plot the timeline of additions and deletions."""
-import os
 import math
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,7 +15,7 @@ def plot_commit_timeline(commits, path, title):
         if (math.fabs(c.additions) + math.fabs(c.deletions)) > 8000:
             continue
         data.append({
-            'date': c.time.replace(tzinfo=None),
+            'date': c.commit_time.replace(tzinfo=None),
             'additions': c.additions,
             'deletions': -c.deletions,
         })

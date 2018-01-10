@@ -17,7 +17,7 @@ def plot_repository_changes(commits, path, title):
             continue
         if (math.fabs(c.additions) + math.fabs(c.deletions)) > 8000:
             continue
-        time = c.time.replace(
+        time = c.commit_time.replace(
             day=1, hour=0, minute=0,
             second=0, microsecond=0,
             tzinfo=None,
