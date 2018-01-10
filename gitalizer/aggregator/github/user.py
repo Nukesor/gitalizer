@@ -1,6 +1,7 @@
 """Data collection from Github."""
 import traceback
 from raven import breadcrumbs
+from flask import current_app
 
 
 from gitalizer.models import Repository
@@ -61,6 +62,7 @@ def get_user_repos(user_login: str):
         )
 
         repos_to_scan = []
+        owned_repos = 0
         while owned_repos._couldGrow():
             call_github_function(owned_repos, '_grow', [])
         # Check own repositories. We assume that we are collaborating in those
@@ -68,10 +70,14 @@ def get_user_repos(user_login: str):
             # Don't scan the repo
             # - Add it if it's not yet added
             # - If we already scanned it in the last 24 hours
+            owned_repos += 1
+            if len(owned_repos) % 100 == 0:
+                current_app.logger.info(f'{len(repos_to_scan)} owned repos for user {user_login}.')
             if not Repository.should_scan(repo.clone_url, session):
                 continue
             repos_to_scan.append(repo)
 
+        starred_repos = 0
         while starred._couldGrow():
             call_github_function(starred, '_grow', [])
         # Check stars. In here we need to check if the user collaborated in the repo.
@@ -80,6 +86,9 @@ def get_user_repos(user_login: str):
             # - Add it if it's not yet added
             # - If we already scanned it in the last 24 hours
             # - If the user is a collaborator in this repo
+            starred_repos += 1
+            if len(starred_repos) % 100 == 0:
+                current_app.logger.info(f'{len(repos_to_scan)} starred repos for user {user_login}.')
             if not Repository.should_scan(star.clone_url, session) or \
                     not call_github_function(star, 'has_in_collaborators', [user]):
                 continue

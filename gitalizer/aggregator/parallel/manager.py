@@ -36,7 +36,7 @@ class Manager():
         # Add unique tasks to queue
         tasks = set(tasks)
         for task in (tasks - self.tasks):
-            current_app.logger.info(f'Added task {task} for type {self.task_type}')
+            # current_app.logger.info(f'Added task {task} for type {self.task_type}')
             self.task_queue.put(Task(self.task_type, task))
 
         # Add new tasks to task set.
