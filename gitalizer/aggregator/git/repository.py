@@ -1,8 +1,11 @@
 """Clone repositories and get data from it."""
 import os
 import shutil
+import traceback
 from flask import current_app
 from pygit2 import Repository, clone_repository, GIT_RESET_HARD, GitError
+
+from gitalizer.extensions import sentry
 
 
 def get_git_repository(url: str, owner: str, name: str):
@@ -26,6 +29,14 @@ def get_git_repository(url: str, owner: str, name: str):
             repo.reset(current_ref.target, GIT_RESET_HARD)
         except GitError as e:
             current_app.logger.info(f'GitError at repo {url}')
+            sentry.sentry.captureMessage(
+                'GitError for repo',
+                level='info',
+                extra={
+                    'clone_url': url,
+                    'stacktrace': traceback.format_exc(),
+                },
+            )
 
     return repo
 
