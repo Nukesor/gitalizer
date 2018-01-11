@@ -18,7 +18,9 @@ class Repository(db.Model):
     parent_url = db.Column(db.String(240), ForeignKey('repository.clone_url'), index=True)
     name = db.Column(db.String(240))
     created_at = db.Column(db.DateTime(timezone=True))
-    completely_scanned = db.Column(db.Boolean(), default=False)
+
+    completely_scanned = db.Column(db.Boolean(), default=False, nullable=False)
+    broken = db.Column(db.Boolean(), default=False, nullable=False)
 
     children = db.relationship("Repository", backref=backref('parent', remote_side=[clone_url]))
     commits = db.relationship("Commit", back_populates="repository")

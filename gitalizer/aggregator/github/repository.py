@@ -5,6 +5,7 @@ from random import randrange
 from datetime import datetime
 from github import GithubException
 from raven import breadcrumbs
+from pygit2 import GitError
 
 from gitalizer.extensions import github, sentry
 from gitalizer.models.repository import Repository
@@ -39,15 +40,8 @@ def get_github_repository(full_name: str):
             repository = Repository(github_repo.clone_url, github_repo.name)
             session.add(repository)
             session.commit()
-
-        breadcrumbs.record(
-            data={
-                'action': 'Get Github repository',
-                'repository': full_name,
-                'clone_url': github_repo.clone_url,
-            },
-            category='info',
-        )
+        elif repository.broken:
+            return {'message': f'Skip broken repo {github_repo.clone_url}'}
 
         # Handle github_repo forks
         for fork in call_github_function(github_repo, 'get_forks'):
@@ -91,6 +85,7 @@ def get_github_repository(full_name: str):
         repository.updated_at = datetime.now()
         session.add(repository)
         session.commit()
+
     except GithubException as e:
         # Catch a Github exception.
         sentry.sentry.captureException()
@@ -99,6 +94,16 @@ def get_github_repository(full_name: str):
             'error': traceback.format_exc(),
         }
         pass
+
+    except GitError as e:
+        repository.broken = True
+        session.add(repository)
+        session.commit()
+        response = {
+            'message': 'Error in get repository:\n',
+            'error': traceback.format_exc(),
+        }
+
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         sentry.sentry.captureException()

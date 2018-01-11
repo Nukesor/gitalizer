@@ -4,7 +4,7 @@ from raven import breadcrumbs
 from flask import current_app
 
 
-from gitalizer.models import Repository
+from gitalizer.models import Repository, Contributer
 from gitalizer.extensions import github, sentry
 from gitalizer.aggregator.github import call_github_function
 from gitalizer.aggregator.parallel import new_session
@@ -28,6 +28,8 @@ def get_friends_by_name(name: str):
             user_list.append(followed)
 
     user_list = [u.login for u in user_list]
+#    for user in user_list:
+#        print(user)
     sub_manager = Manager('github_repository', [])
     manager = Manager('github_contributer', user_list, sub_manager)
     manager.start()
@@ -52,33 +54,53 @@ def get_user_repos(user_login: str):
         user = call_github_function(github.github, 'get_user', [user_login])
         owned = user.get_repos()
         starred = user.get_starred()
-
-        breadcrumbs.record(
-            data={
-                'action': 'Get user repositories',
-                'user': user_login,
-            },
-            category='info',
-        )
-
         repos_to_scan = []
+        contributer = Contributer.get_contributer(user_login, session)
+        user_too_big_message = {
+            'message': f'User {user_login} has too many repositories',
+            'error': 'Too big',
+        }
+        if contributer.too_big:
+            return user_too_big_message
+
         owned_repos = 0
         while owned._couldGrow():
+            owned_repos += 1
+            # Debug messages to see that the repositories are still collected.
+            if owned_repos % 100 == 0:
+                current_app.logger.info(f'{owned_repos} owned repos for user {user_login}.')
+
+            # The user is too big. Just drop him.
+            if owned_repos > 5000:
+                contributer.too_big = True
+                session.add(contributer)
+                session.commit(contributer)
+                return user_too_big_message
+
             call_github_function(owned, '_grow', [])
         # Check own repositories. We assume that we are collaborating in those
         for repo in owned:
             # Don't scan the repo
             # - Add it if it's not yet added
             # - If we already scanned it in the last 24 hours
-            owned_repos += 1
-            if owned_repos % 100 == 0:
-                current_app.logger.info(f'{owned_repos} owned repos for user {user_login}.')
             if not Repository.should_scan(repo.clone_url, session):
                 continue
             repos_to_scan.append(repo)
 
         starred_repos = 0
         while starred._couldGrow():
+            starred_repos += 1
+            # Debug messages to see that the repositories are still collected.
+            if starred_repos % 100 == 0:
+                current_app.logger.info(f'{starred_repos} starred repos for user {user_login}.')
+
+            # The user is too big. Just drop him.
+            if starred_repos > 5000:
+                contributer.too_big = True
+                session.add(contributer)
+                session.commit(contributer)
+                return user_too_big_message
+
             call_github_function(starred, '_grow', [])
         # Check stars. In here we need to check if the user collaborated in the repo.
         for star in starred:
@@ -86,9 +108,6 @@ def get_user_repos(user_login: str):
             # - Add it if it's not yet added
             # - If we already scanned it in the last 24 hours
             # - If the user is a collaborator in this repo
-            starred_repos += 1
-            if starred_repos % 100 == 0:
-                current_app.logger.info(f'{starred_repos} starred repos for user {user_login}.')
             if not Repository.should_scan(star.clone_url, session) or \
                     not call_github_function(star, 'has_in_collaborators', [user]):
                 continue

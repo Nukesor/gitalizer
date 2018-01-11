@@ -41,6 +41,7 @@ class Contributer(db.Model):
         secondary=contributer_organizations,
         back_populates="contributors")
 
+    too_big = db.Column(db.Boolean, default=False, nullable=False)
     last_check = db.Column(db.DateTime(timezone=True))
     full_scan = db.Column(db.DateTime(timezone=True))
 
