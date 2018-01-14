@@ -45,7 +45,7 @@ def get_user_by_name(user: str):
     manager.run()
 
 
-def get_user_repos(user_login: str):
+def get_user_repos(user_login: str, skip=True):
     """Get all relevant Information for a single user."""
     try:
         session = new_session()
@@ -69,7 +69,7 @@ def get_user_repos(user_login: str):
                 current_app.logger.info(f'{owned_repos} owned repos for user {user_login}.')
 
             # The user is too big. Just drop him.
-            if owned_repos > 5000:
+            if skip and owned_repos > current_app.config['GITHUB_USER_SKIP_COUNT']:
                 contributer.too_big = True
                 session.add(contributer)
                 session.commit()
@@ -93,7 +93,7 @@ def get_user_repos(user_login: str):
                 current_app.logger.info(f'{starred_repos} starred repos for user {user_login}.')
 
             # The user is too big. Just drop him.
-            if starred_repos > 5000:
+            if skip and starred_repos > current_app.config['GITHUB_USER_SKIP_COUNT']:
                 contributer.too_big = True
                 session.add(contributer)
                 session.commit(contributer)
