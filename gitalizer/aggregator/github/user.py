@@ -72,7 +72,7 @@ def get_user_repos(user_login: str):
             if owned_repos > 5000:
                 contributer.too_big = True
                 session.add(contributer)
-                session.commit(contributer)
+                session.commit()
                 return user_too_big_message
 
             call_github_function(owned, '_grow', [])
