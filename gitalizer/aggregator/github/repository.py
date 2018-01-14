@@ -31,8 +31,10 @@ def get_github_repository(full_name: str):
     """Get all information from a single repository."""
     try:
         session = new_session()
+        # Sleep for a random time to avoid hitting the abuse detection.
         sleeptime = randrange(1, 15)
         sleep(sleeptime)
+
         github_repo = call_github_function(github.github, 'get_repo',
                                            [full_name], {'lazy': False})
         repository = session.query(Repository).get(github_repo.clone_url)

@@ -1,8 +1,6 @@
 """Data collection from Github."""
 import traceback
-from raven import breadcrumbs
 from flask import current_app
-
 
 from gitalizer.models import Repository, Contributer
 from gitalizer.extensions import github, sentry
