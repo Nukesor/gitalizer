@@ -89,8 +89,15 @@ def get_github_repository(full_name: str):
         session.commit()
 
     except GithubException as e:
-        # Catch a Github exception.
-        sentry.sentry.captureException()
+        # Access denied. Repository probably gone private.
+        if e.status == 451:
+            repository.broken = True
+            session.add(repository)
+            session.commit()
+        # Catch any other GithubException
+        else:
+            sentry.sentry.captureException()
+
         response = {
             'message': 'Error in get repository:\n',
             'error': traceback.format_exc(),
