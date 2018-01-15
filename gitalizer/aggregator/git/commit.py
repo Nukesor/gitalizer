@@ -66,8 +66,21 @@ class CommitScanner():
                     'additions': diff.stats.insertions,
                     'deletions': diff.stats.deletions,
                 }
-            if self.scan_commit(commit) or (not self.repository.completely_scanned):
+
+            commit_known = self.commit_known(commit)
+            # Repo has been completely scanned and a this is a known commit.
+            if commit_known and self.repository.completely_scanned:
+                break
+
+            # Repo has been partially scanned and a this is a known commit.
+            elif not commit_known or not self.repository.completely_scanned:
                 [self.queue.appendleft(parent) for parent in commit.parents]
+            # This is an unknown commit.
+
+            elif not commit_known:
+                self.scan_commit(commit)
+                [self.queue.appendleft(parent) for parent in commit.parents]
+
             all_commits.append(commit)
 
         # Set the time of the first commit as repository creation time if it isn't set yet.
@@ -80,16 +93,20 @@ class CommitScanner():
         self.session.commit()
         return self.scanned_commits
 
-    def scan_commit(self, git_commit):
-        """Get all features of a specific commit."""
+    def commit_known(self, git_commit):
+        """Check if we already scanned this commit."""
         commit = self.session.query(Commit) \
             .filter(Commit.sha == git_commit.hex) \
             .filter(Commit.repository == self.repository) \
             .one_or_none()
 
         if commit:
-            return False
+            return True
 
+        return False
+
+    def scan_commit(self, git_commit):
+        """Get all features of a specific commit."""
         # Get or create new mail
         committer_email = Email.get_email(git_commit.committer.email, self.session)
         author_email = Email.get_email(git_commit.author.email, self.session)
@@ -164,4 +181,3 @@ class CommitScanner():
         self.scanned_commits += 1
         if self.scanned_commits % 20 == 0:
             self.session.commit()
-        return True
