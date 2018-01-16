@@ -39,17 +39,23 @@ class Repository(db.Model):
         self.name = name
 
     @staticmethod
-    def should_scan(clone_url: str, session):
+    def get_or_create(session, clone_url: str, name=None):
+        repo = session.query(Repository).get(clone_url)
+
+        if not repo:
+            repo = Repository(clone_url, name)
+            session.add(repo)
+            session.commit()
+
+        return repo
+
+    def should_scan(self):
         """Check if the repo has been updated in the last day.
 
         If that is the case, we want to skip it.
         """
-        one_hour_ago = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
-        repo = session.query(Repository) \
-            .filter(Repository.clone_url == clone_url) \
-            .filter(Repository.completely_scanned.is_(True)) \
-            .filter(Repository.updated_at >= one_hour_ago) \
-            .one_or_none()
-        if repo:
+        timeout_threshold = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
+        if self.completely_scanned and self.updated_at >= timeout_threshold:
             return False
+
         return True

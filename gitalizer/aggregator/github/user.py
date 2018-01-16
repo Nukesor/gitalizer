@@ -52,7 +52,7 @@ def get_user_repos(user_login: str, skip=True):
         user = call_github_function(github.github, 'get_user', [user_login])
         owned = user.get_repos()
         starred = user.get_starred()
-        repos_to_scan = []
+        repos_to_scan = set()
         contributer = Contributer.get_contributer(user_login, session)
         user_too_big_message = {
             'message': f'User {user_login} has too many repositories',
@@ -61,6 +61,7 @@ def get_user_repos(user_login: str, skip=True):
         if contributer.too_big:
             return user_too_big_message
 
+        # Prefetch all owned repositories
         owned_repos = 0
         while owned._couldGrow():
             owned_repos += 1
@@ -76,15 +77,8 @@ def get_user_repos(user_login: str, skip=True):
                 return user_too_big_message
 
             call_github_function(owned, '_grow', [])
-        # Check own repositories. We assume that we are collaborating in those
-        for repo in owned:
-            # Don't scan the repo
-            # - Add it if it's not yet added
-            # - If we already scanned it in the last 24 hours
-            if not Repository.should_scan(repo.clone_url, session):
-                continue
-            repos_to_scan.append(repo)
 
+        # Prefetch all starred repositories
         starred_repos = 0
         while starred._couldGrow():
             starred_repos += 1
@@ -100,21 +94,32 @@ def get_user_repos(user_login: str, skip=True):
                 return user_too_big_message
 
             call_github_function(starred, '_grow', [])
-        # Check stars. In here we need to check if the user collaborated in the repo.
-        for star in starred:
-            # Don't scan the repo
-            # - Add it if it's not yet added
-            # - If we already scanned it in the last 24 hours
-            # - If the user is a collaborator in this repo
-            if not Repository.should_scan(star.clone_url, session) or \
-                    not call_github_function(star, 'has_in_collaborators', [user]):
-                continue
 
-            repos_to_scan.append(star)
+        # Check own repositories. We assume that we are collaborating in those
+        for github_repo in owned:
+            repository = Repository.get_or_create(
+                session,
+                github_repo.clone_url,
+                github_repo.full_name
+            )
+            if not repository.should_scan():
+                continue
+            repos_to_scan.add(github_repo.full_name)
+
+        # Check stars and if the user collaborated to them.
+        for github_repo in starred:
+            repository = Repository.get_or_create(
+                session,
+                github_repo.clone_url,
+                github_repo.full_name
+            )
+            if not repository.should_scan():
+                continue
+            repos_to_scan.add(github_repo.full_name)
 
         response = {
             'message': f'Got repositories for {user.login}.',
-            'tasks': [r.full_name for r in repos_to_scan],
+            'tasks': list(repos_to_scan),
         }
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.

@@ -73,10 +73,10 @@ class CommitScanner():
                 break
 
             # Repo has been partially scanned and a this is a known commit.
-            elif not commit_known or not self.repository.completely_scanned:
+            elif commit_known and not self.repository.completely_scanned:
                 [self.queue.appendleft(parent) for parent in commit.parents]
-            # This is an unknown commit.
 
+            # This is an unknown commit.
             elif not commit_known:
                 self.scan_commit(commit)
                 [self.queue.appendleft(parent) for parent in commit.parents]
