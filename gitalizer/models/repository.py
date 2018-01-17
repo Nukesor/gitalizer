@@ -19,8 +19,9 @@ class Repository(db.Model):
     name = db.Column(db.String(240))
     created_at = db.Column(db.DateTime(timezone=True))
 
-    completely_scanned = db.Column(db.Boolean(), default=False, nullable=False)
+    fork = db.Column(db.Boolean(), default=False, nullable=False)
     broken = db.Column(db.Boolean(), default=False, nullable=False)
+    completely_scanned = db.Column(db.Boolean(), default=False, nullable=False)
 
     children = db.relationship("Repository", backref=backref('parent', remote_side=[clone_url]))
     commits = db.relationship("Commit", back_populates="repository")
@@ -40,6 +41,7 @@ class Repository(db.Model):
 
     @staticmethod
     def get_or_create(session, clone_url: str, name=None):
+        """Get an existing repository from db or create a new one."""
         repo = session.query(Repository).get(clone_url)
 
         if not repo:
@@ -55,7 +57,7 @@ class Repository(db.Model):
         If that is the case, we want to skip it.
         """
         timeout_threshold = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
-        if self.completely_scanned and self.updated_at >= timeout_threshold:
+        if not self.fork or (self.completely_scanned and self.updated_at >= timeout_threshold):
             return False
 
         return True

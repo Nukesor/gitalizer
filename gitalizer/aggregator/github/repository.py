@@ -45,15 +45,6 @@ def get_github_repository(full_name: str):
         elif repository.broken:
             return {'message': f'Skip broken repo {github_repo.clone_url}'}
 
-        # Handle github_repo forks
-        for fork in call_github_function(github_repo, 'get_forks'):
-            fork_repo = session.query(Repository).get(fork.clone_url)
-            if not fork_repo:
-                fork_repo = Repository(fork.clone_url, fork.name)
-            fork_repo.parent = repository
-            session.add(fork_repo)
-        session.commit()
-
         current_time = datetime.now().strftime('%H:%M')
 
         owner = get_github_object(github_repo, 'owner')

@@ -100,10 +100,16 @@ def get_user_repos(user_login: str, skip=True):
             repository = Repository.get_or_create(
                 session,
                 github_repo.clone_url,
-                github_repo.full_name
+                github_repo.full_name,
             )
+            if github_repo.fork:
+                check_fork(github_repo, user_login, session, repository, repos_to_scan)
+            session.add(repository)
+
             if not repository.should_scan():
                 continue
+
+            session.commit()
             repos_to_scan.add(github_repo.full_name)
 
         # Check stars and if the user collaborated to them.
@@ -111,12 +117,21 @@ def get_user_repos(user_login: str, skip=True):
             repository = Repository.get_or_create(
                 session,
                 github_repo.clone_url,
-                github_repo.full_name
+                github_repo.full_name,
             )
-            if not repository.should_scan():
+
+            if github_repo.fork:
+                check_fork(github_repo, user_login, session, repository, repos_to_scan)
+            session.add(repository)
+
+            if not repository.should_scan() and \
+                    not call_github_function(github_repo, 'has_in_collaborators', [user]):
                 continue
+
+            session.commit()
             repos_to_scan.add(github_repo.full_name)
 
+        session.commit()
         response = {
             'message': f'Got repositories for {user.login}.',
             'tasks': list(repos_to_scan),
@@ -129,4 +144,34 @@ def get_user_repos(user_login: str, skip=True):
             'error': traceback.format_exc(),
         }
         pass
+    finally:
+        session.close()
+
     return response
+
+
+def check_fork(github_repo, user_login, session, repository, scan_list):
+    """Handle github_repo forks."""
+    # Create parent repository
+    parent_repository = Repository.get_or_create(
+        session,
+        github_repo.parent.clone_url,
+        github_repo.parent.name,
+    )
+
+    # Check if the parent isn't set yet.
+    if repository.parent:
+        if parent_repository.should_scan():
+            scan_list.add(github_repo.parent.full_name)
+        return
+
+    repository.parent = parent_repository
+    # If the names are identical it's likely not spite/hate fork.
+    if github_repo.parent.name == github_repo.name:
+        repository.fork = True
+
+        contributed = call_github_function(
+            github_repo.parent,
+            'has_in_collaborators', [user_login])
+        if contributed and parent_repository.should_scan():
+            scan_list.add(github_repo.parent.full_name)
