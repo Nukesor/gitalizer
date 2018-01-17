@@ -1,5 +1,6 @@
 """This module extends the `flask` command with various `click` subcommands."""
 
+import sys
 import click
 import urllib.parse
 from flask import url_for
@@ -69,7 +70,7 @@ def register_cli(app):  # pragma: no cover
             get_user_by_name(name)
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
-            pass
+            sys.exit(1)
 
     @app.cli.command()
     @click.argument('name')
@@ -80,7 +81,7 @@ def register_cli(app):  # pragma: no cover
             get_friends_by_name(name)
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
-            pass
+            sys.exit(1)
 
     @app.cli.command()
     @click.argument('owner')
@@ -92,7 +93,7 @@ def register_cli(app):  # pragma: no cover
             get_github_repository_by_owner_name(owner, repository)
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
-            pass
+            sys.exit(1)
 
     @app.cli.command()
     def get_organizations():
@@ -101,7 +102,7 @@ def register_cli(app):  # pragma: no cover
             get_github_organizations()
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
-            pass
+            sys.exit(1)
 
     @app.cli.command()
     @click.argument('owner')
@@ -111,4 +112,4 @@ def register_cli(app):  # pragma: no cover
             plot_user_func(owner)
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
-            pass
+            sys.exit(1)

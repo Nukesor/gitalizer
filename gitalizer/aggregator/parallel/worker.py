@@ -27,6 +27,8 @@ class Worker(multiprocessing.Process):
                 self.task_queue.task_done()
                 self.result_queue.put(answer)
                 time.sleep(1)
+            except KeyboardInterrupt:
+                break
             except BaseException:
                 sentry.sentry.captureException()
         return
