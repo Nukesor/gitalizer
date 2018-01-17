@@ -1,6 +1,6 @@
 """Representation of a git repository contributer."""
 
-from datetime import datetime, timedelta
+from flask import current_app
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
 
@@ -82,17 +82,19 @@ class Contributer(db.Model):
 
         raise exception
 
-    @staticmethod
-    def should_scan(login: str, session):
+    def should_scan(self):
         """Check if the user has been scanned in the last day.
 
         If that is the case, we want to skip it.
         """
-        time_boundary = datetime.utcnow() - timedelta(hours=24)
-        contributer = session.query(Contributer) \
-            .filter(Contributer.login == login) \
-            .filter(Contributer.full_scan >= time_boundary) \
-            .one_or_none()
-        if contributer:
-            return False
-        return True
+        timeout = current_app.config['REPOSITORY_RESCAN_TIMEOUT']
+        for repository in self.repositories:
+            if repository.fork:
+                continue
+
+            if repository.completely_scanned and repository.updated_at <= timeout:
+                continue
+
+            return True
+
+        return False

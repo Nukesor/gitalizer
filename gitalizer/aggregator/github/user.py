@@ -4,7 +4,7 @@ from flask import current_app
 
 from gitalizer.models import Repository, Contributer
 from gitalizer.extensions import github, sentry
-from gitalizer.aggregator.github import call_github_function
+from gitalizer.aggregator.github import call_github_function, get_github_object
 from gitalizer.aggregator.parallel import new_session
 from gitalizer.aggregator.parallel.manager import Manager
 
@@ -49,17 +49,24 @@ def get_user_repos(user_login: str, skip=True):
     """Get all relevant Information for a single user."""
     try:
         session = new_session()
-        user = call_github_function(github.github, 'get_user', [user_login])
-        owned = user.get_repos()
-        starred = user.get_starred()
-        repos_to_scan = set()
         contributer = Contributer.get_contributer(user_login, session)
+        # Checks for already scanned users.
+        if not contributer.should_scan():
+            return {
+                'message': f'User {user_login} is already up to date',
+                'tasks': [],
+            }
         user_too_big_message = {
             'message': f'User {user_login} has too many repositories',
             'error': 'Too big',
         }
         if contributer.too_big:
             return user_too_big_message
+
+        user = call_github_function(github.github, 'get_user', [user_login])
+        owned = user.get_repos()
+        starred = user.get_starred()
+        repos_to_scan = set()
 
         # Prefetch all owned repositories
         owned_repos = 0
@@ -152,6 +159,8 @@ def get_user_repos(user_login: str, skip=True):
 
 def check_fork(github_repo, user_login, session, repository, scan_list):
     """Handle github_repo forks."""
+    # Complete github repository in case it's not set yet.
+    get_github_object(github_repo, 'clone_url')
     # Create parent repository
     parent_repository = Repository.get_or_create(
         session,
