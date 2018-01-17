@@ -160,7 +160,7 @@ def get_user_repos(user_login: str, skip=True):
 def check_fork(github_repo, user_login, session, repository, scan_list):
     """Handle github_repo forks."""
     # Complete github repository in case it's not set yet.
-    get_github_object(github_repo, 'clone_url')
+    call_github_function(github_repo.parent, '_completeIfNeeded', [])
     # Create parent repository
     parent_repository = Repository.get_or_create(
         session,
