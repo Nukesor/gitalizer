@@ -1,6 +1,7 @@
 """Representation of a git repository contributer."""
 
 from flask import current_app
+from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
 
@@ -87,7 +88,10 @@ class Contributer(db.Model):
 
         If that is the case, we want to skip it.
         """
-        timeout = current_app.config['REPOSITORY_RESCAN_TIMEOUT']
+        timeout = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
+        if len(self.repositories) == 0:
+            return True
+
         for repository in self.repositories:
             if repository.fork:
                 continue
