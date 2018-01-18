@@ -27,7 +27,7 @@ def plot_user_repositories_changes(contributer, path):
     """Box plot the contributions to a specific repository."""
     path = os.path.join(path, 'repo_changes')
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
     repositories = get_user_repositories(contributer)
     for repository in repositories:
         commits = db.session.query(Commit) \
@@ -44,7 +44,8 @@ def plot_user_repositories_changes(contributer, path):
         if len(commits) < 20:
             continue
 
-        plot_path = os.path.join(path, repository.name)
+        name = repository.full_name.replace('/', '---')
+        plot_path = os.path.join(path, name)
         title = ('Commit size history for repository '
                  f'`{repository.name}` and contributer `{contributer.login}`')
         plot_repository_changes(commits, plot_path, title)
