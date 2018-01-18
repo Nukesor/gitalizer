@@ -84,6 +84,15 @@ def get_github_object(github_object: object, object_name: str):
             _try += 1
             exception = e
             pass
+        except GithubException as e:
+            seconds = randrange(180, 480)
+            current_app.logger.info('GithubException. Probably abuse detection.')
+            current_app.logger.info(f'Waiting for {seconds} seconds')
+            time.sleep(seconds)
+
+            _try += 1
+            exception = e
+            pass
         except timeout as e:
             current_app.logger.info('Hit socket timeout waiting 10 secs.')
             _try += 1

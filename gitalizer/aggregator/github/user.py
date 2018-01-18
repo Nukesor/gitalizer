@@ -107,7 +107,8 @@ def get_user_repos(user_login: str, skip=True):
             repository = Repository.get_or_create(
                 session,
                 github_repo.clone_url,
-                github_repo.full_name,
+                name=github_repo.name,
+                full_name=github_repo.full_name,
             )
             if github_repo.fork:
                 check_fork(github_repo, user_login, session, repository, repos_to_scan)
@@ -124,7 +125,8 @@ def get_user_repos(user_login: str, skip=True):
             repository = Repository.get_or_create(
                 session,
                 github_repo.clone_url,
-                github_repo.full_name,
+                name=github_repo.name,
+                full_name=github_repo.full_name,
             )
 
             if github_repo.fork:
@@ -160,12 +162,13 @@ def get_user_repos(user_login: str, skip=True):
 def check_fork(github_repo, user_login, session, repository, scan_list):
     """Handle github_repo forks."""
     # Complete github repository in case it's not set yet.
-    call_github_function(github_repo.parent, '_completeIfNeeded', [])
+    get_github_object(github_repo, 'parent')
     # Create parent repository
     parent_repository = Repository.get_or_create(
         session,
         github_repo.parent.clone_url,
-        github_repo.parent.name,
+        name=github_repo.parent.name,
+        full_name=github_repo.parent.full_name,
     )
 
     # Check if the parent isn't set yet.

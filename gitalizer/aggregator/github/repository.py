@@ -37,12 +37,15 @@ def get_github_repository(full_name: str):
 
         github_repo = call_github_function(github.github, 'get_repo',
                                            [full_name], {'lazy': False})
-        repository = session.query(Repository).get(github_repo.clone_url)
-        if not repository:
-            repository = Repository(github_repo.clone_url, github_repo.name)
-            session.add(repository)
-            session.commit()
-        elif repository.broken:
+
+        repository = Repository.get_or_create(
+            session,
+            github_repo.clone_url,
+            name=github_repo.name,
+            full_name=github_repo.full_name,
+        )
+
+        if repository.broken:
             return {'message': f'Skip broken repo {github_repo.clone_url}'}
 
         current_time = datetime.now().strftime('%H:%M')

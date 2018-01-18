@@ -24,7 +24,11 @@ class Repository(db.Model):
     completely_scanned = db.Column(db.Boolean(), default=False, nullable=False)
 
     children = db.relationship("Repository", backref=backref('parent', remote_side=[clone_url]))
-    commits = db.relationship("Commit", back_populates="repository")
+    commits = db.relationship(
+        "Commit",
+        cascade="delete",
+        back_populates="repository",
+    )
     contributors = db.relationship(
         "Contributer",
         secondary=contributer_repositories,
@@ -34,20 +38,25 @@ class Repository(db.Model):
         nullable=False,
     )
 
-    def __init__(self, clone_url, name=None):
+    def __init__(self, clone_url, name=None, full_name=None):
         """Constructor."""
         self.clone_url = clone_url
         self.name = name
+        self.full_name = full_name
 
     @staticmethod
-    def get_or_create(session, clone_url: str, name=None):
+    def get_or_create(session, clone_url: str, name=None, full_name=None):
         """Get an existing repository from db or create a new one."""
         repo = session.query(Repository).get(clone_url)
 
         if not repo:
-            repo = Repository(clone_url, name)
+            repo = Repository(clone_url, name, full_name)
             session.add(repo)
             session.commit()
+
+        repo.name = name
+        repo.full_name = full_name
+        session.add(repo)
 
         return repo
 
