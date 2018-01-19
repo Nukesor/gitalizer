@@ -21,6 +21,7 @@ class Repository(db.Model):
         index=True,
     )
     name = db.Column(db.String(240))
+    full_name = db.Column(db.String(240))
     created_at = db.Column(db.DateTime(timezone=True))
 
     fork = db.Column(db.Boolean(), default=False, nullable=False)
