@@ -9,7 +9,7 @@ from sqlalchemy_utils.functions import database_exists, create_database, drop_da
 from gitalizer.plot import plot_user as plot_user_func
 from gitalizer.extensions import db
 from gitalizer.models.user import User
-from gitalizer.helpers.cleanup import clean_db
+from gitalizer.helpers.hotfixes import clean_db, complete_data
 from gitalizer.aggregator.github.repository import (
     get_github_repository_by_owner_name,
     get_github_repository_users,
@@ -143,10 +143,19 @@ def register_cli(app):  # pragma: no cover
             sys.exit(1)
 
     @app.cli.command()
-    def clean_up():
+    def clean():
         """Plot all graphs for a specific github user."""
         try:
             clean_db()
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            sys.exit(1)
+
+    @app.cli.command()
+    def complete():
+        """Plot all graphs for a specific github user."""
+        try:
+            complete_data()
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
             sys.exit(1)
