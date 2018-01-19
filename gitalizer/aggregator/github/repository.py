@@ -10,6 +10,7 @@ from pygit2 import GitError
 from gitalizer.extensions import github, sentry
 from gitalizer.models.repository import Repository
 from gitalizer.aggregator.parallel import new_session
+from gitalizer.aggregator.parallel.manager import Manager
 from gitalizer.aggregator.git.commit import CommitScanner
 from gitalizer.aggregator.git.repository import get_git_repository, delete_git_repository
 from gitalizer.aggregator.github import (
@@ -25,6 +26,21 @@ def get_github_repository_by_owner_name(owner: str, name: str):
     print(response['message'])
     if 'error' in response:
         print(response['error'])
+
+
+def get_github_repository_users(full_name: str):
+    """Get all collaborators of a repository."""
+    repo = call_github_function(github.github, 'get_repo', [full_name])
+    collaborators = call_github_function(repo, 'get_collaborators')
+    while collaborators._couldGrow():
+        call_github_function(collaborators, '_grow')
+
+    collaborator_list = [c.login for c in collaborators]
+
+    sub_manager = Manager('github_repository', [])
+    manager = Manager('github_contributer', collaborator_list, sub_manager)
+    manager.start()
+    manager.run()
 
 
 def get_github_repository(full_name: str):

@@ -10,8 +10,14 @@ from gitalizer.plot import plot_user as plot_user_func
 from gitalizer.extensions import db
 from gitalizer.models.user import User
 from gitalizer.helpers.cleanup import clean_db
-from gitalizer.aggregator.github.repository import get_github_repository_by_owner_name
-from gitalizer.aggregator.github.organization import get_github_organizations
+from gitalizer.aggregator.github.repository import (
+    get_github_repository_by_owner_name,
+    get_github_repository_users,
+)
+from gitalizer.aggregator.github.organization import (
+    get_github_organization,
+    get_github_organizations,
+)
 from gitalizer.aggregator.github.user import (
     get_user_by_name,
     get_friends_by_name,
@@ -92,6 +98,27 @@ def register_cli(app):  # pragma: no cover
         try:
             app.logger.info(f'\n\nGet {repository} from user {owner}')
             get_github_repository_by_owner_name(owner, repository)
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            sys.exit(1)
+
+    @app.cli.command()
+    @click.argument('full_name')
+    def get_repository_users(full_name):
+        """Get a github repository by owner and name."""
+        try:
+            app.logger.info(f'\n\nGet users from {full_name}')
+            get_github_repository_users(full_name)
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            sys.exit(1)
+
+    @app.cli.command()
+    @click.argument('orga')
+    def get_organization(orga):
+        """Get github organizations for all known contributers."""
+        try:
+            get_github_organization(orga)
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
             sys.exit(1)

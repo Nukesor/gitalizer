@@ -5,9 +5,11 @@ from flask import current_app
 from datetime import datetime, timedelta
 
 from gitalizer.extensions import github
-from gitalizer.models import Contributer, Organization
+from gitalizer.models import Contributer, Organization, Repository
 from gitalizer.aggregator.github import call_github_function
 from gitalizer.aggregator.parallel import new_session
+from gitalizer.aggregator.parallel.manager import Manager
+from gitalizer.aggregator.github.user import check_fork
 
 
 def get_github_organizations():
@@ -34,3 +36,45 @@ def get_github_organizations():
         contributer.last_check = datetime.utcnow()
         session.add(contributer)
         session.commit()
+
+
+def get_github_organization(name: str):
+    """Get all collaborators of an organization."""
+    session = new_session()
+    orga = call_github_function(github.github, 'get_organization', [name])
+
+    # Get orga repos
+    orga_repos = call_github_function(orga, 'get_repos')
+    while orga_repos ._couldGrow():
+        call_github_function(orga_repos, '_grow')
+
+    # Check orga repos
+    repos_to_scan = []
+    for github_repo in orga_repos:
+        repository = Repository.get_or_create(
+            session,
+            github_repo.clone_url,
+            name=github_repo.name,
+            full_name=github_repo.full_name,
+        )
+        if github_repo.fork:
+            check_fork(github_repo, session, repository, repos_to_scan)
+        session.add(repository)
+
+        if not repository.should_scan():
+            continue
+
+        session.commit()
+        repos_to_scan.add(github_repo.full_name)
+
+    # Get members
+    members = call_github_function(orga, 'get_members')
+    while members._couldGrow():
+        call_github_function(members, '_grow')
+    member_list = [m.login for m in members]
+
+    # Create and start manager with orga repos and memeber_list
+    sub_manager = Manager('github_repository', repos_to_scan)
+    manager = Manager('github_contributer', member_list, sub_manager)
+    manager.start()
+    manager.run()

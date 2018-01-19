@@ -83,7 +83,7 @@ def get_user_repos(user_login: str, skip=True):
                 session.commit()
                 return user_too_big_message
 
-            call_github_function(owned, '_grow', [])
+            call_github_function(owned, '_grow')
 
         # Prefetch all starred repositories
         starred_repos = 0
@@ -100,7 +100,7 @@ def get_user_repos(user_login: str, skip=True):
                 session.commit(contributer)
                 return user_too_big_message
 
-            call_github_function(starred, '_grow', [])
+            call_github_function(starred, '_grow')
 
         # Check own repositories. We assume that we are collaborating in those
         for github_repo in owned:
@@ -111,7 +111,8 @@ def get_user_repos(user_login: str, skip=True):
                 full_name=github_repo.full_name,
             )
             if github_repo.fork:
-                check_fork(github_repo, user_login, session, repository, repos_to_scan)
+                check_fork(github_repo, session, repository,
+                           repos_to_scan, user_login)
             session.add(repository)
 
             if not repository.should_scan():
@@ -130,7 +131,8 @@ def get_user_repos(user_login: str, skip=True):
             )
 
             if github_repo.fork:
-                check_fork(github_repo, user_login, session, repository, repos_to_scan)
+                check_fork(github_repo, session, repository,
+                           repos_to_scan, user_login)
             session.add(repository)
 
             if not repository.should_scan() and \
@@ -159,7 +161,7 @@ def get_user_repos(user_login: str, skip=True):
     return response
 
 
-def check_fork(github_repo, user_login, session, repository, scan_list):
+def check_fork(github_repo, session, repository, scan_list, user_login=None):
     """Handle github_repo forks."""
     # Complete github repository in case it's not set yet.
     get_github_object(github_repo, 'parent')
@@ -182,8 +184,12 @@ def check_fork(github_repo, user_login, session, repository, scan_list):
     if github_repo.parent.name == github_repo.name:
         repository.fork = True
 
-        contributed = call_github_function(
-            github_repo.parent,
-            'has_in_collaborators', [user_login])
+        if user_login:
+            contributed = call_github_function(
+                github_repo.parent,
+                'has_in_collaborators', [user_login])
+        else:
+            contributed = True
+
         if contributed and parent_repository.should_scan():
             scan_list.add(github_repo.parent.full_name)
