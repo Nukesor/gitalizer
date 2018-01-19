@@ -15,7 +15,11 @@ class Repository(db.Model):
     __tablename__ = 'repository'
 
     clone_url = db.Column(db.String(240), primary_key=True)
-    parent_url = db.Column(db.String(240), ForeignKey('repository.clone_url'), index=True)
+    parent_url = db.Column(
+        db.String(240),
+        ForeignKey('repository.clone_url', ondelete='SET NULL'),
+        index=True,
+    )
     name = db.Column(db.String(240))
     created_at = db.Column(db.DateTime(timezone=True))
 
@@ -23,7 +27,11 @@ class Repository(db.Model):
     broken = db.Column(db.Boolean(), default=False, nullable=False)
     completely_scanned = db.Column(db.Boolean(), default=False, nullable=False)
 
-    children = db.relationship("Repository", backref=backref('parent', remote_side=[clone_url]))
+    children = db.relationship(
+        "Repository",
+        cascade="delete",
+        backref=backref('parent', remote_side=[clone_url]),
+    )
     commits = db.relationship(
         "Commit",
         cascade="delete",
