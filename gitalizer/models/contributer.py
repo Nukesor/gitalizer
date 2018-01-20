@@ -88,7 +88,7 @@ class Contributer(db.Model):
 
         If that is the case, we want to skip it.
         """
-        timeout = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
+        timeout = datetime.utcnow() - current_app.config['CONTRIBUTER_RESCAN_TIMEOUT']
         if len(self.repositories) == 0:
             return True
 
