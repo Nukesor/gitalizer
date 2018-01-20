@@ -1,6 +1,7 @@
 """Data collection from Github."""
 from collections import deque
 from pygit2 import Repository, GitError
+from sqlalchemy.orm import joinedload
 from github import Repository as Github_Repository
 from datetime import datetime, timedelta, timezone
 
@@ -20,7 +21,9 @@ class CommitScanner():
                  github_repo: Github_Repository=None):
         """Initialize a new CommitChecker."""
         self.session = session
-        self.repository = session.query(RepositoryModel).get(github_repo.clone_url)
+        self.repository = session.query(RepositoryModel) \
+            .options(joinedload(RepositoryModel.commits_by_hash)) \
+            .get(github_repo.clone_url)
         self.git_repo = git_repo
         self.github_repo = github_repo
         self.queue = deque()
@@ -67,7 +70,7 @@ class CommitScanner():
                     'deletions': diff.stats.deletions,
                 }
 
-            commit_known = self.commit_known(commit)
+            commit_known = commit.hex in self.repository.commits_by_hash
             # Repo has been completely scanned and a this is a known commit.
             if commit_known and self.repository.completely_scanned:
                 break
@@ -92,18 +95,6 @@ class CommitScanner():
 
         self.session.commit()
         return self.scanned_commits
-
-    def commit_known(self, git_commit):
-        """Check if we already scanned this commit."""
-        commit = self.session.query(Commit) \
-            .filter(Commit.sha == git_commit.hex) \
-            .filter(Commit.repository == self.repository) \
-            .one_or_none()
-
-        if commit:
-            return True
-
-        return False
 
     def scan_commit(self, git_commit):
         """Get all features of a specific commit."""

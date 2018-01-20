@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import current_app
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import backref
+from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from gitalizer.extensions import db
 from gitalizer.models.contributer import contributer_repositories
@@ -33,11 +34,19 @@ class Repository(db.Model):
         cascade="delete",
         backref=backref('parent', remote_side=[clone_url]),
     )
+
     commits = db.relationship(
         "Commit",
         cascade="delete",
         back_populates="repository",
     )
+    commits_by_hash = db.relationship(
+        "Commit",
+        collection_class=attribute_mapped_collection('sha'),
+        cascade="delete",
+        back_populates="repository",
+    )
+
     contributors = db.relationship(
         "Contributer",
         secondary=contributer_repositories,
