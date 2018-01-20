@@ -15,6 +15,7 @@ class Manager():
         self.tasks = set(tasks)
         self.task_type = task_type
         self.sub_manager = sub_manager
+        self.started = False
 
         self.task_queue = multiprocessing.JoinableQueue()
         self.result_queue = multiprocessing.Queue()
@@ -33,14 +34,15 @@ class Manager():
 
         for task in self.tasks:
             self.task_queue.put(Task(self.task_type, task))
+        self.started = True
 
     def add_tasks(self, tasks: list):
         """Add some tasks to the queue."""
         # Add unique tasks to queue
         tasks = set(tasks)
-        for task in (tasks - self.tasks):
-            # current_app.logger.info(f'Added task {task} for type {self.task_type}')
-            self.task_queue.put(Task(self.task_type, task))
+        if self.started:
+            for task in (tasks - self.tasks):
+                self.task_queue.put(Task(self.task_type, task))
 
         # Add new tasks to task set.
         self.tasks |= tasks
@@ -50,7 +52,6 @@ class Manager():
         # Start the sub manager
         if self.sub_manager is not None:
             current_app.logger.info('Start sub manager.')
-            self.sub_manager.start()
 
         # Poison pill for user scanner
         current_app.logger.info('Add poison pills.')
@@ -75,4 +76,5 @@ class Manager():
         # All sub tasks have been added.
         # Wait for them to finish.
         if self.sub_manager is not None:
+            self.sub_manager.start()
             self.sub_manager.run()
