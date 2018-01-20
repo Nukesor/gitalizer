@@ -7,6 +7,10 @@ from gitalizer.extensions import github, sentry
 from gitalizer.aggregator.github import call_github_function, get_github_object
 from gitalizer.aggregator.parallel import new_session
 from gitalizer.aggregator.parallel.manager import Manager
+from gitalizer.aggregator.parallel.messages import (
+    user_too_big_message,
+    user_up_to_date_message,
+)
 
 
 def get_friends_by_name(name: str):
@@ -52,16 +56,9 @@ def get_user_repos(user_login: str, skip=True):
         contributer = Contributer.get_contributer(user_login, session)
         # Checks for already scanned users.
         if not contributer.should_scan():
-            return {
-                'message': f'User {user_login} is already up to date',
-                'tasks': [],
-            }
-        user_too_big_message = {
-            'message': f'User {user_login} has too many repositories',
-            'error': 'Too big',
-        }
+            return user_up_to_date_message(user_login)
         if contributer.too_big:
-            return user_too_big_message
+            return user_too_big_message(user_login)
 
         user = call_github_function(github.github, 'get_user', [user_login])
         owned = user.get_repos()
@@ -69,38 +66,39 @@ def get_user_repos(user_login: str, skip=True):
         repos_to_scan = set()
 
         # Prefetch all owned repositories
+        user_too_big = False
         owned_repos = 0
-        while owned._couldGrow():
+        while owned._couldGrow() and not user_too_big:
             owned_repos += 1
+            call_github_function(owned, '_grow')
+
             # Debug messages to see that the repositories are still collected.
             if owned_repos % 100 == 0:
                 current_app.logger.info(f'{owned_repos} owned repos for user {user_login}.')
 
             # The user is too big. Just drop him.
             if skip and owned_repos > current_app.config['GITHUB_USER_SKIP_COUNT']:
-                contributer.too_big = True
-                session.add(contributer)
-                session.commit()
-                return user_too_big_message
-
-            call_github_function(owned, '_grow')
+                user_too_big = True
 
         # Prefetch all starred repositories
         starred_repos = 0
-        while starred._couldGrow():
+        while starred._couldGrow() and not user_too_big:
             starred_repos += 1
+            call_github_function(starred, '_grow')
             # Debug messages to see that the repositories are still collected.
             if starred_repos % 100 == 0:
                 current_app.logger.info(f'{starred_repos} starred repos for user {user_login}.')
 
             # The user is too big. Just drop him.
             if skip and starred_repos > current_app.config['GITHUB_USER_SKIP_COUNT']:
-                contributer.too_big = True
-                session.add(contributer)
-                session.commit(contributer)
-                return user_too_big_message
+                user_too_big = True
 
-            call_github_function(starred, '_grow')
+        # User has too many repositories. Flag him and return
+        if user_too_big:
+            contributer.too_big = True
+            session.add(contributer)
+            session.commit(contributer)
+            return user_too_big_message(user_login)
 
         # Check own repositories. We assume that we are collaborating in those
         for github_repo in owned:
@@ -135,7 +133,7 @@ def get_user_repos(user_login: str, skip=True):
                            repos_to_scan, user_login)
             session.add(repository)
 
-            if not repository.should_scan() and \
+            if not repository.should_scan() or \
                     not call_github_function(github_repo, 'has_in_collaborators', [user]):
                 continue
 

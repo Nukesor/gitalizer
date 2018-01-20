@@ -11,6 +11,7 @@ from gitalizer.extensions import github, sentry
 from gitalizer.models.repository import Repository
 from gitalizer.aggregator.parallel import new_session
 from gitalizer.aggregator.parallel.manager import Manager
+from gitalizer.aggregator.parallel.messages import error_message
 from gitalizer.aggregator.git.commit import CommitScanner
 from gitalizer.aggregator.git.repository import get_git_repository, delete_git_repository
 from gitalizer.aggregator.github import (
@@ -90,9 +91,7 @@ def get_github_repository(full_name: str):
         message += f'Scanned {repository.clone_url} with {commit_count} commits.\n'
         message += f'{rate.remaining} of 5000 remaining. Reset at {time}\n'
 
-        response = {
-            'message': message,
-        }
+        response = {'message': message}
 
         repository.updated_at = datetime.now()
         session.add(repository)
@@ -108,31 +107,25 @@ def get_github_repository(full_name: str):
         else:
             sentry.sentry.captureException()
 
-        response = {
-            'message': 'Error in get repository:\n',
-            'error': traceback.format_exc(),
-        }
+        response = error_message('Error in get_repository:\n')
         pass
 
     except GitError as e:
         repository.broken = True
         session.add(repository)
         session.commit()
-        response = {
-            'message': 'Error in get repository:\n',
-            'error': traceback.format_exc(),
-        }
+        response = error_message('Error in get_repository:\n')
+        pass
 
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         sentry.sentry.captureException()
-        response = {
-            'message': f'Error in {github_repo.clone_url}:\n',
-            'error': traceback.format_exc(),
-        }
+        response = error_message('error in get_repository:\n')
         pass
+
     finally:
         if 'owner' in locals() and 'github_repo' in locals():
             delete_git_repository(owner.login, github_repo.name)
         session.close()
+
     return response

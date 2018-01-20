@@ -69,7 +69,6 @@ class Manager():
                 current_app.logger.info('Encountered an error:')
                 current_app.logger.info(result['error'])
             elif self.sub_manager is not None:
-                current_app.logger.info('Add Tasks')
                 self.sub_manager.add_tasks(result['tasks'])
             finished_tasks += 1
 
