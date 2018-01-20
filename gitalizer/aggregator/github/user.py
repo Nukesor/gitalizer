@@ -143,8 +143,12 @@ def get_user_repos(user_login: str, skip=True):
             repos_to_scan.add(github_repo.full_name)
 
         session.commit()
+
+        rate = github.github.get_rate_limit().rate
+        message = f'Got repositories for {user.login}. '
+        message += f'{user.login}. {rate.remaining} of 5000 remaining.'
         response = {
-            'message': f'Got repositories for {user.login}.',
+            'message': message,
             'tasks': list(repos_to_scan),
         }
     except BaseException as e:
