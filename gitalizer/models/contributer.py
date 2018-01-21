@@ -4,6 +4,7 @@ from flask import current_app
 from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from gitalizer.extensions import db
 
@@ -55,7 +56,7 @@ class Contributer(db.Model):
         return f'<User {self.login}>'
 
     @staticmethod
-    def get_contributer(login: str, session):
+    def get_contributer(login: str, session, eager_repositories=False):
         """Create new contributer or add repository to it's list.
 
         Try multiple times, as we can get Multiple additions through threading.
@@ -65,7 +66,10 @@ class Contributer(db.Model):
         exception = None
         while _try <= tries:
             try:
-                contributer = session.query(Contributer).get(login)
+                contributer = session.query(Contributer)
+                if eager_repositories:
+                    contributer.options(joinedload(Contributer.repositories))
+                contributer = contributer.get(login)
                 if not contributer:
                     # Commit to prevent data loss in case we get an
                     # integrity error and need to rollback.
@@ -93,7 +97,7 @@ class Contributer(db.Model):
             return True
 
         for repository in self.repositories:
-            if repository.fork:
+            if repository.fork or repository.broken:
                 continue
 
             if repository.completely_scanned and repository.updated_at <= timeout:

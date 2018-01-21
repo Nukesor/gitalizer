@@ -53,7 +53,7 @@ def get_user_repos(user_login: str, skip=True):
     """Get all relevant Information for a single user."""
     try:
         session = new_session()
-        contributer = Contributer.get_contributer(user_login, session)
+        contributer = Contributer.get_contributer(user_login, session, True)
         # Checks for already scanned users.
         if not contributer.should_scan():
             return user_up_to_date_message(user_login)
