@@ -84,7 +84,9 @@ class Repository(db.Model):
         If that is the case, we want to skip it.
         """
         timeout_threshold = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
-        if not self.fork or (self.completely_scanned and self.updated_at >= timeout_threshold):
+        up_to_date = self.completely_scanned and self.updated_at <= timeout_threshold
+
+        if self.fork or self.broken or up_to_date:
             return False
 
         return True

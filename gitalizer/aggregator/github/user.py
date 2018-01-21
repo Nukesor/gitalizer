@@ -68,7 +68,7 @@ def get_user_repos(user_login: str, skip=True):
         # Prefetch all owned repositories
         user_too_big = False
         owned_repos = 0
-        while owned._couldGrow() and not user_too_big:
+        while False and owned._couldGrow() and not user_too_big:
             owned_repos += 1
             call_github_function(owned, '_grow')
 
@@ -101,7 +101,7 @@ def get_user_repos(user_login: str, skip=True):
             return user_too_big_message(user_login)
 
         # Check own repositories. We assume that we are collaborating in those
-        for github_repo in owned:
+        for github_repo in []:
             repository = Repository.get_or_create(
                 session,
                 github_repo.clone_url,
@@ -133,11 +133,9 @@ def get_user_repos(user_login: str, skip=True):
                            repos_to_scan, user_login)
             session.add(repository)
 
-            if not repository.should_scan() or \
-                    not call_github_function(github_repo, 'has_in_collaborators', [user]):
+            if not repository.should_scan():
                 continue
 
-            session.commit()
             repos_to_scan.add(github_repo.full_name)
 
         session.commit()

@@ -92,15 +92,15 @@ class Contributer(db.Model):
 
         If that is the case, we want to skip it.
         """
-        timeout = datetime.utcnow() - current_app.config['CONTRIBUTER_RESCAN_TIMEOUT']
-        if len(self.repositories) == 0:
+        no_repositories = len(self.repositories) == 0
+        if no_repositories:
             return True
 
-        for repository in self.repositories:
-            if repository.fork or repository.broken:
-                continue
+        timeout = datetime.utcnow() - current_app.config['CONTRIBUTER_RESCAN_TIMEOUT']
 
-            if repository.completely_scanned and repository.updated_at <= timeout:
+        for repository in self.repositories:
+            up_to_date = repository.completely_scanned and repository.updated_at <= timeout
+            if repository.fork or repository.broken or up_to_date:
                 continue
 
             return True
