@@ -9,5 +9,8 @@ echo "commit count: $result"
 result=$(psql -d gitalizer -t -c 'SELECT count(*) FROM repository;')
 echo "repository count: $result"
 
+result=$(psql -d gitalizer -t -c 'SELECT count(*) FROM repository WHERE completely_scanned = TRUE OR broken = TRUE OR fork = TRUE;')
+echo "Finished or filtered repository count: $result"
+
 result=$(psql -d gitalizer -t -c 'SELECT count(*) FROM contributer;')
 echo "contributer count: $result"

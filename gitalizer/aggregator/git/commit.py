@@ -93,6 +93,7 @@ class CommitScanner():
             utc_offset = timezone(timedelta(minutes=all_commits[-1].author.offset))
             self.repository.created_at = datetime.fromtimestamp(timestamp, utc_offset)
 
+        self.repository.add(self.repository)
         self.session.commit()
         return self.scanned_commits
 
