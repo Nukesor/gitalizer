@@ -1,11 +1,7 @@
 """Clean stuff from db, which occured through bugs."""
-from gitalizer.extensions import db, github
+from sqlalchemy import func
+from gitalizer.extensions import db
 from gitalizer.models import Repository, Commit
-
-from gitalizer.aggregator.github import (
-    call_github_function,
-    get_github_object,
-)
 
 
 def clean_db():
@@ -50,3 +46,14 @@ def complete_data():
         db.session.add(repo)
 
     db.session.commit()
+
+
+def migrate():
+    """Migrate data in case of drastic db changes."""
+    commits = db.session.query(Commit.sha, func.count(Commit.sha)) \
+        .group_by(Commit.sha) \
+        .limit(100000) \
+        .all()
+
+    import pprint
+    pprint.pprint(commits)

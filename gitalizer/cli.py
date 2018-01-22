@@ -9,7 +9,11 @@ from sqlalchemy_utils.functions import database_exists, create_database, drop_da
 from gitalizer.plot import plot_user as plot_user_func
 from gitalizer.extensions import db
 from gitalizer.models.user import User
-from gitalizer.helpers.hotfixes import clean_db, complete_data
+from gitalizer.helpers.hotfixes import (
+    clean_db,
+    complete_data,
+    migrate as migrate_data,
+)
 from gitalizer.aggregator.github.repository import (
     get_github_repository_by_owner_name,
     get_github_repository_users,
@@ -153,9 +157,18 @@ def register_cli(app):  # pragma: no cover
 
     @app.cli.command()
     def complete():
-        """Plot all graphs for a specific github user."""
+        """Complete missing data from previous runs."""
         try:
             complete_data()
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            sys.exit(1)
+
+    @app.cli.command()
+    def migrate():
+        """Migrate data in case of significant schema changes."""
+        try:
+            migrate_data()
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
             sys.exit(1)
