@@ -37,14 +37,13 @@ class Repository(db.Model):
 
     commits = db.relationship(
         "Commit",
-        cascade="delete",
+        cascade="delete, delete-orphan",
         back_populates="repository",
     )
     commits_by_hash = db.relationship(
         "Commit",
         collection_class=attribute_mapped_collection('sha'),
-        cascade="delete",
-        back_populates="repository",
+        cascade="delete, delete-orphan",
     )
 
     contributors = db.relationship(
