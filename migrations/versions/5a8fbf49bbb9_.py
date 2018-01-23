@@ -19,6 +19,7 @@ depends_on = None
 
 def upgrade():
     """Upgrade."""
+    print("Create new table")
     # Create new table
     op.create_table(
         'commit_repositories',
@@ -28,6 +29,7 @@ def upgrade():
     op.create_index(op.f('ix_commit_repositories_commit_sha'), 'commit_repositories', ['commit_sha'], unique=False)
     op.create_index(op.f('ix_commit_repositories_repository_url'), 'commit_repositories', ['repository_url'], unique=False)
 
+    print("Copy data to new table.")
     # Copy data into new many to many relationship
     conn = op.get_bind()
     conn.execute(
@@ -37,6 +39,7 @@ def upgrade():
             FROM commit;
     """))
 
+    print("Drop old duplicates.")
     conn.execute(
         text("""
         DELETE
@@ -48,6 +51,7 @@ def upgrade():
             a.sha = b.sha;
     """))
 
+    print("Create new constraints and drop old fields.")
     # Create new commit unique constraint
     op.create_unique_constraint(None, 'commit', ['sha'])
 
