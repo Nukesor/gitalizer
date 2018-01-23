@@ -12,7 +12,6 @@ from gitalizer.models.user import User
 from gitalizer.helpers.hotfixes import (
     clean_db,
     complete_data,
-    migrate as migrate_data,
 )
 from gitalizer.aggregator.github.repository import (
     get_github_repository_by_owner_name,
@@ -160,15 +159,6 @@ def register_cli(app):  # pragma: no cover
         """Complete missing data from previous runs."""
         try:
             complete_data()
-        except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
-            sys.exit(1)
-
-    @app.cli.command()
-    def migrate():
-        """Migrate data in case of significant schema changes."""
-        try:
-            migrate_data()
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
             sys.exit(1)

@@ -11,7 +11,7 @@ commit_repositories = db.Table(
     'commit_repositories',
     db.Column('commit_sha', db.String(40), ForeignKey('commit.sha'), index=True),
     db.Column('repository_url', db.String(240), ForeignKey('repository.clone_url'), index=True),
-#    db.UniqueConstraint('repository_url', 'commit_sha'),
+    db.UniqueConstraint('repository_url', 'commit_sha'),
 )
 
 
@@ -20,7 +20,7 @@ class Commit(db.Model):
 
     __tablename__ = 'commit'
     __table_args__ = (
-#        UniqueConstraint('sha'),
+        UniqueConstraint('sha'),
         CheckConstraint(
             "(additions is NULL and deletions is NULL) or "
             "(additions is not NULL and deletions is not NULL)",
@@ -33,9 +33,6 @@ class Commit(db.Model):
     creation_time = db.Column(db.DateTime(timezone=True))
     additions = db.Column(db.Integer())
     deletions = db.Column(db.Integer())
-
-    ## TODO: DELETE
-    repository_url = db.Column(db.String(240), ForeignKey('repository.clone_url'),
 
     # Email addresses
     author_email_address = db.Column(
