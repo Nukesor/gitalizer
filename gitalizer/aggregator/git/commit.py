@@ -140,23 +140,28 @@ class CommitScanner():
             self.checked_emails.add(git_commit.author.email)
 
         try:
-            # Create a new commit and extract all valuable information
-            commit = Commit(git_commit.hex, self.repository,
-                            author_email, committer_email)
-            if git_commit.hex in self.commit_stats:
-                commit.additions = self.commit_stats[git_commit.hex]['additions']
-                commit.deletions = self.commit_stats[git_commit.hex]['deletions']
+            commit = self.session.query(Commit).filter(Commit.sha == git_commit.hex).one_or_none()
+            if commit:
+                # Commit already exists, we only need to add the repository.
+                commit.repositories.append(self.repository)
+            else:
+                # Create a new commit and extract all valuable information
+                commit = Commit(git_commit.hex, self.repository,
+                                author_email, committer_email)
+                if git_commit.hex in self.commit_stats:
+                    commit.additions = self.commit_stats[git_commit.hex]['additions']
+                    commit.deletions = self.commit_stats[git_commit.hex]['deletions']
 
-            # Get timestamp with utc offset
-            if git_commit.author:
-                timestamp = git_commit.author.time
-                utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
-                commit.creation_time = datetime.fromtimestamp(timestamp, utc_offset)
+                # Get timestamp with utc offset
+                if git_commit.author:
+                    timestamp = git_commit.author.time
+                    utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
+                    commit.creation_time = datetime.fromtimestamp(timestamp, utc_offset)
 
-            if git_commit.committer:
-                timestamp = git_commit.committer.time
-                utc_offset = timezone(timedelta(minutes=git_commit.committer.offset))
-                commit.commit_time = datetime.fromtimestamp(timestamp, utc_offset)
+                if git_commit.committer:
+                    timestamp = git_commit.committer.time
+                    utc_offset = timezone(timedelta(minutes=git_commit.committer.offset))
+                    commit.commit_time = datetime.fromtimestamp(timestamp, utc_offset)
 
             self.session.add(commit)
         except BaseException as e:
@@ -171,5 +176,5 @@ class CommitScanner():
 
         # Commit session every 20 commits to avoid loss of all data on crash.
         self.scanned_commits += 1
-        if self.scanned_commits % 20 == 0:
+        if self.scanned_commits % 100 == 0:
             self.session.commit()
