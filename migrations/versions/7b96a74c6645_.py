@@ -42,7 +42,6 @@ def upgrade():
         nullable=False,
         existing_server_default=sa.text('false'),
     )
-    # ### end Alembic commands ###
 
 
 def downgrade():
@@ -70,4 +69,3 @@ def downgrade():
         nullable=True,
         existing_server_default=sa.text('false'),
     )
-    # ### end Alembic commands ###

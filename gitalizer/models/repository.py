@@ -7,6 +7,7 @@ from sqlalchemy.orm import backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from gitalizer.extensions import db
+from gitalizer.models.commit import commit_repositories
 from gitalizer.models.contributer import contributer_repositories
 
 
@@ -28,6 +29,7 @@ class Repository(db.Model):
     fork = db.Column(db.Boolean(), default=False, nullable=False)
     broken = db.Column(db.Boolean(), default=False, nullable=False)
     completely_scanned = db.Column(db.Boolean(), default=False, nullable=False)
+    updated_at = db.Column(db.DateTime, server_default=func.now(), nullable=False)
 
     children = db.relationship(
         "Repository",
@@ -38,21 +40,20 @@ class Repository(db.Model):
     commits = db.relationship(
         "Commit",
         cascade="delete, delete-orphan",
+        secondary=commit_repositories,
         back_populates="repository",
     )
     commits_by_hash = db.relationship(
         "Commit",
         collection_class=attribute_mapped_collection('sha'),
+        secondary=commit_repositories,
         cascade="delete, delete-orphan",
     )
 
     contributors = db.relationship(
         "Contributer",
         secondary=contributer_repositories,
-        back_populates="repositories")
-    updated_at = db.Column(
-        db.DateTime, server_default=func.now(),
-        nullable=False,
+        back_populates="repositories",
     )
 
     def __init__(self, clone_url, name=None, full_name=None):

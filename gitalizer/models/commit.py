@@ -7,12 +7,20 @@ from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint
 from gitalizer.extensions import db
 
 
+commit_repositories = db.Table(
+    'commit_repositories',
+    db.Column('commit_sha', db.String(40), ForeignKey('commit.sha'), index=True),
+    db.Column('repository_url', db.String(240), ForeignKey('repository.clone_url'), index=True),
+#    db.UniqueConstraint('repository_url', 'commit_sha'),
+)
+
+
 class Commit(db.Model):
     """Commit model."""
 
     __tablename__ = 'commit'
     __table_args__ = (
-        UniqueConstraint('sha', 'repository_url'),
+#        UniqueConstraint('sha'),
         CheckConstraint(
             "(additions is NULL and deletions is NULL) or "
             "(additions is not NULL and deletions is not NULL)",
@@ -25,6 +33,9 @@ class Commit(db.Model):
     creation_time = db.Column(db.DateTime(timezone=True))
     additions = db.Column(db.Integer())
     deletions = db.Column(db.Integer())
+
+    ## TODO: DELETE
+    repository_url = db.Column(db.String(240), ForeignKey('repository.clone_url'),
 
     # Email addresses
     author_email_address = db.Column(
@@ -44,10 +55,11 @@ class Commit(db.Model):
         foreign_keys=[committer_email_address],
     )
 
-    # Repository
-    repository_url = db.Column(db.String(240), ForeignKey('repository.clone_url'),
-                               index=True, nullable=False)
-    repository = db.relationship("Repository", back_populates="commits")
+    repositories = db.relationship(
+        "Repository",
+        secondary=commit_repositories,
+        back_populates="commits",
+    )
 
     def __init__(self, sha, repository, author_email, committer_email):
         """Constructor."""
