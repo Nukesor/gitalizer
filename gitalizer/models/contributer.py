@@ -9,8 +9,8 @@ from sqlalchemy.orm import joinedload
 from gitalizer.extensions import db
 
 
-contributer_repositories = db.Table(
-    'contributer_repositories',
+contributer_repository = db.Table(
+    'contributer_repository',
     db.Column('contributer_login', db.String(240), ForeignKey('contributer.login'), index=True),
     db.Column('repository_url', db.String(240), ForeignKey('repository.clone_url'), index=True),
     db.UniqueConstraint('repository_url', 'contributer_login'),
@@ -36,7 +36,7 @@ class Contributer(db.Model):
     emails = db.relationship("Email", back_populates="contributer")
     repositories = db.relationship(
         "Repository",
-        secondary=contributer_repositories,
+        secondary=contributer_repository,
         back_populates="contributors")
     organizations = db.relationship(
         "Organization",

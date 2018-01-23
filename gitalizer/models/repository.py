@@ -7,8 +7,8 @@ from sqlalchemy.orm import backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from gitalizer.extensions import db
-from gitalizer.models.commit import commit_repositories
-from gitalizer.models.contributer import contributer_repositories
+from gitalizer.models.commit import commit_repository
+from gitalizer.models.contributer import contributer_repository
 
 
 class Repository(db.Model):
@@ -39,18 +39,18 @@ class Repository(db.Model):
 
     commits = db.relationship(
         "Commit",
-        secondary=commit_repositories,
+        secondary=commit_repository,
         back_populates="repositories",
     )
     commits_by_hash = db.relationship(
         "Commit",
         collection_class=attribute_mapped_collection('sha'),
-        secondary=commit_repositories,
+        secondary=commit_repository,
     )
 
     contributors = db.relationship(
         "Contributer",
-        secondary=contributer_repositories,
+        secondary=contributer_repository,
         back_populates="repositories",
     )
 

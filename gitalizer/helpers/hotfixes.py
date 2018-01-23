@@ -2,7 +2,7 @@
 from sqlalchemy import func
 from gitalizer.extensions import db
 from gitalizer.models import Repository, Commit
-from gitalizer.models.commit import commit_repositories
+from gitalizer.models.commit import commit_repository
 
 
 def clean_db():

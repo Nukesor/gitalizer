@@ -7,8 +7,8 @@ from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint
 from gitalizer.extensions import db
 
 
-commit_repositories = db.Table(
-    'commit_repositories',
+commit_repository = db.Table(
+    'commit_repository',
     db.Column('commit_sha', db.String(40), ForeignKey('commit.sha'), index=True),
     db.Column('repository_url', db.String(240), ForeignKey('repository.clone_url'), index=True),
     db.UniqueConstraint('repository_url', 'commit_sha'),
@@ -54,7 +54,7 @@ class Commit(db.Model):
 
     repositories = db.relationship(
         "Repository",
-        secondary=commit_repositories,
+        secondary=commit_repository,
         back_populates="commits",
     )
 
