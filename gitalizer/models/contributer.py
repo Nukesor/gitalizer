@@ -12,8 +12,8 @@ from gitalizer.extensions import db
 contributer_repository = db.Table(
     'contributer_repository',
     db.Column('contributer_login', db.String(240), ForeignKey('contributer.login'), index=True),
-    db.Column('repository_url', db.String(240), ForeignKey('repository.clone_url'), index=True),
-    db.UniqueConstraint('repository_url', 'contributer_login'),
+    db.Column('repository_clone_url', db.String(240), ForeignKey('repository.clone_url'), index=True),
+    db.UniqueConstraint('repository_clone_url', 'contributer_login'),
 )
 
 

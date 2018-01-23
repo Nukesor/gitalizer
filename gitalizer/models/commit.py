@@ -10,8 +10,8 @@ from gitalizer.extensions import db
 commit_repository = db.Table(
     'commit_repository',
     db.Column('commit_sha', db.String(40), ForeignKey('commit.sha'), index=True),
-    db.Column('repository_url', db.String(240), ForeignKey('repository.clone_url'), index=True),
-    db.UniqueConstraint('repository_url', 'commit_sha'),
+    db.Column('repository_clone_url', db.String(240), ForeignKey('repository.clone_url'), index=True),
+    db.UniqueConstraint('repository_clone_url', 'commit_sha'),
 )
 
 

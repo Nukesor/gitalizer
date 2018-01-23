@@ -14,7 +14,7 @@ def get_user_repositories(contributer):
     repositories = db.session.query(Repository) \
         .join(
             contributer_repository,
-            contributer_repository.c.repository_url == Repository.clone_url,
+            contributer_repository.c.repository_clone_url == Repository.clone_url,
         ) \
         .filter(contributer_repository.c.contributer_login == contributer.login) \
         .all()
