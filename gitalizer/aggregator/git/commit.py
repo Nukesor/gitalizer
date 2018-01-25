@@ -161,8 +161,8 @@ class CommitScanner():
         # Unknown commit, thereby we need to get all information
         else:
             try:
-                committer_email = self.session.get(git_commit.committer.email)
-                author_email = self.session.get(git_commit.author.email)
+                committer_email = self.session.query(Email).get(git_commit.committer.email)
+                author_email = self.session.query(Email).get(git_commit.author.email)
                 commit = Commit(git_commit.hex, self.repository,
                                 author_email, committer_email)
                 if len(git_commit.parents) == 1:
