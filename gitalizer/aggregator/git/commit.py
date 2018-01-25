@@ -28,7 +28,6 @@ class CommitScanner():
         self.github_repo = github_repo
         self.queue = deque()
         self.scanned_commits = 0
-        self.commit_stats = {}
         self.commit_hashes = set()
         self.checked_emails = set()
 
@@ -63,13 +62,6 @@ class CommitScanner():
                 continue
 
             self.commit_hashes.add(commit.hex)
-            if len(commit.parents) == 1:
-                diff = commit.tree.diff_to_tree(commit.parents[0].tree)
-                self.commit_stats[commit.hex] = {
-                    'additions': diff.stats.insertions,
-                    'deletions': diff.stats.deletions,
-                }
-
             commit_known = commit.hex in self.repository.commits_by_hash
             # Repo has been completely scanned and a this is a known commit.
             if commit_known and self.repository.completely_scanned:
@@ -78,13 +70,15 @@ class CommitScanner():
             # Repo has been partially scanned and a this is a known commit.
             elif commit_known and not self.repository.completely_scanned:
                 [self.queue.appendleft(parent) for parent in commit.parents]
-
+                continue
             # This is an unknown commit.
             elif not commit_known:
-                self.scan_commit(commit)
                 [self.queue.appendleft(parent) for parent in commit.parents]
 
             all_commits.append(commit)
+
+        for commit in all_commits:
+            self.scan_commit(commit)
 
         # Set the time of the first commit as repository creation time if it isn't set yet.
         self.repository.completely_scanned = True
@@ -148,11 +142,11 @@ class CommitScanner():
                 # Create a new commit and extract all valuable information
                 commit = Commit(git_commit.hex, self.repository,
                                 author_email, committer_email)
-                if git_commit.hex in self.commit_stats:
-                    commit.additions = self.commit_stats[git_commit.hex]['additions']
-                    commit.deletions = self.commit_stats[git_commit.hex]['deletions']
+                if len(git_commit.parents) == 1:
+                    diff = self.git_repo.diff(git_commit.parents[0].hex, git_commit.hex)
+                    commit.additions = diff.stats.insertions
+                    commit.deletions = diff.stats.deletions
 
-                # Get timestamp with utc offset
                 if git_commit.author:
                     timestamp = git_commit.author.time
                     utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
