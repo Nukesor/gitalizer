@@ -28,7 +28,6 @@ class CommitScanner():
         self.github_repo = github_repo
         self.queue = deque()
         self.scanned_commits = 0
-        self.commit_hashes = set()
         self.checked_emails = set()
 
     def scan_repository(self):
@@ -52,16 +51,17 @@ class CommitScanner():
             return self.scanned_commits
 
         # List of commit hashes to check if we already were at this point in the tree.
-        all_commits = []
+        commits_to_scan = []
+        known_commit_hashes = set()
         # This is a simple BFS through the git commit tree.
         # If we already know a node or already scanned a node, we don't add the parents.
         while len(self.queue) > 0:
             commit = self.queue.pop()
             # Break if we already visited this tree node
-            if commit.hex in self.commit_hashes:
+            if commit.hex in known_commit_hashes:
                 continue
+            known_commit_hashes.add(commit.hex)
 
-            self.commit_hashes.add(commit.hex)
             commit_known = commit.hex in self.repository.commits_by_hash
             # Repo has been completely scanned and a this is a known commit.
             if commit_known and self.repository.completely_scanned:
@@ -75,23 +75,28 @@ class CommitScanner():
             elif not commit_known:
                 [self.queue.appendleft(parent) for parent in commit.parents]
 
-            all_commits.append(commit)
+            commits_to_scan.append(commit)
 
-        for commit in all_commits:
-            self.scan_commit(commit)
+        hashes_to_scan = [c.hex for c in commits_to_scan]
+        existing_commits = self.session.query(Commit) \
+            .filter(Commit.sha.in_(hashes_to_scan)) \
+            .all()
+        existing_commits = {c.sha: c for c in existing_commits}
+        for commit in commits_to_scan:
+            self.scan_commit(commit, existing_commits)
 
         # Set the time of the first commit as repository creation time if it isn't set yet.
         self.repository.completely_scanned = True
         if not self.repository.created_at:
-            timestamp = all_commits[-1].author.time
-            utc_offset = timezone(timedelta(minutes=all_commits[-1].author.offset))
+            timestamp = commits_to_scan[-1].author.time
+            utc_offset = timezone(timedelta(minutes=commits_to_scan[-1].author.offset))
             self.repository.created_at = datetime.fromtimestamp(timestamp, utc_offset)
 
         self.session.add(self.repository)
         self.session.commit()
         return self.scanned_commits
 
-    def scan_commit(self, git_commit):
+    def scan_commit(self, git_commit, existing_commits):
         """Get all features of a specific commit."""
         # Get or create new mail
         committer_email = Email.get_email(git_commit.committer.email, self.session)
@@ -134,9 +139,9 @@ class CommitScanner():
             self.checked_emails.add(git_commit.author.email)
 
         try:
-            commit = self.session.query(Commit).filter(Commit.sha == git_commit.hex).one_or_none()
-            if commit:
+            if git_commit.hex in existing_commits:
                 # Commit already exists, we only need to add the repository.
+                commit = existing_commits[git_commit.hex]
                 commit.repositories.append(self.repository)
             else:
                 # Create a new commit and extract all valuable information
