@@ -101,7 +101,7 @@ def get_user_repos(user_login: str, skip=True):
             return user_too_big_message(user_login)
 
         # Check own repositories. We assume that we are collaborating in those
-        for github_repo in []:
+        for github_repo in owned:
             repository = Repository.get_or_create(
                 session,
                 github_repo.clone_url,

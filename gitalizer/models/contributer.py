@@ -99,7 +99,7 @@ class Contributer(db.Model):
         timeout = datetime.utcnow() - current_app.config['CONTRIBUTER_RESCAN_TIMEOUT']
 
         for repository in self.repositories:
-            up_to_date = repository.completely_scanned and repository.updated_at <= timeout
+            up_to_date = repository.completely_scanned and repository.updated_at >= timeout
             if repository.fork or repository.broken or up_to_date:
                 continue
 

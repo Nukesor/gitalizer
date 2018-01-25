@@ -77,11 +77,19 @@ class CommitScanner():
 
             commits_to_scan.append(commit)
 
+        # Fetch all commits from db with matching shas.
+        # We do this once to bunch-fetch all matching commits
+        # to avoid performance breaks.
         hashes_to_scan = [c.hex for c in commits_to_scan]
-        existing_commits = self.session.query(Commit) \
-            .filter(Commit.sha.in_(hashes_to_scan)) \
-            .all()
-        existing_commits = {c.sha: c for c in existing_commits}
+        if len(hashes_to_scan) != 0:
+            existing_commits = self.session.query(Commit) \
+                .filter(Commit.sha.in_(hashes_to_scan)) \
+                .all()
+            existing_commits = {c.sha: c for c in existing_commits}
+        else:
+            existing_commits = {}
+
+        # Actually scan the commits
         for commit in commits_to_scan:
             self.scan_commit(commit, existing_commits)
 
@@ -98,12 +106,14 @@ class CommitScanner():
 
     def scan_commit(self, git_commit, existing_commits):
         """Get all features of a specific commit."""
-        # Get or create new mail
-        committer_email = Email.get_email(git_commit.committer.email, self.session)
-        author_email = Email.get_email(git_commit.author.email, self.session)
-
-        # Check every email only once to avoid github api calls
+        #  Get or create new mail. Check every email only once
+        committer_email = None
+        author_email = None
         if git_commit.author.email not in self.checked_emails:
+            author_email = Email.get_email(
+                git_commit.author.email,
+                self.session,
+            )
             # Try to get the contributer if we have a github repository and
             # don't know the contributer for this email yet.
             author_email.get_github_relation(
@@ -120,8 +130,12 @@ class CommitScanner():
 
             self.checked_emails.add(git_commit.author.email)
 
-        # Check every email only once to avoid github api calls
+        #  Get or create new mail. Check every email only once
         if git_commit.committer.email not in self.checked_emails:
+            committer_email = Email.get_email(
+                git_commit.committer.email,
+                self.session,
+            )
             # Try to get the contributer if we have a github repository and
             # don't know the contributer for this email yet.
             committer_email.get_github_relation(
@@ -138,13 +152,17 @@ class CommitScanner():
 
             self.checked_emails.add(git_commit.author.email)
 
-        try:
-            if git_commit.hex in existing_commits:
-                # Commit already exists, we only need to add the repository.
-                commit = existing_commits[git_commit.hex]
-                commit.repositories.append(self.repository)
-            else:
-                # Create a new commit and extract all valuable information
+            # If we already know this commit just add the commit to this repository.
+        if git_commit.hex in existing_commits:
+            commit = existing_commits[git_commit.hex]
+            commit.repositories.append(self.repository)
+            self.session.add(commit)
+
+        # Unknown commit, thereby we need to get all information
+        else:
+            try:
+                committer_email = self.session.get(git_commit.committer.email)
+                author_email = self.session.get(git_commit.author.email)
                 commit = Commit(git_commit.hex, self.repository,
                                 author_email, committer_email)
                 if len(git_commit.parents) == 1:
@@ -162,16 +180,15 @@ class CommitScanner():
                     utc_offset = timezone(timedelta(minutes=git_commit.committer.offset))
                     commit.commit_time = datetime.fromtimestamp(timestamp, utc_offset)
 
-            self.session.add(commit)
-        except BaseException as e:
-            sentry.sentry.captureException(
-                extra={
-                    'message': 'Error during Commit creation',
-                    'clone_url': self.repository.clone_url,
-                    'hex': git_commit.hex,
-                    'stats': self.commit_stats,
-                },
-            )
+                self.session.add(commit)
+            except BaseException as e:
+                sentry.sentry.captureException(
+                    extra={
+                        'message': 'Error during Commit creation',
+                        'clone_url': self.repository.clone_url,
+                        'hex': git_commit.hex,
+                    },
+                )
 
         # Commit session every 20 commits to avoid loss of all data on crash.
         self.scanned_commits += 1

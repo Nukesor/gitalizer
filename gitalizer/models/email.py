@@ -51,9 +51,6 @@ class Email(db.Model):
             try:
                 email = session.query(Email).get(email_address)
                 if not email:
-                    # Commit to prevent data loss in case we get an
-                    # integrity error and need to rollback.
-                    session.commit()
                     email = Email(email_address)
                     session.add(email)
                     session.commit()

@@ -1,5 +1,4 @@
 """Data collection from Github."""
-import traceback
 from time import sleep
 from random import randrange
 from datetime import datetime
