@@ -1,8 +1,10 @@
 """Clean stuff from db, which occured through bugs."""
-from sqlalchemy import func
+from flask import current_app
+from datetime import datetime
+from sqlalchemy import or_
 from gitalizer.extensions import db
 from gitalizer.models import Repository, Commit
-from gitalizer.models.commit import commit_repository
+from gitalizer.aggregator.parallel.manager import Manager
 
 
 def clean_db():
@@ -32,18 +34,22 @@ def clean_db():
 
 def complete_data():
     """Clean stuff."""
-    print("Get repos with missing full_name.")
+    print("Get non up to date.")
+    timeout_threshold = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
+
     repos = db.session.query(Repository) \
-        .filter(Repository.full_name.is_(None)) \
+        .filter(Repository.fork.is_(False)) \
+        .filter(Repository.broken.is_(False)) \
+        .filter(or_(
+            Repository.updated_at <= timeout_threshold,
+            Repository.completely_scanned.is_(False),
+        )) \
         .all()
 
-    for repo in repos:
-        name_parts = repo.clone_url.rsplit('/', 2)
-        owner = name_parts[1]
-        name = name_parts[2].rsplit('.', 1)[0]
-        full_name = f'{owner}/{name}'
-        repo.name = name
-        repo.full_name = full_name
-        db.session.add(repo)
+    repos_to_scan = [r.full_name for r in repos]
+
+    manager = Manager('github_repository', repos_to_scan)
+    manager.start()
+    manager.run()
 
     db.session.commit()
