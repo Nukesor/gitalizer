@@ -147,7 +147,7 @@ def register_cli(app):  # pragma: no cover
 
     @app.cli.command()
     def clean():
-        """Plot all graphs for a specific github user."""
+        """Remove uncomplete or unwanted data."""
         try:
             clean_db()
         except KeyboardInterrupt:
