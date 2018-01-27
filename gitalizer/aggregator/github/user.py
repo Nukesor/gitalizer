@@ -97,7 +97,7 @@ def get_user_repos(user_login: str, skip=True):
         if user_too_big:
             contributer.too_big = True
             session.add(contributer)
-            session.commit(contributer)
+            session.commit()
             return user_too_big_message(user_login)
 
         # Check own repositories. We assume that we are collaborating in those
