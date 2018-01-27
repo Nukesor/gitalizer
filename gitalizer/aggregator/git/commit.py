@@ -2,6 +2,7 @@
 from collections import deque
 from pygit2 import Repository, GitError
 from sqlalchemy.orm import joinedload
+from sqlalchemy.exc import IntegrityError
 from github import Repository as Github_Repository
 from datetime import datetime, timedelta, timezone
 
@@ -28,6 +29,8 @@ class CommitScanner():
         self.github_repo = github_repo
         self.queue = deque()
         self.scanned_commits = 0
+
+        self.emails = {}
         self.checked_emails = set()
 
     def scan_repository(self):
@@ -89,9 +92,20 @@ class CommitScanner():
         else:
             existing_commits = {}
 
+        # Get emails for all commits.
+        try:
+            for commit in commits_to_scan:
+                self.get_commit_emails(commit)
+            self.session.commit()
+        except IntegrityError as e:
+            for commit in commits_to_scan:
+                self.get_commit_emails(commit)
+            self.session.commit()
+
         # Actually scan the commits
         for commit in commits_to_scan:
             self.scan_commit(commit, existing_commits)
+        self.session.commit()
 
         # Set the time of the first commit as repository creation time if it isn't set yet.
         self.repository.completely_scanned = True
@@ -106,53 +120,7 @@ class CommitScanner():
 
     def scan_commit(self, git_commit, existing_commits):
         """Get all features of a specific commit."""
-        #  Get or create new mail. Check every email only once
-        committer_email = None
-        author_email = None
-        if git_commit.author.email not in self.checked_emails:
-            author_email = Email.get_email(
-                git_commit.author.email,
-                self.session,
-            )
-            # Try to get the contributer if we have a github repository and
-            # don't know the contributer for this email yet.
-            author_email.get_github_relation(
-                git_commit,
-                'author',
-                self.session,
-                self.github_repo,
-            )
-
-            if author_email.contributer:
-                author_email.contributer.repositories.append(self.repository)
-            self.session.add(author_email)
-            self.session.commit()
-
-            self.checked_emails.add(git_commit.author.email)
-
-        #  Get or create new mail. Check every email only once
-        if git_commit.committer.email not in self.checked_emails:
-            committer_email = Email.get_email(
-                git_commit.committer.email,
-                self.session,
-            )
-            # Try to get the contributer if we have a github repository and
-            # don't know the contributer for this email yet.
-            committer_email.get_github_relation(
-                git_commit,
-                'committer',
-                self.session,
-                self.github_repo,
-            )
-
-            if committer_email.contributer:
-                committer_email.contributer.repositories.append(self.repository)
-            self.session.add(committer_email)
-            self.session.commit()
-
-            self.checked_emails.add(git_commit.author.email)
-
-            # If we already know this commit just add the commit to this repository.
+        # If we already know this commit just add the commit to this repository.
         if git_commit.hex in existing_commits:
             commit = existing_commits[git_commit.hex]
             commit.repositories.append(self.repository)
@@ -161,8 +129,8 @@ class CommitScanner():
         # Unknown commit, thereby we need to get all information
         else:
             try:
-                committer_email = self.session.query(Email).get(git_commit.committer.email)
-                author_email = self.session.query(Email).get(git_commit.author.email)
+                author_email = self.emails[git_commit.author.email]
+                committer_email = self.emails[git_commit.committer.email]
                 commit = Commit(git_commit.hex, self.repository,
                                 author_email, committer_email)
                 if len(git_commit.parents) == 1:
@@ -192,5 +160,50 @@ class CommitScanner():
 
         # Commit session every 20 commits to avoid loss of all data on crash.
         self.scanned_commits += 1
-        if self.scanned_commits % 100 == 0:
+        if self.scanned_commits % 1000 == 0:
             self.session.commit()
+
+    def get_commit_emails(self, git_commit):
+        """Get emails of all commits to scan."""
+        if git_commit.author.email not in self.checked_emails:
+            author_email = Email.get_email(
+                git_commit.author.email,
+                self.session,
+            )
+            self.emails[git_commit.author.email] = author_email
+            # Try to get the contributer if we have a github repository and
+            # don't know the contributer for this email yet.
+            author_email.get_github_relation(
+                git_commit,
+                'author',
+                self.session,
+                self.github_repo,
+            )
+
+            if author_email.contributer:
+                author_email.contributer.repositories.append(self.repository)
+            self.session.add(author_email)
+
+            self.checked_emails.add(git_commit.author.email)
+
+        #  Get or create new mail. Check every email only once
+        if git_commit.committer.email not in self.checked_emails:
+            committer_email = Email.get_email(
+                git_commit.committer.email,
+                self.session,
+            )
+            self.emails[git_commit.committer.email] = committer_email
+            # Try to get the contributer if we have a github repository and
+            # don't know the contributer for this email yet.
+            committer_email.get_github_relation(
+                git_commit,
+                'committer',
+                self.session,
+                self.github_repo,
+            )
+
+            if committer_email.contributer:
+                committer_email.contributer.repositories.append(self.repository)
+            self.session.add(committer_email)
+
+            self.checked_emails.add(git_commit.author.email)
