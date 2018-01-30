@@ -9,14 +9,14 @@ class Config(object):
     DEBUG = False
     TESTING = False
     AUTH_TOKEN_TIMEOUT = timedelta(days=30)
-    SENTRY_TOKEN = 'token_for_sentry_debugging'
+    SENTRY_TOKEN = ''
 
     GITHUB_USER = 'User'
     GITHUB_PASSWORD = 'userpass'
     GITHUB_USER_SKIP_COUNT = 3000
     GIT_CLONE_PATH = '/tmp/gitalizer'
     GIT_USER_SCAN_THREADS = 4
-    GIT_COMMIT_SCAN_THREADS = 8
+    GIT_COMMIT_SCAN_THREADS = 4
 
     REPOSITORY_RESCAN_TIMEOUT = timedelta(days=5)
     CONTRIBUTER_RESCAN_TIMEOUT = timedelta(days=14)

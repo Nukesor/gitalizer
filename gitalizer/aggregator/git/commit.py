@@ -29,7 +29,7 @@ class CommitScanner():
         self.github_repo = github_repo
         self.queue = deque()
         self.scanned_commits = 0
-        self.diff = {}
+        self.diffs = {}
 
         self.emails = {}
         self.checked_emails = set()
@@ -79,7 +79,7 @@ class CommitScanner():
             elif not commit_known:
                 [self.queue.appendleft(parent) for parent in commit.parents]
 
-            if len(commit.parent) == 1:
+            if len(commit.parents) == 1:
                 self.diffs[commit.hex] = commit.tree.diff_to_tree(commit.parents[0].tree)
             commits_to_scan.append(commit)
 
