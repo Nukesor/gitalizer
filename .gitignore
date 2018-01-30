@@ -32,5 +32,8 @@ var/
 venv
 __pycache__
 .cache
+
+# Project files
 plots
 logs
+gitalizer/config.py
