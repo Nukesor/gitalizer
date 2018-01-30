@@ -101,6 +101,10 @@ class CommitScanner():
                 self.get_commit_emails(commit)
             self.session.commit()
         except IntegrityError as e:
+            sentry.sentry.captureException()
+            self.session.rollback()
+            self.emails = {}
+            self.checked_emails = set()
             for commit in commits_to_scan:
                 self.get_commit_emails(commit)
             self.session.commit()
@@ -185,7 +189,8 @@ class CommitScanner():
             )
 
             if author_email.contributer:
-                author_email.contributer.repositories.append(self.repository)
+                if self.repository not in author_email.contributer.repositories:
+                    author_email.contributer.repositories.append(self.repository)
             self.session.add(author_email)
 
             self.checked_emails.add(git_commit.author.email)
@@ -207,7 +212,8 @@ class CommitScanner():
             )
 
             if committer_email.contributer:
-                committer_email.contributer.repositories.append(self.repository)
+                if self.repository not in committer_email.contributer.repositories:
+                    committer_email.contributer.repositories.append(self.repository)
             self.session.add(committer_email)
 
             self.checked_emails.add(git_commit.author.email)
