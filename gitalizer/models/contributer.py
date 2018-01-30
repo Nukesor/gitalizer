@@ -11,18 +11,28 @@ from gitalizer.extensions import db
 
 contributer_repository = db.Table(
     'contributer_repository',
-    db.Column('contributer_login', db.String(240), ForeignKey('contributer.login'), index=True),
-    db.Column('repository_clone_url', db.String(240), ForeignKey('repository.clone_url'), index=True),
+    db.Column('contributer_login',
+              db.String(240),
+              ForeignKey('contributer.login', ondelete='CASCADE', deferrable=True),
+              index=True),
+    db.Column('repository_clone_url',
+              db.String(240),
+              ForeignKey('repository.clone_url', ondelete='CASCADE', deferrable=True),
+              index=True),
     db.UniqueConstraint('repository_clone_url', 'contributer_login'),
 )
 
 
 contributer_organizations = db.Table(
     'contributer_organizations',
-    db.Column('contributer_login', db.String(240),
-              ForeignKey('contributer.login')),
-    db.Column('organization_login', db.String(240),
-              ForeignKey('organization.login')),
+    db.Column('contributer_login',
+              db.String(240),
+              ForeignKey('contributer.login', ondelete='CASCADE', deferrable=True),
+              index=True),
+    db.Column('organization_login',
+              db.String(240),
+              ForeignKey('organization.login', ondelete='CASCADE', deferrable=True),
+              index=True),
     db.UniqueConstraint('contributer_login', 'organization_login'),
 )
 

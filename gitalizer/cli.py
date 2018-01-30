@@ -8,7 +8,13 @@ from sqlalchemy_utils.functions import database_exists, create_database, drop_da
 
 from gitalizer.plot import plot_user as plot_user_func
 from gitalizer.extensions import db
-from gitalizer.models.user import User
+from gitalizer.models import (
+    Commit,
+    commit_repository,
+    contributer_repository,
+    Repository,
+    User,
+)
 from gitalizer.helpers.hotfixes import (
     clean_db,
     complete_data,
@@ -162,3 +168,44 @@ def register_cli(app):  # pragma: no cover
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
             sys.exit(1)
+
+    @app.cli.command()
+    def profile():
+        """Profile the get of a specific function."""
+        import cProfile, pstats, io
+        pr = cProfile.Profile()
+        pr.enable()
+        get_github_repository_by_owner_name("svenstaro", "ansible")
+        pr.disable()
+        s = io.StringIO()
+        sortby = 'cumulative'
+        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
+
+    @app.cli.command()
+    @click.argument('full_name')
+    def delete_repository(full_name):
+        """Profile the get of a specific function."""
+        repository = db.session.query(Repository) \
+            .filter(Repository.full_name == full_name) \
+            .one()
+
+        commit_shas = db.session.query(Commit.sha) \
+            .join(
+                commit_repository,
+                commit_repository.c.repository_clone_url == repository.clone_url,
+            ) \
+            .filter(commit_repository.c.commit_sha == Commit.sha) \
+            .all()
+
+        commit_shas = [c[0] for c in commit_shas]
+        if commit_shas:
+            db.session.query(Commit) \
+                .filter(Commit.sha.in_(commit_shas)) \
+                .delete()
+
+        db.session.query(Repository) \
+            .filter(Repository.full_name == full_name) \
+            .delete()
+        db.session.commit()

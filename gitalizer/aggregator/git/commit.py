@@ -29,6 +29,7 @@ class CommitScanner():
         self.github_repo = github_repo
         self.queue = deque()
         self.scanned_commits = 0
+        self.diff = {}
 
         self.emails = {}
         self.checked_emails = set()
@@ -78,6 +79,8 @@ class CommitScanner():
             elif not commit_known:
                 [self.queue.appendleft(parent) for parent in commit.parents]
 
+            if len(commit.parent) == 1:
+                self.diffs[commit.hex] = commit.tree.diff_to_tree(commit.parents[0].tree)
             commits_to_scan.append(commit)
 
         # Fetch all commits from db with matching shas.
@@ -133,8 +136,9 @@ class CommitScanner():
                 committer_email = self.emails[git_commit.committer.email]
                 commit = Commit(git_commit.hex, self.repository,
                                 author_email, committer_email)
-                if len(git_commit.parents) == 1:
-                    diff = self.git_repo.diff(git_commit.parents[0].hex, git_commit.hex)
+
+                diff = self.diffs.get(git_commit.hex)
+                if diff:
                     commit.additions = diff.stats.insertions
                     commit.deletions = diff.stats.deletions
 
