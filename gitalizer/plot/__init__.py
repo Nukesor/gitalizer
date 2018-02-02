@@ -31,5 +31,5 @@ def plot_user(login):
         sys.exit(1)
 
     plot_user_punchcard(contributer, user_dir)
-    plot_user_repositories_changes(contributer, user_dir)
+#    plot_user_repositories_changes(contributer, user_dir)
     plot_user_commit_timeline(contributer, user_dir)

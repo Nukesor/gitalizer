@@ -83,6 +83,11 @@ class CommitScanner():
                 self.diffs[commit.hex] = commit.tree.diff_to_tree(commit.parents[0].tree)
             commits_to_scan.append(commit)
 
+            if len(commits_to_scan) > 100000:
+                self.repository.too_big = True
+                self.session.add(self.repository)
+                self.session.commit()
+
         # Fetch all commits from db with matching shas.
         # We do this once to bunch-fetch all matching commits
         # to avoid performance breaks.
@@ -112,6 +117,11 @@ class CommitScanner():
         # Actually scan the commits
         for commit in commits_to_scan:
             self.scan_commit(commit, existing_commits)
+            # Commit session every 20 commits to avoid loss of all data on crash.
+            self.scanned_commits += 1
+            if self.scanned_commits % 1000 == 0:
+                self.session.commit()
+
         self.session.commit()
 
         # Set the time of the first commit as repository creation time if it isn't set yet.
@@ -165,11 +175,6 @@ class CommitScanner():
                         'hex': git_commit.hex,
                     },
                 )
-
-        # Commit session every 20 commits to avoid loss of all data on crash.
-        self.scanned_commits += 1
-        if self.scanned_commits % 1000 == 0:
-            self.session.commit()
 
     def get_commit_emails(self, git_commit):
         """Get emails of all commits to scan."""

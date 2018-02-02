@@ -26,9 +26,14 @@ class Repository(db.Model):
     full_name = db.Column(db.String(240))
     created_at = db.Column(db.DateTime(timezone=True))
 
-    fork = db.Column(db.Boolean(), default=False, nullable=False)
-    broken = db.Column(db.Boolean(), default=False, nullable=False)
-    completely_scanned = db.Column(db.Boolean(), default=False, nullable=False)
+    fork = db.Column(db.Boolean(), default=False,
+                     server_default='FALSE', nullable=False)
+    broken = db.Column(db.Boolean(), default=False,
+                       server_default='FALSE', nullable=False)
+    too_big = db.Column(db.Boolean(), default=False,
+                        server_default='FALSE', nullable=False)
+    completely_scanned = db.Column(db.Boolean(), default=False,
+                                   server_default='FALSE', nullable=False)
     updated_at = db.Column(db.DateTime, server_default=func.now(), nullable=False)
 
     children = db.relationship(
@@ -84,7 +89,11 @@ class Repository(db.Model):
         timeout_threshold = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
         up_to_date = self.completely_scanned and self.updated_at >= timeout_threshold
 
-        if self.fork or self.broken or up_to_date:
+        if self.fork or self.broken or self.too_big or up_to_date:
             return False
 
         return True
+
+    def is_invalid(self):
+        """Check if we should skip this repository for for checking."""
+        return (self.broken or self.too_big)

@@ -28,7 +28,7 @@ from gitalizer.aggregator.github.organization import (
     get_github_organizations,
 )
 from gitalizer.aggregator.github.user import (
-    get_user_by_name,
+    get_user_by_login,
     get_friends_by_name,
 )
 
@@ -78,12 +78,12 @@ def register_cli(app):  # pragma: no cover
         db.session.commit()
 
     @app.cli.command()
-    @click.argument('name')
-    def get_user(name):
+    @click.argument('login')
+    def get_user(login):
         """Get all repositories for a specific github user."""
         try:
-            app.logger.info(f'\n\nGet user {name}')
-            get_user_by_name(name)
+            app.logger.info(f'\n\nGet user {login}')
+            get_user_by_login(login)
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
             sys.exit(1)

@@ -53,9 +53,8 @@ class Contributer(db.Model):
         secondary=contributer_organizations,
         back_populates="contributors")
 
-    too_big = db.Column(db.Boolean, default=False, nullable=False)
-    last_check = db.Column(db.DateTime(timezone=True))
-    full_scan = db.Column(db.DateTime(timezone=True))
+    too_big = db.Column(db.Boolean, default=False, server_default='FALSE', nullable=False)
+    last_full_scan = db.Column(db.DateTime(timezone=True))
 
     def __init__(self, login: str):
         """Constructor."""
@@ -108,11 +107,8 @@ class Contributer(db.Model):
 
         timeout = datetime.utcnow() - current_app.config['CONTRIBUTER_RESCAN_TIMEOUT']
 
-        for repository in self.repositories:
-            up_to_date = repository.completely_scanned and repository.updated_at >= timeout
-            if repository.fork or repository.broken or up_to_date:
-                continue
-
+        up_to_date = self.last_full_scan and self.last_full_scan >= timeout
+        if not up_to_date:
             return True
 
         return False
