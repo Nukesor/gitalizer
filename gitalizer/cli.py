@@ -170,12 +170,14 @@ def register_cli(app):  # pragma: no cover
             sys.exit(1)
 
     @app.cli.command()
-    def profile():
+    @click.argument('owner')
+    @click.argument('repository')
+    def profile(owner, repository):
         """Profile the get of a specific function."""
         import cProfile, pstats, io
         pr = cProfile.Profile()
         pr.enable()
-        get_github_repository_by_owner_name("svenstaro", "ansible")
+        get_github_repository_by_owner_name(owner, repository)
         pr.disable()
         s = io.StringIO()
         sortby = 'cumulative'
