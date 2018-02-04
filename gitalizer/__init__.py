@@ -25,7 +25,8 @@ def create_app(config_name='develop'):
     db.init_app(app)
     passlib.init_app(app)
     github.init_app(app)
-    sentry.init_app(app)
+    if app.config['SENTRY']:
+        sentry.init_app(app)
     migrate.init_app(app, db)
 
     # Check if the git clone dir can be created/accessed

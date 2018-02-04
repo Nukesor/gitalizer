@@ -161,6 +161,21 @@ def register_cli(app):  # pragma: no cover
             sys.exit(1)
 
     @app.cli.command()
+    def test():
+        """Complete missing data from previous runs."""
+        try:
+            from gitalizer.models import Contributer
+            from gitalizer.plot.user import plot_user_travel_path
+            contributer = db.session.query(Contributer) \
+                .filter(Contributer.login.ilike('nukesor')) \
+                .one_or_none()
+
+            plot_user_travel_path(contributer, './')
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            sys.exit(1)
+
+    @app.cli.command()
     def complete():
         """Complete missing data from previous runs."""
         try:

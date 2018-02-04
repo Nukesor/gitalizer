@@ -21,6 +21,7 @@ class Config(object):
     REPOSITORY_RESCAN_TIMEOUT = timedelta(days=5)
     CONTRIBUTER_RESCAN_TIMEOUT = timedelta(days=14)
 
+    SENTRY = False
     SENTRY_CONFIG = {
         'ignore_exceptions': [
             KeyboardInterrupt,

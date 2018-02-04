@@ -23,7 +23,7 @@ def get_user_repositories(contributer):
 
 
 def get_user_commits(contributer, delta=None):
-    """Get ALL commits of a contributer."""
+    """Get ALL commits of a contributer in a given timespan."""
     if delta is None:
         delta = timedelta(days=99*365)
     time_span = datetime.now() - delta
@@ -35,6 +35,7 @@ def get_user_commits(contributer, delta=None):
         )) \
         .join(Contributer, Email.contributer_login == contributer.login) \
         .filter(Contributer.login == contributer.login) \
+        .order_by(Commit.commit_time.asc()) \
         .all()
 
     return commits

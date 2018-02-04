@@ -12,6 +12,7 @@ from .helper.db import get_user_repositories, get_user_commits
 from .plotting.commit_timeline import plot_commit_timeline
 from .plotting.commit_punchcard import plot_commit_punchcard
 from .plotting.repository_changes import plot_repository_changes
+from .plotting.contributer_travel_path import contributer_travel_path
 
 
 def plot_user_commit_timeline(contributer, path):
@@ -61,3 +62,13 @@ def plot_user_punchcard(contributer, path):
     title = f"{contributer.login}'s Punchcard"
 
     plot_commit_punchcard(commits, path, title)
+
+
+def plot_user_travel_path(contributer, path):
+    """Get the user utcoffset changes."""
+    commits = get_user_commits(contributer)
+
+    title = f"{contributer.login}'s Travel history"
+    contributer_travel_path(commits, path, title)
+
+    """Plot the travel timeline of an user."""
