@@ -5,7 +5,7 @@ from gitalizer.models import Commit
 def contributer_travel_path(commits: Commit, path, title):
     """Print the travel history of a contributer."""
     last_timezone = None
-    last_day = None
+    changed_day = None
     current_day = None
 
     ignore = False
@@ -22,7 +22,6 @@ def contributer_travel_path(commits: Commit, path, title):
             continue
         elif not last_timezone:
             if commit_time.date() != current_day.date():
-                last_day = current_day
                 last_timezone = current_day
                 current_day = commit_time
             continue
@@ -32,11 +31,10 @@ def contributer_travel_path(commits: Commit, path, title):
             # It is changed and the change should not be ignored
             # (Changes are ignored if multiple timezones are present at the same day)
             if changed and not ignore:
-                print(f'Change at {last_day.date()} detected')
-                print(f'New timezone {get_timezone(last_day)} detected')
+                print(f'Change at {changed_day.date()} detected:')
+                print(f'    New timezone {get_timezone(changed_day)} detected.\n')
                 last_timezone = commit_time
 
-            last_day = current_day
             current_day = commit_time
             ignore = False
             changed = False
@@ -45,6 +43,7 @@ def contributer_travel_path(commits: Commit, path, title):
 
         offset = get_timezone(commit_time)
         if not changed and offset != get_timezone(last_timezone):
+            changed_day = commit_time
             changed = True
 
         # We got a change at the same day. Ignore it
