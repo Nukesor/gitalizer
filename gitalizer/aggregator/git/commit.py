@@ -161,10 +161,9 @@ class CommitScanner():
                     utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
                     commit.creation_time = datetime.fromtimestamp(timestamp, utc_offset)
 
-                if git_commit.committer:
-                    timestamp = git_commit.committer.time
-                    utc_offset = timezone(timedelta(minutes=git_commit.committer.offset))
-                    commit.commit_time = datetime.fromtimestamp(timestamp, utc_offset)
+                timestamp = git_commit.commit_time
+                utc_offset = timezone(timedelta(minutes=git_commit.commit_time_offset))
+                commit.commit_time = datetime.fromtimestamp(timestamp, utc_offset)
 
                 self.session.add(commit)
             except BaseException as e:
