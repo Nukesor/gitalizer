@@ -75,10 +75,6 @@ class Repository(db.Model):
             session.add(repo)
             session.commit()
 
-        repo.name = name
-        repo.full_name = full_name
-        session.add(repo)
-
         return repo
 
     def should_scan(self):

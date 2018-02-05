@@ -2,14 +2,17 @@
 from collections import deque
 from pygit2 import Repository, GitError
 from sqlalchemy.orm import joinedload
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from github import Repository as Github_Repository
+from github.GithubObject import NotSet
 from datetime import datetime, timedelta, timezone
 
 from gitalizer.extensions import sentry
+from gitalizer.aggregator.github import call_github_function
 from gitalizer.models import (
     Email,
     Commit,
+    Contributer,
     Repository as RepositoryModel,
 )
 
@@ -32,7 +35,6 @@ class CommitScanner():
         self.diffs = {}
 
         self.emails = {}
-        self.checked_emails = set()
 
     def scan_repository(self):
         """Get all commits from this repository.
@@ -40,8 +42,50 @@ class CommitScanner():
         It extracts the user as well as additions, deletions and the timestamp.
         This function gathers all commits in the git commit tree
         """
-        # Walk through the repository and get all commits
-        # that are reachable as parents from master commit
+        commits_to_scan = self.get_commits_to_scan()
+        if not commits_to_scan:
+            return
+
+        existing_commits = self.preload_commits(commits_to_scan)
+
+        # Get emails for all commits.
+        emails_to_scan = self.unique_emails(commits_to_scan)
+        try:
+            self.preload_emails(emails_to_scan)
+            self.collect_emails(emails_to_scan)
+            self.session.commit()
+        except (IntegrityError, OperationalError) as e:
+            # The email has probably just been added by another thread -> rollback + retry
+            sentry.sentry.captureException()
+            self.session.rollback()
+
+            self.preload_emails(emails_to_scan)
+            self.collect_emails(emails_to_scan)
+            self.session.commit()
+
+        # Actually scan the commits
+        for commit in commits_to_scan:
+            self.scan_commit(commit, existing_commits)
+            # Commit session every 20 commits to avoid loss of all data on crash.
+            self.scanned_commits += 1
+            if self.scanned_commits % 1000 == 0:
+                self.session.commit()
+
+        self.session.commit()
+
+        # Set the time of the first commit as repository creation time if it isn't set yet.
+        self.repository.completely_scanned = True
+        if not self.repository.created_at:
+            timestamp = commits_to_scan[-1].author.time
+            utc_offset = timezone(timedelta(minutes=commits_to_scan[-1].author.offset))
+            self.repository.created_at = datetime.fromtimestamp(timestamp, utc_offset)
+
+        self.session.add(self.repository)
+        self.session.commit()
+        return self.scanned_commits
+
+    def get_commits_to_scan(self):
+        """Walk through the repository and get all commits reachable in master."""
         try:
             master_commit = self.git_repo.head.get_object()
             self.queue.appendleft(master_commit)
@@ -86,11 +130,16 @@ class CommitScanner():
             if len(commits_to_scan) > 100000:
                 self.repository.too_big = True
                 self.session.add(self.repository)
-                self.session.commit()
+                commits_to_scan = []
+                break
 
-        # Fetch all commits from db with matching shas.
-        # We do this once to bunch-fetch all matching commits
-        # to avoid performance breaks.
+        return commits_to_scan
+
+    def preload_commits(self, commits_to_scan):
+        """Fetch all commits from db with matching shas.
+
+        We do this once to bunch-fetch all matching commits to avoid performance breaks.
+        """
         hashes_to_scan = [c.hex for c in commits_to_scan]
         if len(hashes_to_scan) != 0:
             existing_commits = self.session.query(Commit) \
@@ -99,41 +148,7 @@ class CommitScanner():
             existing_commits = {c.sha: c for c in existing_commits}
         else:
             existing_commits = {}
-
-        # Get emails for all commits.
-        try:
-            for commit in commits_to_scan:
-                self.get_commit_emails(commit)
-            self.session.commit()
-        except IntegrityError as e:
-            sentry.sentry.captureException()
-            self.session.rollback()
-            self.emails = {}
-            self.checked_emails = set()
-            for commit in commits_to_scan:
-                self.get_commit_emails(commit)
-            self.session.commit()
-
-        # Actually scan the commits
-        for commit in commits_to_scan:
-            self.scan_commit(commit, existing_commits)
-            # Commit session every 20 commits to avoid loss of all data on crash.
-            self.scanned_commits += 1
-            if self.scanned_commits % 1000 == 0:
-                self.session.commit()
-
-        self.session.commit()
-
-        # Set the time of the first commit as repository creation time if it isn't set yet.
-        self.repository.completely_scanned = True
-        if not self.repository.created_at:
-            timestamp = commits_to_scan[-1].author.time
-            utc_offset = timezone(timedelta(minutes=commits_to_scan[-1].author.offset))
-            self.repository.created_at = datetime.fromtimestamp(timestamp, utc_offset)
-
-        self.session.add(self.repository)
-        self.session.commit()
-        return self.scanned_commits
+        return existing_commits
 
     def scan_commit(self, git_commit, existing_commits):
         """Get all features of a specific commit."""
@@ -178,53 +193,93 @@ class CommitScanner():
                     },
                 )
 
-    def get_commit_emails(self, git_commit):
+    def unique_emails(self, commits):
+        """Get all commits that should be collected."""
+        checked_emails = set()
+        emails_to_scan = []
+        for commit in commits:
+            if commit.author.email not in checked_emails:
+                emails_to_scan.append((commit, 'author', commit.author.email))
+
+            if commit.committer.email not in checked_emails:
+                emails_to_scan.append((commit, 'committer', commit.committer.email))
+
+        return emails_to_scan
+
+    def preload_emails(self, emails_to_scan):
+        """Bulk preload all emails to avoid DB overhead."""
+        addresses = [e[2] for e in emails_to_scan]
+        emails = self.session.query(Email) \
+            .filter(Email.email.in_(addresses)) \
+            .all()
+        if emails:
+            self.emails = {e.email: e for e in emails}
+        else:
+            self.emails = {}
+
+    def collect_emails(self, emails):
         """Get emails of all commits to scan."""
-        if git_commit.author.email not in self.checked_emails:
-            author_email = Email.get_email(
-                git_commit.author.email,
+        for (commit, address_type, address) in emails:
+            email = self.emails.get(address)
+
+            # Create a new mail if we don't know it yet
+            if not email:
+                email = Email.get_email(
+                    address,
+                    self.session,
+                    do_commit=False,
+                )
+                self.emails[address] = email
+
+            # Get the email relation to github contributers
+            if address_type == 'author':
+                self.get_github_author(email, commit, do_commit=False)
+            if address_type == 'committer':
+                self.get_github_committer(email, commit, do_commit=False)
+
+            # Add the contributer to the repository if he isn't known yet.
+            if email.contributer:
+                if self.repository not in email.contributer.repositories:
+                    email.contributer.repositories.append(self.repository)
+            self.session.add(email)
+
+    def get_github_author(self, email, git_commit, do_commit=True):
+        """Get the related Github author."""
+        # No Github repository or the contributer is already known
+        if not self.github_repo or email.contributer is not None:
+            return
+        github_commit = call_github_function(self.github_repo, 'get_commit', [git_commit.hex])
+
+        if github_commit.author and github_commit.author is not NotSet:
+            # Workaround for issue https://github.com/PyGithub/PyGithub/issues/279
+            if github_commit.author._url.value is None:
+                sentry.captureMessage('Author has no _url', level='info')
+                return
+
+            contributer = Contributer.get_contributer(
+                github_commit.author.login,
                 self.session,
-                do_commit=False,
+                do_commit=do_commit,
             )
-            self.emails[git_commit.author.email] = author_email
-            # Try to get the contributer if we have a github repository and
-            # don't know the contributer for this email yet.
-            author_email.get_github_relation(
-                git_commit,
-                'author',
+            email.contributer = contributer
+
+    def get_github_committer(self, email, git_commit, do_commit=True):
+        """Get the related Github committer."""
+        # No Github repository or the contributer is already known
+        if not self.github_repo or email.contributer is not None:
+            return
+        github_commit = call_github_function(self.github_repo, 'get_commit', [git_commit.hex])
+
+        if github_commit.committer and github_commit.committer is not NotSet:
+            # Workaround for issue https://github.com/PyGithub/PyGithub/issues/279
+            if github_commit.committer._url.value is None:
+                sentry.captureMessage('committer has no _url', level='info')
+                return
+
+            contributer = Contributer.get_contributer(
+                github_commit.committer.login,
                 self.session,
-                self.github_repo,
-                do_commit=False,
+                do_commit=do_commit,
             )
-
-            if author_email.contributer:
-                if self.repository not in author_email.contributer.repositories:
-                    author_email.contributer.repositories.append(self.repository)
-            self.session.add(author_email)
-
-            self.checked_emails.add(git_commit.author.email)
-
-        #  Get or create new mail. Check every email only once
-        if git_commit.committer.email not in self.checked_emails:
-            committer_email = Email.get_email(
-                git_commit.committer.email,
-                self.session,
-                do_commit=False,
-            )
-            self.emails[git_commit.committer.email] = committer_email
-            # Try to get the contributer if we have a github repository and
-            # don't know the contributer for this email yet.
-            committer_email.get_github_relation(
-                git_commit,
-                'committer',
-                self.session,
-                self.github_repo,
-                do_commit=False,
-            )
-
-            if committer_email.contributer:
-                if self.repository not in committer_email.contributer.repositories:
-                    committer_email.contributer.repositories.append(self.repository)
-            self.session.add(committer_email)
-
-            self.checked_emails.add(git_commit.author.email)
+            email.contributer = contributer
+        return
