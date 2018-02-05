@@ -220,7 +220,7 @@ def register_cli(app):  # pragma: no cover
         if commit_shas:
             db.session.query(Commit) \
                 .filter(Commit.sha.in_(commit_shas)) \
-                .delete()
+                .delete(synchronize_session=False)
 
         db.session.query(Repository) \
             .filter(Repository.full_name == full_name) \

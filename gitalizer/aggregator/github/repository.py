@@ -103,7 +103,7 @@ def get_github_repository(full_name: str):
             session.commit()
         # Catch any other GithubException
         else:
-            sentry.sentry.captureException()
+            sentry.captureException()
 
         response = error_message('Error in get_repository:\n')
         pass
@@ -117,7 +117,7 @@ def get_github_repository(full_name: str):
 
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
-        sentry.sentry.captureException()
+        sentry.captureException()
         response = error_message('error in get_repository:\n')
         pass
 

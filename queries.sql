@@ -5,8 +5,8 @@ select distinct(extract(TIMEZONE from commit_time))
     on commit.sha = commit_repository.commit_sha
     join repository
     ON repository.clone_url = commit_repository.repository_clone_url
-    join contributer_repositor
+    join contributer_repository
     ON contributer_repository.repository_clone_url = repository.clone_url
     join contributer
     ON contributer.login = contributer_repository.contributer_login
-    where contributer.login = 'lattner'
+    where contributer.login = 'nukesor';

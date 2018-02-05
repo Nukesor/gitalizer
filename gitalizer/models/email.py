@@ -39,7 +39,7 @@ class Email(db.Model):
         self.contributer = contributer
 
     @staticmethod
-    def get_email(email_address: str, session):
+    def get_email(email_address: str, session, do_commit=True):
         """Create new email.
 
         Try multiple times, as we can get Multiple additions through threading.
@@ -53,7 +53,8 @@ class Email(db.Model):
                 if not email:
                     email = Email(email_address)
                     session.add(email)
-                    session.commit()
+                    if do_commit:
+                        session.commit()
                 return email
             except IntegrityError as e:
                 print(f'Got an Email IntegrityError, Try {_try} of {tries}')
@@ -65,7 +66,7 @@ class Email(db.Model):
         raise exception
 
     def get_github_relation(self, git_commit, user_type, session,
-                            github_repo: Github_Repository):
+                            github_repo: Github_Repository, do_commit=True):
         """Get the related github contributer."""
         # Early return, as we have no github repository or
         # the contributer is already known.
@@ -80,7 +81,7 @@ class Email(db.Model):
                 and github_commit.author is not NotSet:
             # Workaround for issue https://github.com/PyGithub/PyGithub/issues/279
             if github_commit.author._url.value is None:
-                sentry.sentry.captureMessage(
+                sentry.captureMessage(
                     'Author has no _url',
                     level='info',
                     extra={
@@ -93,6 +94,7 @@ class Email(db.Model):
             contributer = Contributer.get_contributer(
                 github_commit.author.login,
                 session,
+                do_commit=do_commit,
             )
             self.contributer = contributer
 
@@ -100,7 +102,7 @@ class Email(db.Model):
                 and github_commit.committer is not NotSet:
             # Workaround for issue https://github.com/PyGithub/PyGithub/issues/279
             if github_commit.committer._url.value is None:
-                sentry.sentry.captureMessage(
+                sentry.captureMessage(
                     'Committer has no _url',
                     level='info',
                     extra={
@@ -113,6 +115,7 @@ class Email(db.Model):
             contributer = Contributer.get_contributer(
                 github_commit.committer.login,
                 session,
+                do_commit=do_commit,
             )
             self.contributer = contributer
         return

@@ -65,7 +65,7 @@ class Contributer(db.Model):
         return f'<User {self.login}>'
 
     @staticmethod
-    def get_contributer(login: str, session, eager_repositories=False):
+    def get_contributer(login: str, session, eager_repositories=False, do_commit=True):
         """Create new contributer or add repository to it's list.
 
         Try multiple times, as we can get Multiple additions through threading.
@@ -82,10 +82,10 @@ class Contributer(db.Model):
                 if not contributer:
                     # Commit to prevent data loss in case we get an
                     # integrity error and need to rollback.
-                    session.commit()
-                    contributer = Contributer(login)
+                        contributer = Contributer(login)
                 session.add(contributer)
-                session.commit()
+                if do_commit:
+                    session.commit()
                 return contributer
             except IntegrityError as e:
                 print(f'Got an Contributer IntegrityError, Try {_try} of {tries}')

@@ -46,7 +46,7 @@ class CommitScanner():
             master_commit = self.git_repo.head.get_object()
             self.queue.appendleft(master_commit)
         except GitError as e:
-            sentry.sentry.captureException(
+            sentry.captureException(
                 extra={
                     'message': 'GitError during repo cloning. Probably empty',
                     'clone_url': self.repository.clone_url,
@@ -158,16 +158,19 @@ class CommitScanner():
 
                 if git_commit.author:
                     timestamp = git_commit.author.time
-                    utc_offset = timezone(timedelta(minutes=git_commit.author.offset))
+                    offset_delta = timedelta(minutes=git_commit.author.offset)
+                    utc_offset = timezone(offset_delta)
                     commit.creation_time = datetime.fromtimestamp(timestamp, utc_offset)
 
                 timestamp = git_commit.commit_time
-                utc_offset = timezone(timedelta(minutes=git_commit.commit_time_offset))
+                offset_delta = timedelta(minutes=git_commit.commit_time_offset)
+                utc_offset = timezone(offset_delta)
                 commit.commit_time = datetime.fromtimestamp(timestamp, utc_offset)
+                commit.commit_time_offset = offset_delta
 
                 self.session.add(commit)
             except BaseException as e:
-                sentry.sentry.captureException(
+                sentry.captureException(
                     extra={
                         'message': 'Error during Commit creation',
                         'clone_url': self.repository.clone_url,
@@ -181,6 +184,7 @@ class CommitScanner():
             author_email = Email.get_email(
                 git_commit.author.email,
                 self.session,
+                do_commit=False,
             )
             self.emails[git_commit.author.email] = author_email
             # Try to get the contributer if we have a github repository and
@@ -190,6 +194,7 @@ class CommitScanner():
                 'author',
                 self.session,
                 self.github_repo,
+                do_commit=False,
             )
 
             if author_email.contributer:
@@ -204,6 +209,7 @@ class CommitScanner():
             committer_email = Email.get_email(
                 git_commit.committer.email,
                 self.session,
+                do_commit=False,
             )
             self.emails[git_commit.committer.email] = committer_email
             # Try to get the contributer if we have a github repository and
@@ -213,6 +219,7 @@ class CommitScanner():
                 'committer',
                 self.session,
                 self.github_repo,
+                do_commit=False,
             )
 
             if committer_email.contributer:
