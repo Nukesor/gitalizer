@@ -2,10 +2,14 @@
 from collections import deque
 from pygit2 import Repository, GitError
 from sqlalchemy.orm import joinedload
-from sqlalchemy.exc import IntegrityError, OperationalError
 from github import Repository as Github_Repository
 from github.GithubObject import NotSet
 from datetime import datetime, timedelta, timezone
+from sqlalchemy.exc import (
+    IntegrityError,
+    OperationalError,
+    InvalidRequestError,
+)
 
 from gitalizer.extensions import sentry
 from gitalizer.aggregator.github import call_github_function
@@ -54,7 +58,7 @@ class CommitScanner():
             self.preload_emails(emails_to_scan)
             self.collect_emails(emails_to_scan)
             self.session.commit()
-        except (IntegrityError, OperationalError) as e:
+        except (IntegrityError, OperationalError, InvalidRequestError) as e:
             # The email has probably just been added by another thread -> rollback + retry
             sentry.sentry.captureException()
             self.session.rollback()
@@ -62,6 +66,7 @@ class CommitScanner():
             self.preload_emails(emails_to_scan)
             self.collect_emails(emails_to_scan)
             self.session.commit()
+            pass
 
         # Actually scan the commits
         for commit in commits_to_scan:

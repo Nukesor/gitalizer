@@ -96,11 +96,17 @@ def get_github_repository(full_name: str):
         session.commit()
 
     except GithubException as e:
-        # Access denied. Repository probably gone private.
-        if e.status == 451:
-            repository.broken = True
-            session.add(repository)
-            session.commit()
+        # 451: Access denied. Repository probably gone private.
+        # 404: User or repository just got deleted
+        if e.status == 451 or e.status == 404:
+            repository = session.query(Repository) \
+                .filter(Repository.full_name == full_name) \
+                .one_or_none()
+
+            if repository:
+                repository.broken = True
+                session.add(repository)
+                session.commit()
         # Catch any other GithubException
         else:
             sentry.captureException()

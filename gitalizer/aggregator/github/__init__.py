@@ -29,6 +29,8 @@ def call_github_function(github_object: object, function_name: str, args: list=N
         except RateLimitExceededException as e:
             # Wait until the rate limiting is reset
             resettime = github.github.get_rate_limit().rate.reset
+            if resettime < datetime.now():
+                resettime = datetime.now()
             delta = resettime - datetime.utcnow()
             delta += timedelta(minutes=2)
             total_minutes = int(delta.total_seconds() / 60)
@@ -73,6 +75,8 @@ def get_github_object(github_object: object, object_name: str):
         except RateLimitExceededException as e:
             # Wait until the rate limiting is reset
             resettime = github.github.get_rate_limit().rate.reset
+            if resettime < datetime.now():
+                resettime = datetime.now()
             delta = resettime - datetime.now()
             delta += timedelta(minutes=2)
             total_minutes = int(delta.total_seconds() / 60)

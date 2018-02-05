@@ -188,6 +188,7 @@ def check_fork(github_repo, session, repository, scan_list, user_login=None):
     # We don't know the repository yet.
     # Create the parent and check if it is a valid fork
     get_github_object(github_repo, 'parent')
+    call_github_function(github_repo.parent, '_completeIfNeeded')
     parent_repository = Repository.get_or_create(
         session,
         github_repo.parent.clone_url,
