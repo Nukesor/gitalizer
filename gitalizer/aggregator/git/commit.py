@@ -54,19 +54,9 @@ class CommitScanner():
 
         # Get emails for all commits.
         emails_to_scan = self.unique_emails(commits_to_scan)
-        try:
-            self.preload_emails(emails_to_scan)
-            self.collect_emails(emails_to_scan)
-            self.session.commit()
-        except (IntegrityError, OperationalError, InvalidRequestError) as e:
-            # The email has probably just been added by another thread -> rollback + retry
-            sentry.sentry.captureException()
-            self.session.rollback()
-
-            self.preload_emails(emails_to_scan)
-            self.collect_emails(emails_to_scan)
-            self.session.commit()
-            pass
+        self.preload_emails(emails_to_scan)
+        self.collect_emails(emails_to_scan)
+        self.session.commit()
 
         # Actually scan the commits
         for commit in commits_to_scan:
@@ -133,6 +123,7 @@ class CommitScanner():
             commits_to_scan.append(commit)
 
             if len(commits_to_scan) > 100000:
+                sentry.captureMessage(f'Repository too big: {self.repository.clone_url}', level='info')
                 self.repository.too_big = True
                 self.session.add(self.repository)
                 commits_to_scan = []
@@ -205,9 +196,11 @@ class CommitScanner():
         for commit in commits:
             if commit.author.email not in checked_emails:
                 emails_to_scan.append((commit, 'author', commit.author.email))
+                checked_emails.add(commit.author.email)
 
             if commit.committer.email not in checked_emails:
                 emails_to_scan.append((commit, 'committer', commit.committer.email))
+                checked_emails.add(commit.committer.email)
 
         return emails_to_scan
 
@@ -224,29 +217,55 @@ class CommitScanner():
 
     def collect_emails(self, emails):
         """Get emails of all commits to scan."""
-        for (commit, address_type, address) in emails:
-            email = self.emails.get(address)
+        collecting = True
+        one_more_try = False
+        while collecting:
+            try:
+                email_count = 0
+                for (commit, address_type, address) in emails:
+                    email = self.emails.get(address)
 
-            # Create a new mail if we don't know it yet
-            if not email:
-                email = Email.get_email(
-                    address,
-                    self.session,
-                    do_commit=False,
-                )
-                self.emails[address] = email
+                    # Create a new mail if we don't know it yet
+                    if not email:
+                        email = Email.get_email(
+                            address,
+                            self.session,
+                            do_commit=False,
+                        )
+                        self.emails[address] = email
 
-            # Get the email relation to github contributers
-            if address_type == 'author':
-                self.get_github_author(email, commit, do_commit=False)
-            if address_type == 'committer':
-                self.get_github_committer(email, commit, do_commit=False)
+                    # Get the email relation to github contributers
+                    if address_type == 'author':
+                        self.get_github_author(email, commit, do_commit=False)
+                    if address_type == 'committer':
+                        self.get_github_committer(email, commit, do_commit=False)
 
-            # Add the contributer to the repository if he isn't known yet.
-            if email.contributer:
-                if self.repository not in email.contributer.repositories:
-                    email.contributer.repositories.append(self.repository)
-            self.session.add(email)
+                    # Add the contributer to the repository if he isn't known yet.
+                    if email.contributer:
+                        if self.repository not in email.contributer.repositories:
+                            email.contributer.repositories.append(self.repository)
+                    self.session.add(email)
+                    email_count += 1
+
+                    # Commit all 20 emails to prevent large reloads on transaction failures.
+                    if email_count % 20:
+                        self.session.commit()
+                        one_more_try = False
+                        collecting = True
+
+                collecting = False
+            except (IntegrityError, OperationalError, InvalidRequestError) as e:
+                # This can happen in case two threads add the same email addresses
+                # Rollback the transaction, try one more time and raise if it fails again.
+                # If the next transaction is successful, we reset the retry behaviour.
+                sentry.captureMessage(f'Email collection IntegrityError', level='info')
+                self.session.rollback()
+                self.preload_emails(emails)
+                if one_more_try:
+                    collecting = False
+                    raise e
+
+                one_more_try = True
 
     def get_github_author(self, email, git_commit, do_commit=True):
         """Get the related Github author."""
