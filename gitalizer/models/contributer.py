@@ -102,12 +102,12 @@ class Contributer(db.Model):
         If that is the case, we want to skip it.
         """
         no_repositories = len(self.repositories) == 0
-        if no_repositories:
+        if no_repositories or self.last_full_scan is None:
             return True
 
         timeout = datetime.utcnow() - current_app.config['CONTRIBUTER_RESCAN_TIMEOUT']
-
         up_to_date = self.last_full_scan and self.last_full_scan >= timeout
+
         if not up_to_date:
             return True
 

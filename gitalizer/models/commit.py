@@ -1,7 +1,5 @@
 """Representation of a git commit."""
 
-import uuid
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint
 
 from gitalizer.extensions import db
@@ -33,8 +31,7 @@ class Commit(db.Model):
         ),
     )
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    sha = db.Column(db.String(40), nullable=False)
+    sha = db.Column(db.String(40), primary_key=True)
     commit_time = db.Column(db.DateTime(timezone=True))
     commit_time_offset = db.Column(db.Interval())
     creation_time = db.Column(db.DateTime(timezone=True))
