@@ -123,7 +123,12 @@ class CommitScanner():
             commits_to_scan.append(commit)
 
             if len(commits_to_scan) > 100000:
-                sentry.captureMessage(f'Repository too big: {self.repository.clone_url}', level='info')
+                sentry.captureMessage(
+                    'Repository too big',
+                    extra={'url': self.repository.clone_url},
+                    level='info',
+                    tags=['too_big'],
+                )
                 self.repository.too_big = True
                 self.session.add(self.repository)
                 commits_to_scan = []

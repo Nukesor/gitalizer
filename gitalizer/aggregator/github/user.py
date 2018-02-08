@@ -107,6 +107,12 @@ def get_user_repos(user_login: str, skip=True):
         # User has too many repositories. Flag him and return
         if user_too_big:
             contributer.too_big = True
+            sentry.captureMessage(
+                'User too big',
+                extra={'url': contributer.login},
+                level='info',
+                tags=['too_big'],
+            )
             session.add(contributer)
             session.commit()
             return user_too_big_message(user_login)

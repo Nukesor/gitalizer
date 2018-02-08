@@ -107,11 +107,12 @@ def get_github_repository(full_name: str):
                 repository.broken = True
                 session.add(repository)
                 session.commit()
+            response = {'message': 'Repository access blocked.'}
         # Catch any other GithubException
         else:
             sentry.captureException()
+            response = error_message('Error in get_repository:\n')
 
-        response = error_message('Error in get_repository:\n')
         pass
 
     except GitError as e:
