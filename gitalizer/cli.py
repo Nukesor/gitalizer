@@ -167,7 +167,7 @@ def register_cli(app):  # pragma: no cover
             from gitalizer.models import Contributer
             from gitalizer.plot.user import plot_user_travel_path
             contributer = db.session.query(Contributer) \
-                .filter(Contributer.login.ilike('nukesor')) \
+                .filter(Contributer.login.ilike('Nukesor')) \
                 .one_or_none()
 
             plot_user_travel_path(contributer, './')
