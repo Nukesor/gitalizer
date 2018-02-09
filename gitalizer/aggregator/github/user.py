@@ -2,6 +2,7 @@
 import traceback
 from flask import current_app
 from datetime import datetime
+from github.GithubException import GithubException
 
 from gitalizer.models import Repository, Contributer
 from gitalizer.extensions import github, sentry, db
@@ -79,7 +80,7 @@ def get_user_repos(user_login: str, skip=True):
         # Prefetch all owned repositories
         user_too_big = False
         owned_repos = 0
-        while False and owned._couldGrow() and not user_too_big:
+        while owned._couldGrow() and not user_too_big:
             owned_repos += 1
             call_github_function(owned, '_grow')
 
@@ -193,8 +194,14 @@ def check_fork(github_repo, session, repository, scan_list, user_login=None):
 
     # We don't know the repository yet.
     # Create the parent and check if it is a valid fork
-    get_github_object(github_repo, 'parent')
-    call_github_function(github_repo.parent, '_completeIfNeeded')
+    try:
+        get_github_object(github_repo, 'parent')
+        call_github_function(github_repo.parent, '_completeIfNeeded')
+    except GithubException as e:
+        if e.status == 451 or e.status == 404:
+            repository.fork = False
+            return
+
     parent_repository = Repository.get_or_create(
         session,
         github_repo.parent.clone_url,

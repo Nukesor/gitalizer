@@ -5,18 +5,20 @@ import time
 from socket import timeout
 from random import randrange
 from flask import current_app
+from raven import breadcrumbs
 from datetime import datetime, timedelta
 
 from gitalizer.extensions import github
 
 
-def call_github_function(github_object: object, function_name: str, args: list=None, kwargs: dict=None):
+def call_github_function(github_object: object, function_name: str,
+                         args: list=None, kwargs: dict=None):
     """Call a pygithub object member function.
 
     We need to handle those calls in case we get rate limited.
     """
     _try = 0
-    tries = 3
+    tries = 5
     exception = None
     while _try <= tries:
         try:
@@ -42,16 +44,31 @@ def call_github_function(github_object: object, function_name: str, args: list=N
             exception = e
             pass
         except GithubException as e:
-            seconds = randrange(180, 480)
-            current_app.logger.info('GithubException. Probably abuse detection.')
-            current_app.logger.info(f'Waiting for {seconds} seconds')
-            time.sleep(seconds)
+            # Forbidden or not found (Just made private or deleted)
+            if e.status == 451 or e.status == 404:
+                raise e
+
+                # Otherwise abuse detection
+            if e.status == 403:
+                seconds = randrange(180, 480)
+                current_app.logger.info('Github abuse detection.')
+                current_app.logger.info(f'Waiting for {seconds} seconds')
+                time.sleep(seconds)
+
+            breadcrumbs.record(
+                data={'action': 'Github Exception.', 'exception': e},
+                category='info',
+            )
 
             _try += 1
             exception = e
             pass
         except timeout as e:
             current_app.logger.info('Hit socket timeout waiting 10 secs.')
+            breadcrumbs.record(data={'action': 'Socket timeout hit'},
+                               category='info')
+
+            time.sleep(10)
             _try += 1
             exception = e
             pass
@@ -66,7 +83,7 @@ def get_github_object(github_object: object, object_name: str):
     we need to handle those accesses in case we get rate limited.
     """
     _try = 0
-    tries = 3
+    tries = 5
     exception = None
     while _try <= tries:
         try:
@@ -89,16 +106,31 @@ def get_github_object(github_object: object, object_name: str):
             exception = e
             pass
         except GithubException as e:
-            seconds = randrange(180, 480)
-            current_app.logger.info('GithubException. Probably abuse detection.')
-            current_app.logger.info(f'Waiting for {seconds} seconds')
-            time.sleep(seconds)
+            # Forbidden or not found (Just made private or deleted)
+            if e.status == 451 or e.status == 404:
+                raise e
+
+                # Otherwise abuse detection
+            if e.status == 403:
+                seconds = randrange(180, 480)
+                current_app.logger.info('Github abuse detection.')
+                current_app.logger.info(f'Waiting for {seconds} seconds')
+                time.sleep(seconds)
+
+            breadcrumbs.record(
+                data={'action': 'Github Exception.', 'exception': e},
+                category='info',
+            )
 
             _try += 1
             exception = e
             pass
         except timeout as e:
             current_app.logger.info('Hit socket timeout waiting 10 secs.')
+            breadcrumbs.record(data={'action': 'Socket timeout hit'},
+                               category='info')
+
+            time.sleep(10)
             _try += 1
             exception = e
             pass
