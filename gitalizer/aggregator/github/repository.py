@@ -115,10 +115,11 @@ def get_github_repository(full_name: str):
 
         pass
 
-    except GitError as e:
-        repository.broken = True
-        session.add(repository)
-        session.commit()
+    except (GitError, UnicodeDecodeError) as e:
+        if repository:
+            repository.broken = True
+            session.add(repository)
+            session.commit()
         response = error_message('Error in get_repository:\n')
         pass
 

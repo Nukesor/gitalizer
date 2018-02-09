@@ -48,6 +48,7 @@ class CommitScanner():
         """
         commits_to_scan = self.get_commits_to_scan()
         if not commits_to_scan:
+            self.repository.completely_scanned = True
             return 0
 
         existing_commits = self.preload_commits(commits_to_scan)
