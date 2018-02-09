@@ -112,7 +112,7 @@ def get_user_repos(user_login: str, skip=True):
                 'User too big',
                 extra={'url': contributer.login},
                 level='info',
-                tags=['too_big'],
+                tags={'type': 'too_big', 'entity': 'user'},
             )
             session.add(contributer)
             session.commit()

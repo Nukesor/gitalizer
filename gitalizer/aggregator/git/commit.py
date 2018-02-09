@@ -127,7 +127,7 @@ class CommitScanner():
                     'Repository too big',
                     extra={'url': self.repository.clone_url},
                     level='info',
-                    tags=['too_big'],
+                    tags={'type': 'too_big', 'entity': 'repository'},
                 )
                 self.repository.too_big = True
                 self.session.add(self.repository)
