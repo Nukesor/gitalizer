@@ -1,7 +1,7 @@
 """Representation of a git repository contributer."""
 
 from flask import current_app
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -105,7 +105,7 @@ class Contributer(db.Model):
         if no_repositories or self.last_full_scan is None:
             return True
 
-        timeout = datetime.utcnow() - current_app.config['CONTRIBUTER_RESCAN_TIMEOUT']
+        timeout = datetime.now(timezone.utc) - current_app.config['CONTRIBUTER_RESCAN_TIMEOUT']
         up_to_date = self.last_full_scan and self.last_full_scan >= timeout
 
         if not up_to_date:
