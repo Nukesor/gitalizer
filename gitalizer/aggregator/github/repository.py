@@ -5,6 +5,7 @@ from datetime import datetime
 from github import GithubException
 from raven import breadcrumbs
 from pygit2 import GitError
+from flask import current_app
 
 from gitalizer.extensions import github, sentry
 from gitalizer.models.repository import Repository
@@ -63,6 +64,14 @@ def get_github_repository(full_name: str):
 
         if repository.broken:
             return {'message': f'Skip broken repo {github_repo.clone_url}'}
+        elif github_repo.size > current_app.config['MAX_REPOSITORY_SIZE']:
+            repository.too_big = True
+            session.add(repository)
+            session.commit()
+            sentry.captureMessage(f'Repo filesize too big', level='info',
+                                  extra={'repo': repository.clone_url})
+
+            return {'message': f'Repo too big (filesize): {github_repo.clone_url}'}
 
         current_time = datetime.now().strftime('%H:%M')
 

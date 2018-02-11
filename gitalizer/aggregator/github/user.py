@@ -40,7 +40,9 @@ def get_friends_by_name(name: str):
     manager.run()
 
     for login in user_logins:
-        contributer = db.session.query(Contributer).get(login)
+        contributer = db.session.query(Contributer) \
+            .filter(Contributer.login.ilike(login)) \
+            .one()
         if not contributer.too_big:
             contributer.last_full_scan = datetime.utcnow()
             db.session.add(contributer)
@@ -55,7 +57,9 @@ def get_user_by_login(login: str):
     manager.start()
     manager.run()
 
-    contributer = db.session.query(Contributer).get(login)
+    contributer = db.session.query(Contributer) \
+        .filter(Contributer.login.ilike(login)) \
+        .one()
     contributer.last_full_scan = datetime.utcnow()
     db.session.add(contributer)
     db.session.commit()
