@@ -19,6 +19,8 @@ depends_on = None
 
 def upgrade():
     """Drop id primary key and use sha as pkey."""
+    conn = op.get_bind()
+    conn.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
     op.drop_constraint('commit_repository_commit_sha_fkey', 'commit_repository', type_='foreignkey')
     op.drop_constraint('commit_pkey', 'commit', type_='primary')
     op.drop_constraint('commit_sha_key', 'commit', type_='unique')
@@ -29,6 +31,8 @@ def upgrade():
 
 def downgrade():
     """Drop sha primary key and create id uuid pkey."""
+    conn = op.get_bind()
+    conn.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
     op.drop_constraint('commit_repository_commit_sha_fkey', 'commit_repository', type_='foreignkey')
     op.drop_constraint('commit_pkey', 'commit', type_='primary')
     op.add_column('commit', sa.Column('id', postgresql.UUID(), autoincrement=False, nullable=False, server_default=text('uuid_generate_v4()')))
