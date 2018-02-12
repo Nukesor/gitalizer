@@ -46,7 +46,6 @@ class Repository(db.Model):
         "Commit",
         secondary=commit_repository,
         back_populates="repositories",
-        cascade='save-update',
     )
     commits_by_hash = db.relationship(
         "Commit",
@@ -58,7 +57,6 @@ class Repository(db.Model):
         "Contributer",
         secondary=contributer_repository,
         back_populates="repositories",
-        cascade='save-update',
     )
 
     def __init__(self, clone_url, name=None, full_name=None):

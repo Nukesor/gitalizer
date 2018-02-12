@@ -46,21 +46,29 @@ def get_user_commits_from_repositories(contributer, repositories, delta=None):
     if delta is None:
         delta = timedelta(days=99*365)
     time_span = datetime.now() - delta
+
+    conditions = []
+    full_names = [r.full_name for r in repositories]
+    print(full_names)
+    for name in full_names:
+        conditions.append(Repository.full_name.ilike(name))
+
     commits = db.session.query(Commit) \
         .filter(Commit.commit_time >= time_span) \
         .join(Email, or_(
             Email.email == Commit.author_email_address,
             Email.email == Commit.committer_email_address,
         )) \
-        .join(Contributer, Email.contributer_login == contributer.login) \
+        .join(Contributer, Email.contributer_login == Contributer.login) \
         .join(
             commit_repository,
             commit_repository.c.commit_sha == Commit.sha,
         ) \
         .join(Repository, commit_repository.c.repository_clone_url == Repository.clone_url) \
-        .filter(Repository.full_name.in_(repositories)) \
         .filter(Contributer.login == contributer.login) \
         .order_by(Commit.commit_time.asc()) \
         .all()
+        #.filter(or_(*conditions)) \
+        #.filter(Repository.full_name.in_(full_names)) \
 
     return commits

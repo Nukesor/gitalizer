@@ -45,13 +45,13 @@ def plot_employee(login, repositories):
     """Plot all user related graphs."""
     plot_dir = current_app.config['PLOT_DIR']
     path = os.path.join(plot_dir, login.lower(), 'employee')
-    os.mkdirs(path, exist_ok=True)
+    os.makedirs(path, exist_ok=True)
 
     contributer = db.session.query(Contributer) \
         .filter(Contributer.login.ilike(login)) \
         .one_or_none()
 
-    from gitalizer.models.contributer import Repository
+    from gitalizer.models import Repository
     repositories = db.session.query(Repository) \
         .filter(Repository.full_name.in_(repositories)) \
         .all()

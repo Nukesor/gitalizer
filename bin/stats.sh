@@ -7,6 +7,9 @@ echo "DB size: $result"
 result=$(psql -d $db -t -c 'SELECT count(*) FROM commit;')
 echo "commit count: $result"
 
+result=$(psql -d $db -t -c 'SELECT count(*) FROM commit_repository;')
+echo "Referenced commit count: $result"
+
 result=$(psql -d $db -t -c 'SELECT count(*) FROM repository;')
 echo "repository count: $result"
 
@@ -15,3 +18,6 @@ echo "Finished or filtered repository count: $result"
 
 result=$(psql -d $db -t -c 'SELECT count(*) FROM contributer;')
 echo "contributer count: $result"
+
+result=$(psql -d $db -t -c 'SELECT count(*) FROM contributer_repository;')
+echo "Referenced contributer to repositories: $result"
