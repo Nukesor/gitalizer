@@ -38,8 +38,6 @@ class Commit(db.Model):
     creation_time_offset = db.Column(db.Interval())
     additions = db.Column(db.Integer())
     deletions = db.Column(db.Integer())
-    unknown = db.Column(db.Boolean(), default=False,
-                        server_default='FALSE', nullable=False)
 
     # Email addresses
     author_email_address = db.Column(

@@ -28,6 +28,7 @@ class Email(db.Model):
         "Commit", back_populates="committer_email",
         foreign_keys='Commit.committer_email_address',
     )
+    unknown = db.Column(db.Boolean(), default=False)
 
     def __init__(self, email, contributer=None):
         """Constructor."""

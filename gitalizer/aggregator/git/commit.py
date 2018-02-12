@@ -299,7 +299,7 @@ class CommitScanner():
     def get_github_committer(self, email, git_commit, do_commit=True):
         """Get the related Github committer."""
         # No Github repository or the contributer is already known
-        if not self.github_repo or email.contributer is not None or email.unkown:
+        if not self.github_repo or email.contributer is not None or email.unknown:
             return
         github_commit = call_github_function(self.github_repo, 'get_commit', [git_commit.hex])
 
