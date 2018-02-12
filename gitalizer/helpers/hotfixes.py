@@ -10,6 +10,7 @@ from gitalizer.models import (
     contributer_repository,
     commit_repository,
 )
+from gitalizer.aggregator.parallel import new_session
 from gitalizer.aggregator.parallel.manager import Manager
 from gitalizer.aggregator.github.user import check_fork
 from gitalizer.aggregator.github import (
@@ -52,34 +53,27 @@ def complete_repos():
     """Complete unfinished repsitories."""
     print("Get unfinished or out of date repositories.")
     timeout_threshold = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
+    session = new_session()
 
-    repos = db.session.query(Repository) \
+    repos = session.query(Repository) \
         .filter(Repository.fork.is_(False)) \
         .filter(Repository.broken.is_(False)) \
+        .filter(Repository.too_big.is_(False)) \
         .filter(or_(
             Repository.completely_scanned.is_(False),
             Repository.updated_at <= timeout_threshold,
         )) \
-        .options(joinedload(Repository.parent)) \
         .all()
     print(f'Found {len(repos)}')
 
+    full_names = [r.full_name for r in repos]
     repo_count = 0
     repos_to_scan = set()
-    for repo in repos:
-        github_repo = call_github_function(github.github, 'get_repo',
-                                           [repo.full_name], {'lazy': False})
-        if github_repo.fork:
-            check_fork(github_repo, db.session, repo, repos_to_scan)
-
-        # Check if repos should b
-        if repo.should_scan():
-            repos_to_scan.add(github_repo.full_name)
-
+    for name in full_names:
+        repos_to_scan.add(name)
         repo_count += 1
         if repo_count % 100 == 0 or repo_count == len(repos):
             print(f'Get batch {repo_count}')
-            db.session.commit()
             manager = Manager('github_repository', repos_to_scan)
             manager.start()
             manager.run()
