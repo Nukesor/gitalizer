@@ -14,10 +14,18 @@ class Config(object):
     GITHUB_USER = 'User'
     GITHUB_PASSWORD = 'userpass'
     GITHUB_TOKEN = None
-    GITHUB_USER_SKIP_COUNT = 3000
+
+    SSH_USER = 'git'
+    SSH_PASSWORD = 'password'
+    PUBLIC_KEY = '/home/user/.ssh/id_rsa.pub'
+    PRIVATE_KEY = '/home/user/.ssh/id_rsa'
+
     GIT_CLONE_PATH = '/tmp/gitalizer'
     GIT_USER_SCAN_THREADS = 4
     GIT_COMMIT_SCAN_THREADS = 4
+
+    MAX_REPOSITORY_SIZE = 1024 * 1024 * 10
+    GITHUB_USER_SKIP_COUNT = 3000
 
     REPOSITORY_RESCAN_TIMEOUT = timedelta(days=5)
     CONTRIBUTER_RESCAN_TIMEOUT = timedelta(days=14)

@@ -16,8 +16,9 @@ def get_git_repository(url: str, owner: str, name: str):
 
     callbacks = None
     if 'https://' not in url:
-        keypair = pygit2.Keypair(current_app.config['GITHUB_USER'],
-                                 "id_rsa.pub", "id_rsa",
+        keypair = pygit2.Keypair(current_app.config['SSH_USER'],
+                                 current_app.config['PUBLIC_KEY'],
+                                 current_app.config['PRIVATE_KEY'],
                                  current_app.config['SSH_PASSWORD'])
         callbacks = pygit2.RemoteCallbacks(credentials=keypair)
 
