@@ -15,9 +15,11 @@ class Github(object):
         """Initialize github."""
         if configs['production'].GITHUB_TOKEN:
             user = configs['production'].GITHUB_TOKEN
+            password = None
         else:
             user = configs['production'].GITHUB_USER
-        self.github = ActualGithub(user, configs['production'].GITHUB_PASSWORD)
+            password = configs['production'].GITHUB_PASSWORD
+        self.github = ActualGithub(user, password)
 
     def init_app(self, app):
         """Lazy initializer which takes an `app` and sets up the internal context."""
