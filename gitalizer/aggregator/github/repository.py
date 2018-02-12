@@ -56,19 +56,19 @@ def get_github_repository(full_name: str):
 
         repository = Repository.get_or_create(
             session,
-            github_repo.clone_url,
+            github_repo.ssh_url,
             name=github_repo.name,
             full_name=github_repo.full_name,
         )
 
         if repository.broken:
-            return {'message': f'Skip broken repo {github_repo.clone_url}'}
+            return {'message': f'Skip broken repo {github_repo.ssh_url}'}
 
         current_time = datetime.now().strftime('%H:%M')
 
         owner = get_github_object(github_repo, 'owner')
         git_repo = get_git_repository(
-            github_repo.clone_url,
+            github_repo.ssh_url,
             owner.login,
             github_repo.name,
         )
@@ -80,7 +80,7 @@ def get_github_repository(full_name: str):
             category='info',
         )
 
-        repository = session.query(Repository).get(github_repo.clone_url)
+        repository = session.query(Repository).get(github_repo.ssh_url)
         rate = github.github.get_rate_limit().rate
         time = rate.reset.strftime("%H:%M")
         current_time = datetime.now().strftime('%H:%M')
@@ -116,10 +116,10 @@ def get_github_repository(full_name: str):
         pass
 
     except (GitError, UnicodeDecodeError) as e:
-        if repository:
-            repository.broken = True
-            session.add(repository)
-            session.commit()
+#        if repository:
+#            repository.broken = True
+#            session.add(repository)
+#            session.commit()
         response = error_message('Error in get_repository:\n')
         pass
 

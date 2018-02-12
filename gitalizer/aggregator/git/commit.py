@@ -31,7 +31,7 @@ class CommitScanner():
         self.session = session
         self.repository = session.query(RepositoryModel) \
             .options(joinedload(RepositoryModel.commits_by_hash)) \
-            .get(github_repo.clone_url)
+            .get(github_repo.ssh_url)
         self.git_repo = git_repo
         self.github_repo = github_repo
         self.queue = deque()

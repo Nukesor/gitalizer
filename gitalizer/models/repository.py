@@ -19,11 +19,12 @@ class Repository(db.Model):
     clone_url = db.Column(db.String(240), primary_key=True)
     parent_url = db.Column(
         db.String(240),
-        ForeignKey('repository.clone_url', ondelete='SET NULL'),
+        ForeignKey('repository.clone_url', ondelete='SET NULL',
+                   onupdate='CASCADE', deferrable=True),
         index=True,
     )
     name = db.Column(db.String(240))
-    full_name = db.Column(db.String(240))
+    full_name = db.Column(db.String(240), unique=True)
     created_at = db.Column(db.DateTime(timezone=True))
 
     fork = db.Column(db.Boolean(), default=False,
@@ -38,7 +39,6 @@ class Repository(db.Model):
 
     children = db.relationship(
         "Repository",
-        cascade="delete",
         backref=backref('parent', remote_side=[clone_url]),
     )
 
@@ -46,6 +46,7 @@ class Repository(db.Model):
         "Commit",
         secondary=commit_repository,
         back_populates="repositories",
+        cascade='save-update',
     )
     commits_by_hash = db.relationship(
         "Commit",
@@ -57,6 +58,7 @@ class Repository(db.Model):
         "Contributer",
         secondary=contributer_repository,
         back_populates="repositories",
+        cascade='save-update',
     )
 
     def __init__(self, clone_url, name=None, full_name=None):

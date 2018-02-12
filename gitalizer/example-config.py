@@ -13,6 +13,7 @@ class Config(object):
 
     GITHUB_USER = 'User'
     GITHUB_PASSWORD = 'userpass'
+    GITHUB_TOKEN = None
     GITHUB_USER_SKIP_COUNT = 3000
     GIT_CLONE_PATH = '/tmp/gitalizer'
     GIT_USER_SCAN_THREADS = 4

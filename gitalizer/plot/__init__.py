@@ -11,6 +11,10 @@ from .user import (
     plot_user_commit_timeline,
     plot_user_travel_path,
 )
+from .employee import (
+    plot_employee_timeline_with_holiday,
+    plot_employee_punchcard,
+)
 
 
 def plot_user(login):
@@ -35,3 +39,29 @@ def plot_user(login):
 #    plot_user_repositories_changes(contributer, user_dir)
     plot_user_commit_timeline(contributer, user_dir)
     plot_user_travel_path(contributer, user_dir)
+
+
+def plot_employee(login, repositories):
+    """Plot all user related graphs."""
+    plot_dir = current_app.config['PLOT_DIR']
+    path = os.path.join(plot_dir, login.lower(), 'employee')
+    os.mkdirs(path, exist_ok=True)
+
+    contributer = db.session.query(Contributer) \
+        .filter(Contributer.login.ilike(login)) \
+        .one_or_none()
+
+    from gitalizer.models.contributer import Repository
+    repositories = db.session.query(Repository) \
+        .filter(Repository.full_name.in_(repositories)) \
+        .all()
+
+    if contributer is None:
+        print(f'No contributer with name {login}')
+        sys.exit(1)
+    elif len(repositories) == 0:
+        print(f'No repositories found with these names.')
+        sys.exit(1)
+
+    plot_employee_punchcard(contributer, repositories, path)
+    plot_employee_timeline_with_holiday(contributer, repositories, path)

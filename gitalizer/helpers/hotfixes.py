@@ -4,7 +4,12 @@ from datetime import datetime
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 from gitalizer.extensions import db, github
-from gitalizer.models import Repository, Commit
+from gitalizer.models import (
+    Repository,
+    Commit,
+    contributer_repository,
+    commit_repository,
+)
 from gitalizer.aggregator.parallel.manager import Manager
 from gitalizer.aggregator.github.user import check_fork
 from gitalizer.aggregator.github import (
@@ -40,24 +45,11 @@ def clean_db():
 
 def complete_data():
     """Clean stuff."""
-    print("Get repos with missing full_name.")
-    repos = db.session.query(Repository) \
-        .filter(Repository.full_name.is_(None)) \
-        .all()
+    complete_repos()
 
-    print(f'Found {len(repos)}')
 
-    for repo in repos:
-        name_parts = repo.clone_url.rsplit('/', 2)
-        owner = name_parts[1]
-        name = name_parts[2].rsplit('.', 1)[0]
-        full_name = f'{owner}/{name}'
-        repo.name = name
-        repo.full_name = full_name
-        db.session.add(repo)
-
-    db.session.commit()
-
+def complete_repos():
+    """Complete unfinished repsitories."""
     print("Get unfinished or out of date repositories.")
     timeout_threshold = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
 

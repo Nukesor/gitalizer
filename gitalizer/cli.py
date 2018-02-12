@@ -4,10 +4,17 @@ import sys
 import click
 import urllib.parse
 from flask import url_for
-from sqlalchemy_utils.functions import database_exists, create_database, drop_database
+from sqlalchemy_utils.functions import (
+    database_exists,
+    create_database,
+    drop_database,
+)
 
-from gitalizer.plot import plot_user as plot_user_func
 from gitalizer.extensions import db
+from gitalizer.plot import (
+    plot_user as plot_user_func,
+    plot_employee,
+)
 from gitalizer.models import (
     Commit,
     commit_repository,
@@ -133,6 +140,16 @@ def register_cli(app):  # pragma: no cover
             sys.exit(1)
 
     @app.cli.command()
+    @click.argument('orga')
+    def get_organization_with_member(orga):
+        """Get github organizations for all known contributers."""
+        try:
+            get_github_organization(orga, True)
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            sys.exit(1)
+
+    @app.cli.command()
     def get_organizations():
         """Get github organizations for all known contributers."""
         try:
@@ -141,15 +158,30 @@ def register_cli(app):  # pragma: no cover
             print("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
+    # ----- Plotting / Data mining -----
+
     @app.cli.command()
-    @click.argument('owner')
-    def plot_user(owner):
+    @click.argument('login')
+    def plot_user(login):
         """Plot all graphs for a specific github user."""
         try:
-            plot_user_func(owner)
+            plot_user_func(login)
         except KeyboardInterrupt:
             print("CTRL-C Exiting Gracefully")
             sys.exit(1)
+
+    @app.cli.command()
+    @click.argument('login')
+    @click.argument('repositories', nargs=-1)
+    def plot_user_for_repositories(login, repositories):
+        """Get statistics of an user for specific repositories."""
+        try:
+            plot_employee(login, repositories)
+        except KeyboardInterrupt:
+            print("CTRL-C Exiting Gracefully")
+            sys.exit(1)
+
+    # ----- Maintainance -----
 
     @app.cli.command()
     def clean():

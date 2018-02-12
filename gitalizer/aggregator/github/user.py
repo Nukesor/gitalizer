@@ -122,7 +122,7 @@ def get_user_repos(user_login: str, skip=True):
         for github_repo in owned:
             repository = Repository.get_or_create(
                 session,
-                github_repo.clone_url,
+                github_repo.ssh_url,
                 name=github_repo.name,
                 full_name=github_repo.full_name,
             )
@@ -141,7 +141,7 @@ def get_user_repos(user_login: str, skip=True):
         for github_repo in starred:
             repository = Repository.get_or_create(
                 session,
-                github_repo.clone_url,
+                github_repo.ssh_url,
                 name=github_repo.name,
                 full_name=github_repo.full_name,
             )
@@ -204,7 +204,7 @@ def check_fork(github_repo, session, repository, scan_list, user_login=None):
 
     parent_repository = Repository.get_or_create(
         session,
-        github_repo.parent.clone_url,
+        github_repo.parent.ssh_url,
         name=github_repo.parent.name,
         full_name=github_repo.parent.full_name,
     )

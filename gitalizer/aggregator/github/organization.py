@@ -38,7 +38,7 @@ def get_github_organizations():
         session.commit()
 
 
-def get_github_organization(name: str):
+def get_github_organization(name: str, members=False):
     """Get all collaborators of an organization."""
     session = new_session()
     orga = call_github_function(github.github, 'get_organization', [name])
@@ -49,11 +49,11 @@ def get_github_organization(name: str):
         call_github_function(orga_repos, '_grow')
 
     # Check orga repos
-    repos_to_scan = []
+    repos_to_scan = set()
     for github_repo in orga_repos:
         repository = Repository.get_or_create(
             session,
-            github_repo.clone_url,
+            github_repo.ssh_url,
             name=github_repo.name,
             full_name=github_repo.full_name,
         )
@@ -67,11 +67,13 @@ def get_github_organization(name: str):
         session.commit()
         repos_to_scan.add(github_repo.full_name)
 
-    # Get members
-    members = call_github_function(orga, 'get_members')
-    while members._couldGrow():
-        call_github_function(members, '_grow')
-    member_list = [m.login for m in members]
+    member_list = set()
+    if members:
+        # Get members
+        members = call_github_function(orga, 'get_members')
+        while members._couldGrow():
+            call_github_function(members, '_grow')
+        member_list = set([m.login for m in members])
 
     # Create and start manager with orga repos and memeber_list
     sub_manager = Manager('github_repository', repos_to_scan)

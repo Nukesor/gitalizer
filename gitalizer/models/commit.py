@@ -1,6 +1,5 @@
 """Representation of a git commit."""
-
-from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint
+from sqlalchemy import ForeignKey, CheckConstraint
 
 from gitalizer.extensions import db
 
@@ -9,11 +8,13 @@ commit_repository = db.Table(
     'commit_repository',
     db.Column('commit_sha',
               db.String(40),
-              ForeignKey('commit.sha', ondelete='CASCADE', deferrable=True),
+              ForeignKey('commit.sha', ondelete='CASCADE',
+                         onupdate='CASCADE', deferrable=True),
               index=True),
     db.Column('repository_clone_url',
               db.String(240),
-              ForeignKey('repository.clone_url', ondelete='CASCADE', deferrable=True),
+              ForeignKey('repository.clone_url', ondelete='CASCADE',
+                         onupdate='CASCADE', deferrable=True),
               index=True),
     db.UniqueConstraint('repository_clone_url', 'commit_sha'),
 )
@@ -24,7 +25,6 @@ class Commit(db.Model):
 
     __tablename__ = 'commit'
     __table_args__ = (
-        UniqueConstraint('sha'),
         CheckConstraint(
             "(additions is NULL and deletions is NULL) or "
             "(additions is not NULL and deletions is not NULL)",
