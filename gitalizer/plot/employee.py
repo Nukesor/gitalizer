@@ -10,9 +10,6 @@ from .plotting.commit_punchcard import plot_commit_punchcard
 def plot_employee_timeline_with_holiday(contributer, repositories, path):
     """Get all commits of repositories of an user."""
     commits = get_user_commits_from_repositories(contributer, repositories)
-    print(len(commits))
-    for commit in commits:
-        print(commit.local_time())
 
     raise Exception
     title = f"{contributer.login}'s commit size history."

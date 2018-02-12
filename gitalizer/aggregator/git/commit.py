@@ -250,6 +250,9 @@ class CommitScanner():
                     if email.contributer:
                         if self.repository not in email.contributer.repositories:
                             email.contributer.repositories.append(self.repository)
+                    else:
+                        # Mark email as unknown to prevent further github queries for this email.
+                        email.unknown = True
                     self.session.add(email)
                     email_count += 1
 
@@ -276,7 +279,7 @@ class CommitScanner():
     def get_github_author(self, email, git_commit, do_commit=True):
         """Get the related Github author."""
         # No Github repository or the contributer is already known
-        if not self.github_repo or email.contributer is not None:
+        if not self.github_repo or email.contributer is not None or email.unknown:
             return
         github_commit = call_github_function(self.github_repo, 'get_commit', [git_commit.hex])
 
@@ -296,7 +299,7 @@ class CommitScanner():
     def get_github_committer(self, email, git_commit, do_commit=True):
         """Get the related Github committer."""
         # No Github repository or the contributer is already known
-        if not self.github_repo or email.contributer is not None:
+        if not self.github_repo or email.contributer is not None or email.unkown:
             return
         github_commit = call_github_function(self.github_repo, 'get_commit', [git_commit.hex])
 

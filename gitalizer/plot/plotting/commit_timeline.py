@@ -15,7 +15,7 @@ def plot_commit_timeline(commits, path, title):
         if (math.fabs(c.additions) + math.fabs(c.deletions)) > 8000:
             continue
         data.append({
-            'date': c.commit_time.replace(tzinfo=None),
+            'date': c.local_time(),
             'additions': c.additions,
             'deletions': -c.deletions,
         })

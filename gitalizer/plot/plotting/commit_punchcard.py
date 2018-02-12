@@ -8,8 +8,8 @@ def plot_commit_punchcard(commits, path, title):
     # Find how many plots we are making
     statistic = {}
     for commit in commits:
-        weekday = commit.commit_time.weekday()
-        hour = commit.commit_time.hour
+        weekday = commit.local_time().weekday()
+        hour = commit.local_time().hour
         if weekday not in statistic:
             statistic[weekday] = {}
             for i in range(24):
