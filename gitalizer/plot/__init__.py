@@ -1,6 +1,7 @@
 """The main module for plotting graphs."""
 import os
 import sys
+from sqlalchemy import or_
 from flask import current_app
 
 from gitalizer.extensions import db
@@ -52,8 +53,12 @@ def plot_employee(login, repositories):
         .one_or_none()
 
     from gitalizer.models import Repository
+    conditions = []
+    for name in repositories:
+        conditions.append(Repository.full_name.ilike(name))
+
     repositories = db.session.query(Repository) \
-        .filter(Repository.full_name.in_(repositories)) \
+        .filter(or_(*conditions)) \
         .all()
 
     if contributer is None:

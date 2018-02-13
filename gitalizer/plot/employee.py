@@ -11,7 +11,6 @@ def plot_employee_timeline_with_holiday(contributer, repositories, path):
     """Get all commits of repositories of an user."""
     commits = get_user_commits_from_repositories(contributer, repositories)
 
-    raise Exception
     title = f"{contributer.login}'s commit size history."
     path = os.path.join(path, 'commit_timeline')
 

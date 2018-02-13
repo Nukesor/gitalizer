@@ -72,22 +72,10 @@ class Commit(db.Model):
 
     def local_time(self):
         """Get the local commit time for this commit."""
-        print('\n')
         new_time = self.commit_time
         if self.commit_time.utcoffset():
-            print(self.commit_time.utcoffset())
-            print(self.commit_time)
             new_time = self.commit_time - self.commit_time.utcoffset()
             new_time = new_time.replace(tzinfo=None)
-            print(new_time)
-            print(new_time.utcoffset())
-            print(f'Offset: {self.commit_time_offset}')
             new_time += self.commit_time_offset
-            print(new_time)
-            print(new_time.utcoffset())
-
-        else:
-            print(self.commit_time)
-            print(self.commit_time.utcoffset())
 
         return new_time
