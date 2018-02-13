@@ -68,19 +68,10 @@ def complete_repos():
 
     full_names = [r.full_name for r in repos]
     repo_count = 0
-    repos_to_scan = set()
-    for name in full_names:
-        repos_to_scan.add(name)
-        repo_count += 1
-        if repo_count % 100 == 0 or repo_count == len(repos):
-            print(f'Get batch {repo_count}')
-            manager = Manager('github_repository', repos_to_scan)
-            manager.start()
-            manager.run()
-            repos_to_scan = set()
+    repos_to_scan = set(full_names)
 
     manager = Manager('github_repository', repos_to_scan)
     manager.start()
     manager.run()
 
-    db.session.commit()
+    session.close()
