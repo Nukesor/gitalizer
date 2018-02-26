@@ -9,10 +9,12 @@ from gitalizer.models.commit import Commit
 from gitalizer.models.contributer import Contributer
 
 from .helper.db import get_user_repositories, get_user_commits
-from .plotting.commit_timeline import plot_commit_timeline
-from .plotting.commit_punchcard import plot_commit_punchcard
-from .plotting.repository_changes import plot_repository_changes
-from .plotting.contributer_travel_path import contributer_travel_path
+from .plotting import (
+    CommitTimeline,
+    CommitPunchcard,
+    plot_repository_changes,
+    contributer_travel_path,
+)
 
 
 def plot_user_commit_timeline(contributer, path):
@@ -21,7 +23,8 @@ def plot_user_commit_timeline(contributer, path):
     title = f"{contributer.login}'s commit size history."
     path = os.path.join(path, 'commit_timeline')
 
-    plot_commit_timeline(commits, path, title)
+    plotter = CommitTimeline(commits, path, title)
+    plotter.run()
 
 
 def plot_user_repositories_changes(contributer, path):
@@ -61,7 +64,8 @@ def plot_user_punchcard(contributer, path):
 
     title = f"{contributer.login}'s Punchcard"
 
-    plot_commit_punchcard(commits, path, title)
+    plotter = CommitPunchcard(commits, path, title)
+    plotter.run()
 
 
 def plot_user_travel_path(contributer, path):
@@ -70,5 +74,3 @@ def plot_user_travel_path(contributer, path):
 
     title = f"{contributer.login}'s Travel history"
     contributer_travel_path(commits, path, title)
-
-    """Plot the travel timeline of an user."""

@@ -39,7 +39,7 @@ def plot_user(login):
     plot_user_punchcard(contributer, user_dir)
 #    plot_user_repositories_changes(contributer, user_dir)
     plot_user_commit_timeline(contributer, user_dir)
-    plot_user_travel_path(contributer, user_dir)
+#    plot_user_travel_path(contributer, user_dir)
 
 
 def plot_employee(login, repositories):
