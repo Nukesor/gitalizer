@@ -15,6 +15,7 @@ from .user import (
 from .employee import (
     plot_employee_timeline_with_holiday,
     plot_employee_punchcard,
+    plot_employee_missing_time,
 )
 
 
@@ -68,5 +69,6 @@ def plot_employee(login, repositories):
         print(f'No repositories found with these names.')
         sys.exit(1)
 
-    plot_employee_punchcard(contributer, repositories, path)
-    plot_employee_timeline_with_holiday(contributer, repositories, path)
+#    plot_employee_punchcard(contributer, repositories, path)
+#    plot_employee_timeline_with_holiday(contributer, repositories, path)
+    plot_employee_missing_time(contributer, repositories, path)

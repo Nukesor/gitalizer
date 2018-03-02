@@ -6,6 +6,7 @@ from .helper.db import get_user_commits_from_repositories
 from .plotting import (
     CommitTimeline,
     CommitPunchcard,
+    MissingTime,
 )
 
 
@@ -28,3 +29,12 @@ def plot_employee_punchcard(contributer, repositories, path):
 
     plotter = CommitPunchcard(commits, path, title)
     plotter.run()
+
+
+def plot_employee_missing_time(contributer, repositories, path):
+    """Plot a timeline with marked missing times."""
+    commits = get_user_commits_from_repositories(contributer, repositories)
+    title = f"{contributer.login}'s Missing times"
+
+    plotter = MissingTime(commits, path, title)
+    plotter.preprocess()
