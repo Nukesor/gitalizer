@@ -7,6 +7,8 @@ from datetime import date
 
 from gitalizer.plot.helper.plot import plot_figure
 
+week_days = ['Mon', 'Tue', 'Wen', 'Thu', 'Fri', 'Sat', 'Sun']
+
 
 class CommitTimeline():
     """Timeline creator."""
@@ -97,6 +99,10 @@ class MissingTime():
         self.raw_data = raw_data
         self.data = None
 
+        self.entries = []
+        self.anomalies = []
+        self.current_entry = {}
+
     def run(self):
         """Execute all steps."""
         self.preprocess()
@@ -121,8 +127,7 @@ class MissingTime():
         # Create a dataframe for sorting and easier processing
         data = pd.DataFrame(
             week_vectors,
-            columns=['year', 'week', 'working_days',
-                     'Mon', 'Tue', 'Wen', 'Thu', 'Fri', 'Sat', 'Sun'],
+            columns=['year', 'week', 'working_days'] + week_days,
         )
 
         # Create a fingerprint row for easier prototype detection.
@@ -130,43 +135,42 @@ class MissingTime():
             return row.ix[2:10].astype('U').str.cat(sep=',')
         data['fingerprint'] = data.apply(fingerprint, axis=1)
 
-        entries = []
-        current_entry = {}
+        entry = None
         prototype = None
         for index, row in data.iterrows():
-
-            # First iteration.
+            # We currently have no prototype. Try to find one.
             if prototype is None:
                 prototype = self.find_prototype(data.loc[index:index+6])
-                # We found a prototype. Save it and mark it.
-                # Check if the current row is the prototype. Otherwise we handle it as unknown.
-                if prototype is not None and (prototype == row).all():
-                    # If there is a entry from a previous unknown time span,
-                    # add an end date for this time span and add it.
-                    if current_entry and current_entry['type'] == 'unknown':
-                        current_entry['end'] = [row.year, row.week]
-                        entries.append(current_entry)
-
-                    current_entry = {
-                        'type': 'normal',
-                        'prototype': prototype,
-                        'start': [row.year, row.week],
-                    }
-
-                else:
-                    # If no prototype has been found, the type 'unknown' will be used.
-                    current_entry = {
-                        'type': 'unknown',
-                        'start': [row.year, row.week],
-                    }
-                    prototype = None
+                prototype, entry = self.create_new_entry(prototype, row, entry)
+                self.check_anomaly(prototype, row)
 
                 continue
 
-        current_entry['end'] = [date.today().year, date.today().isocalendar()[1]]
-        entries.append(current_entry)
+            # Identical fingerprint (same week workday pattern)
+            if row.fingerprint == prototype.fingerprint:
+                continue
 
-        print(entries)
+            prototype_exists = self.check_for_prototype(prototype, data.loc[index:index+6])
+            # We couldn't find the prototype in the next few rows
+            # Mark the previous entry as finished and start a new one.
+            if not prototype_exists:
+                entry['end'] = [row.year, row.week]
+                self.entries.append(entry)
+                entry = None
+
+                # Try to find a new prototype.
+                prototype = self.find_prototype(data.loc[index:index+6])
+                prototype, entry = self.create_new_entry(prototype, row, entry)
+
+            # Check if the current row is a anomaly
+            self.check_anomaly(prototype, row)
+
+        entry['end'] = [date.today().year, date.today().isocalendar()[1]]
+        self.entries.append(entry)
+
+        print(self.entries)
+        print(self.anomalies)
+        print(data)
         self.data = data
 
     def find_prototype(self, data, last_prototype=None):
@@ -174,7 +178,7 @@ class MissingTime():
         # Create an entry for each fingerprint and count the occurrences of this entry
         counter = {}
         for _, row in data.iterrows():
-            fingerprint = row['fingerprint']
+            fingerprint = row.fingerprint
             if fingerprint not in counter:
                 counter[fingerprint] = {
                     'prototype': row,
@@ -190,15 +194,83 @@ class MissingTime():
         max_count = 0
         invalid = False
         prototype = None
-        for _, entry in counter.items():
-            if entry['count'] > max_count:
-                prototype = entry['prototype']
-                max_count = entry['count']
+        for _, item in counter.items():
+            if item['count'] > max_count:
+                prototype = item['prototype']
+                max_count = item['count']
                 invalid = False
-            elif entry['count'] == max_count:
+            elif item['count'] == max_count:
                 invalid = True
 
         if invalid:
             return None
 
         return prototype
+
+    def check_for_prototype(self, prototype, data):
+        """Check if there is an instance of the current prototype in the next few rows."""
+        for _, row in data.iterrows():
+            if row['fingerprint'] == prototype['fingerprint']:
+                return True
+
+        return False
+
+    def check_similarity(self, prototype, row):
+        """Check if a row is close to the current prototype."""
+        working_days_diff = math.fabs(row['working_days'] - prototype['working_days'])
+        different_days = 0
+        for day in week_days:
+            if row[day] != prototype[day]:
+                different_days += 1
+
+        # Shifted a day to another day.
+        if working_days_diff == 0:
+            if different_days <= 1:
+                return True
+
+        # A single day missing
+        if working_days_diff == 1:
+            if different_days <= 1:
+                return True
+
+        return False
+
+    def create_new_entry(self, prototype, row, last_entry):
+        """Create a new entry."""
+        # We found a prototype. Save it and mark it.
+        # Check if the current row is the prototype. Otherwise we handle it as unknown.
+        empty_week = row.working_days == 0
+        if prototype is not None and (prototype == row).all() and not empty_week:
+            # If there is a entry from a previous unknown time span,
+            # add an end date for this time span and add it.
+            if self.current_entry:
+                last_entry['end'] = [row.year, row.week]
+                self.entries.append(last_entry)
+
+            new_entry = {
+                'type': 'normal',
+                'prototype': prototype,
+                'start': [row.year, row.week],
+            }
+
+        else:
+            # If no prototype has been found, the type 'unknown' will be used.
+            new_entry = {
+                'type': 'unknown',
+                'start': [row.year, row.week],
+            }
+            prototype = None
+
+        return prototype, new_entry
+
+    def check_anomaly(self, prototype, row):
+        """Check if this entry is an anomaly."""
+        if row['working_days'] <= 1:
+            self.anomalies.append([row.year, row.week])
+
+        if prototype is not None:
+            similar = self.check_similarity(prototype, row)
+            if not similar:
+                self.anomalies.append([row.year, row.week])
+
+        return
