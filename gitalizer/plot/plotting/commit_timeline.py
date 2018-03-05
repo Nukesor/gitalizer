@@ -109,7 +109,9 @@ class MissingTime():
         self.data = None
 
         self.entries = []
+        self.entry_texts = []
         self.anomalies = []
+        self.anomaly_texts = []
         self.current_entry = {}
 
     def run(self):
@@ -303,6 +305,17 @@ class MissingTime():
             start_date = mdates.date2num(datetime.strptime(start, "%Y-%W-%w"))
             end_date = mdates.date2num(datetime.strptime(end, "%Y-%W-%w"))
 
+            entry_text = f'{entry["type"]} work pattern from : {datetime.strptime(end, "%Y-%W-%w")} to {datetime.strptime(start, "%Y-%W-%w")}'
+            if 'prototype' in entry:
+                days = []
+                prototype = entry['prototype']
+                for day in week_days:
+                    if prototype[day] == 1:
+                        days.append(day)
+
+                entry_text += f'Working Days: {", ".join(days)}'
+            self.entry_texts.append(entry_text)
+
             height = ymax/3
             patch = patches.Rectangle(
                 (start_date, -height/2),
@@ -320,6 +333,8 @@ class MissingTime():
             end = f"{entry[0]}-{entry[1]}-0-23-59"
             start_date = mdates.date2num(datetime.strptime(start, "%Y-%W-%w"))
             end_date = mdates.date2num(datetime.strptime(end, "%Y-%W-%w-%H-%M"))
+
+            self.anomaly_texts.append(f'Anomaly in week {entry[0]}-{entry[1]}: {datetime.strptime(start, "%Y-%W-%w")}')
 
             height = ymax/7
             patch = patches.Rectangle(
@@ -356,6 +371,12 @@ class MissingTime():
         fig.set_figheight(20)
         fig.set_figwidth(40)
         fig.suptitle(self.title, fontsize=30)
+
+        for text in self.anomaly_texts:
+            print(text)
+
+        for text in self.entry_texts:
+            print(text)
 
         plot_figure(self.path, fig)
 
