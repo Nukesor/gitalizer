@@ -2,8 +2,9 @@
 import math
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import matplotlib.dates as mdates
-from datetime import date
+from datetime import date, datetime
 
 from gitalizer.plot.helper.plot import plot_figure
 
@@ -52,13 +53,10 @@ class CommitTimeline():
 
         self.data = data
 
-    def plot(self):
-        """Plot the changes of commits."""
-        # Create and specify figure
-        fig, ax = plt.subplots()
-        fig.set_figheight(20)
-        fig.set_figwidth(40)
-        fig.suptitle(self.title, fontsize=30)
+    def get_ax(self):
+        """Create and specify figure."""
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
 
         # We only want to see years as xaxis labels .
         years = mdates.YearLocator()
@@ -82,9 +80,20 @@ class CommitTimeline():
             plt.sca(ax)
             plt.scatter(group.date.dt.to_pydatetime(), group.vals, color=colors[key], label=key)
 
+        return ax
+
+    def plot(self):
+        """Plot the changes of commits."""
         # Create legend
+        ax = self.get_ax()
+
+        fig = ax.get_figure()
+        fig.set_figheight(20)
+        fig.set_figwidth(40)
+        fig.suptitle(self.title, fontsize=30)
+
         ax.legend()
-        plot_figure(self.path, ax)
+        plot_figure(self.path, fig)
 
         return
 
@@ -110,11 +119,11 @@ class MissingTime():
 
     def preprocess(self):
         """Preprocess the data for plotting."""
-        timeline = CommitTimeline(self.raw_data, self.path, self.title)
-        timeline.preprocess()
+        self.timeline = CommitTimeline(self.raw_data, self.path, self.title)
+        self.timeline.preprocess()
 
         # Sort commits by week and mark each day with a commit as a working day
-        by_week = {n: g for n, g in timeline.data.groupby(pd.Grouper(freq='W'))}
+        by_week = {n: g for n, g in self.timeline.data.groupby(pd.Grouper(freq='W'))}
         week_vectors = []
         for week, commits in by_week.items():
             days = [0] * 7
@@ -168,9 +177,6 @@ class MissingTime():
         entry['end'] = [date.today().year, date.today().isocalendar()[1]]
         self.entries.append(entry)
 
-        print(self.entries)
-        print(self.anomalies)
-        print(data)
         self.data = data
 
     def find_prototype(self, data, last_prototype=None):
@@ -243,7 +249,7 @@ class MissingTime():
         if prototype is not None and (prototype == row).all() and not empty_week:
             # If there is a entry from a previous unknown time span,
             # add an end date for this time span and add it.
-            if self.current_entry:
+            if last_entry:
                 last_entry['end'] = [row.year, row.week]
                 self.entries.append(last_entry)
 
@@ -254,11 +260,14 @@ class MissingTime():
             }
 
         else:
-            # If no prototype has been found, the type 'unknown' will be used.
-            new_entry = {
-                'type': 'unknown',
-                'start': [row.year, row.week],
-            }
+            if last_entry is None or last_entry['type'] != 'unknown':
+                # If no prototype has been found, the type 'unknown' will be used.
+                new_entry = {
+                    'type': 'unknown',
+                    'start': [row.year, row.week],
+                }
+            else:
+                new_entry = last_entry
             prototype = None
 
         return prototype, new_entry
@@ -268,9 +277,86 @@ class MissingTime():
         if row['working_days'] <= 1:
             self.anomalies.append([row.year, row.week])
 
+            return
+
         if prototype is not None:
             similar = self.check_similarity(prototype, row)
             if not similar:
                 self.anomalies.append([row.year, row.week])
+
+        return
+
+    def get_ax(self):
+        """Get the updated axis of commit timeline."""
+        ax = self.timeline.get_ax()
+
+        ymin, ymax = ax.get_ylim()
+        colors = {
+            'unknown': {'color': 'yellow', 'alpha': 0.2, 'fill': True},
+            'normal': {'color': 'blue', 'alpha': 0.1, 'fill': True},
+            'anomaly': {'color': 'red', 'alpha': 0.4, 'fill': True},
+        }
+
+        for entry in self.entries:
+            start = f"{entry['start'][0]}-{entry['start'][1]}-1"
+            end = f"{entry['end'][0]}-{entry['end'][1]}-1"
+            start_date = mdates.date2num(datetime.strptime(start, "%Y-%W-%w"))
+            end_date = mdates.date2num(datetime.strptime(end, "%Y-%W-%w"))
+
+            height = ymax/3
+            patch = patches.Rectangle(
+                (start_date, -height/2),
+                end_date - start_date,
+                height,  # height
+                fill=colors[entry['type']]['fill'],
+                edgecolor=colors[entry['type']]['color'],
+                facecolor=colors[entry['type']]['color'],
+                alpha=colors[entry['type']]['alpha'],
+            )
+            ax.add_patch(patch)
+
+        for entry in self.anomalies:
+            start = f"{entry[0]}-{entry[1]}-1"
+            end = f"{entry[0]}-{entry[1]}-0-23-59"
+            start_date = mdates.date2num(datetime.strptime(start, "%Y-%W-%w"))
+            end_date = mdates.date2num(datetime.strptime(end, "%Y-%W-%w-%H-%M"))
+
+            height = ymax/7
+            patch = patches.Rectangle(
+                (start_date, -height/2),
+                end_date - start_date,
+                height,  # height
+                fill=colors['anomaly']['fill'],
+                edgecolor=colors['anomaly']['color'],
+                facecolor=colors['anomaly']['color'],
+                alpha=colors['anomaly']['alpha'],
+            )
+            ax.add_patch(patch)
+
+        return ax
+
+    def plot(self):
+        """Plot the figure."""
+        ax = self.get_ax()
+        handles, labels = ax.get_legend_handles_labels()
+        new_handles = [
+            patches.Patch(color='yellow', label='Work pattern unknown'),
+            patches.Patch(color='blue', label='Work pattern exists'),
+            patches.Patch(color='red', label='Work pattern anomaly'),
+        ]
+        new_labels = [
+            'Work pattern unknown ',
+            'Work pattern exists',
+            'Work pattern anomaly',
+        ]
+        handles += new_handles
+        labels += new_labels
+        ax.legend(handles, labels)
+        fig = ax.get_figure()
+        fig.set_figheight(20)
+        fig.set_figwidth(40)
+        fig.suptitle(self.title, fontsize=30)
+
+        plot_figure(self.path, fig)
 
         return
