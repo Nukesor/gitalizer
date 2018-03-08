@@ -225,21 +225,22 @@ class MissingTime():
 
     def check_similarity(self, prototype, row):
         """Check if a row is close to the current prototype."""
-        working_days_diff = math.fabs(row['working_days'] - prototype['working_days'])
+        working_days_diff = prototype['working_days'] - row['working_days']
         different_days = 0
         for day in week_days:
             if row[day] != prototype[day]:
                 different_days += 1
 
-        # Shifted a day to another day.
+        # Shifted one or more days to another day.
         if working_days_diff == 0:
+            return True
+        # A single day missing, this should be ok
+        elif working_days_diff == 1:
             if different_days <= 1:
                 return True
-
-        # A single day missing
-        if working_days_diff == 1:
-            if different_days <= 1:
-                return True
+        # More work days
+        elif working_days_diff < 0:
+            return True
 
         return False
 
@@ -276,7 +277,7 @@ class MissingTime():
 
     def check_anomaly(self, prototype, row):
         """Check if this entry is an anomaly."""
-        if row['working_days'] <= 1:
+        if row['working_days'] == 0:
             self.anomalies.append([row.year, row.week])
 
             return
@@ -305,7 +306,7 @@ class MissingTime():
             start_date = mdates.date2num(datetime.strptime(start, "%Y-%W-%w"))
             end_date = mdates.date2num(datetime.strptime(end, "%Y-%W-%w"))
 
-            entry_text = f'{entry["type"]} work pattern from : {datetime.strptime(end, "%Y-%W-%w")} to {datetime.strptime(start, "%Y-%W-%w")}'
+            entry_text = f'{entry["type"]} work pattern from : {datetime.strptime(start, "%Y-%W-%w")} to {datetime.strptime(end, "%Y-%W-%w")}\n'
             if 'prototype' in entry:
                 days = []
                 prototype = entry['prototype']

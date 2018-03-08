@@ -33,7 +33,8 @@ def plot_employee_punchcard(contributer, repositories, path):
 
 def plot_employee_missing_time(contributer, repositories, path):
     """Plot a timeline with marked missing times."""
-    commits = get_user_commits_from_repositories(contributer, repositories)
+    delta = timedelta(days=364)
+    commits = get_user_commits_from_repositories(contributer, repositories, delta)
     title = f"{contributer.login}'s Missing times"
 
     plotter = MissingTime(commits, path, title)

@@ -66,7 +66,7 @@ def plot_employee(login, repositories):
         print(f'No contributer with name {login}')
         sys.exit(1)
     elif len(repositories) == 0:
-        print(f'No repositories found with these names.')
+        print('No repositories found with these names.')
         sys.exit(1)
 
 #    plot_employee_punchcard(contributer, repositories, path)

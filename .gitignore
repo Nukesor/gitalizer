@@ -37,3 +37,4 @@ __pycache__
 plots
 logs
 gitalizer/config.py
+bin/plot_work.sh

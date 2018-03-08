@@ -23,7 +23,7 @@ blinker
 pygithub~=1.35
 pygit2~=0.26
 gitpython~=2.1.7
-pytz~=2017.3
+pytz~=2018.3
 
 # Visualization
 pandas~=0.21
