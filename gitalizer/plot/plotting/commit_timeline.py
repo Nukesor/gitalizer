@@ -64,6 +64,11 @@ class CommitTimeline():
         ax.xaxis.set_major_locator(years)
         ax.xaxis.set_major_formatter(yearsFmt)
 
+        weeks = mdates.WeekdayLocator(byweekday=mdates.MO)
+        weeksFmt = mdates.DateFormatter('%W')
+        ax.xaxis.set_minor_locator(weeks)
+        ax.xaxis.set_minor_formatter(weeksFmt)
+
         colors = {
             'additions': 'green',
             'deletions': 'crimson',
@@ -289,9 +294,12 @@ class MissingTime():
 
         return
 
-    def get_ax(self):
+    def get_ax(self, parent_ax=None):
         """Get the updated axis of commit timeline."""
-        ax = self.timeline.get_ax()
+        if parent_ax is None:
+            ax = self.timeline.get_ax()
+        else:
+            ax = parent_ax
 
         ymin, ymax = ax.get_ylim()
         colors = {

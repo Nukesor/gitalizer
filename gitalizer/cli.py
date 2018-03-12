@@ -14,11 +14,11 @@ from gitalizer.extensions import db
 from gitalizer.plot import (
     plot_user as plot_user_func,
     plot_employee,
+    plot_comparison as plot_comparison_func,
 )
 from gitalizer.models import (
     Commit,
     commit_repository,
-    contributer_repository,
     Repository,
     User,
 )
@@ -92,7 +92,7 @@ def register_cli(app):  # pragma: no cover
             app.logger.info(f'\n\nGet user {login}')
             get_user_by_login(login)
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     @app.cli.command()
@@ -103,7 +103,7 @@ def register_cli(app):  # pragma: no cover
             app.logger.info(f'\n\nGet friends of user {name}')
             get_friends_by_name(name)
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     @app.cli.command()
@@ -115,7 +115,7 @@ def register_cli(app):  # pragma: no cover
             app.logger.info(f'\n\nGet {repository} from user {owner}')
             get_github_repository_by_owner_name(owner, repository)
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     @app.cli.command()
@@ -126,7 +126,7 @@ def register_cli(app):  # pragma: no cover
             app.logger.info(f'\n\nGet users from {full_name}')
             get_github_repository_users(full_name)
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     @app.cli.command()
@@ -136,7 +136,7 @@ def register_cli(app):  # pragma: no cover
         try:
             get_github_organization(orga)
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     @app.cli.command()
@@ -146,7 +146,7 @@ def register_cli(app):  # pragma: no cover
         try:
             get_github_organization(orga, True)
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     @app.cli.command()
@@ -155,7 +155,7 @@ def register_cli(app):  # pragma: no cover
         try:
             get_github_organizations()
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     # ----- Plotting / Data mining -----
@@ -167,7 +167,7 @@ def register_cli(app):  # pragma: no cover
         try:
             plot_user_func(login)
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     @app.cli.command()
@@ -178,7 +178,19 @@ def register_cli(app):  # pragma: no cover
         try:
             plot_employee(login, repositories)
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
+            sys.exit(1)
+
+    @app.cli.command()
+    @click.argument('logins')
+    @click.argument('repositories', nargs=-1)
+    def plot_comparison(logins, repositories):
+        """Get statistics of several user for specific repositories."""
+        # The logins are comma seperated ('test1,test2,rofl,wtf,omfg')
+        try:
+            plot_comparison_func(logins, repositories)
+        except KeyboardInterrupt:
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     # ----- Maintainance -----
@@ -189,7 +201,7 @@ def register_cli(app):  # pragma: no cover
         try:
             clean_db()
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     @app.cli.command()
@@ -204,7 +216,7 @@ def register_cli(app):  # pragma: no cover
 
             plot_user_travel_path(contributer, './')
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     @app.cli.command()
@@ -213,7 +225,7 @@ def register_cli(app):  # pragma: no cover
         try:
             complete_data()
         except KeyboardInterrupt:
-            print("CTRL-C Exiting Gracefully")
+            app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
     @app.cli.command()
@@ -230,7 +242,7 @@ def register_cli(app):  # pragma: no cover
         sortby = 'cumulative'
         ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
         ps.print_stats()
-        print(s.getvalue())
+        app.logger.info(s.getvalue())
 
     @app.cli.command()
     @click.argument('full_name')

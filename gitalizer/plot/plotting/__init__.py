@@ -2,3 +2,4 @@ from .commit_punchcard import CommitPunchcard
 from .commit_timeline import CommitTimeline, MissingTime
 from .repository_changes import plot_repository_changes
 from .contributer_travel_path import contributer_travel_path
+from .missing_time_comparison import MissingTimeComparison
