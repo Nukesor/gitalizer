@@ -16,7 +16,7 @@ from gitalizer.aggregator.github import call_github_function
 from gitalizer.models import (
     Email,
     Commit,
-    Contributer,
+    Contributor,
     Repository as RepositoryModel,
 )
 
@@ -240,16 +240,16 @@ class CommitScanner():
                         )
                         self.emails[address] = email
 
-                    # Get the email relation to github contributers
+                    # Get the email relation to github contributors
                     if address_type == 'author':
                         self.get_github_author(email, commit, do_commit=False)
                     if address_type == 'committer':
                         self.get_github_committer(email, commit, do_commit=False)
 
-                    # Add the contributer to the repository if he isn't known yet.
-                    if email.contributer:
-                        if self.repository not in email.contributer.repositories:
-                            email.contributer.repositories.append(self.repository)
+                    # Add the contributor to the repository if he isn't known yet.
+                    if email.contributor:
+                        if self.repository not in email.contributor.repositories:
+                            email.contributor.repositories.append(self.repository)
                     else:
                         # Mark email as unknown to prevent further github queries for this email.
                         email.unknown = True
@@ -278,8 +278,8 @@ class CommitScanner():
 
     def get_github_author(self, email, git_commit, do_commit=True):
         """Get the related Github author."""
-        # No Github repository or the contributer is already known
-        if not self.github_repo or email.contributer is not None or email.unknown:
+        # No Github repository or the contributor is already known
+        if not self.github_repo or email.contributor is not None or email.unknown:
             return
         github_commit = call_github_function(self.github_repo, 'get_commit', [git_commit.hex])
 
@@ -289,17 +289,17 @@ class CommitScanner():
                 sentry.captureMessage('Author has no _url', level='info')
                 return
 
-            contributer = Contributer.get_contributer(
+            contributor = Contributor.get_contributor(
                 github_commit.author.login,
                 self.session,
                 do_commit=do_commit,
             )
-            email.contributer = contributer
+            email.contributor = contributor
 
     def get_github_committer(self, email, git_commit, do_commit=True):
         """Get the related Github committer."""
-        # No Github repository or the contributer is already known
-        if not self.github_repo or email.contributer is not None or email.unknown:
+        # No Github repository or the contributor is already known
+        if not self.github_repo or email.contributor is not None or email.unknown:
             return
         github_commit = call_github_function(self.github_repo, 'get_commit', [git_commit.hex])
 
@@ -309,10 +309,10 @@ class CommitScanner():
                 sentry.captureMessage('committer has no _url', level='info')
                 return
 
-            contributer = Contributer.get_contributer(
+            contributor = Contributor.get_contributor(
                 github_commit.committer.login,
                 self.session,
                 do_commit=do_commit,
             )
-            email.contributer = contributer
+            email.contributor = contributor
         return

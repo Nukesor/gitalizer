@@ -4,7 +4,7 @@ from flask import current_app
 from datetime import datetime
 from github.GithubException import GithubException
 
-from gitalizer.models import Repository, Contributer
+from gitalizer.models import Repository, Contributor
 from gitalizer.extensions import github, sentry, db
 from gitalizer.aggregator.github import call_github_function, get_github_object
 from gitalizer.aggregator.parallel import new_session
@@ -35,17 +35,17 @@ def get_friends_by_name(name: str):
 #    for user in user_list:
 #        print(user)
     sub_manager = Manager('github_repository', [])
-    manager = Manager('github_contributer', user_logins, sub_manager)
+    manager = Manager('github_contributor', user_logins, sub_manager)
     manager.start()
     manager.run()
 
     for login in user_logins:
-        contributer = db.session.query(Contributer) \
-            .filter(Contributer.login.ilike(login)) \
+        contributor = db.session.query(Contributor) \
+            .filter(Contributor.login.ilike(login)) \
             .one()
-        if not contributer.too_big:
-            contributer.last_full_scan = datetime.utcnow()
-            db.session.add(contributer)
+        if not contributor.too_big:
+            contributor.last_full_scan = datetime.utcnow()
+            db.session.add(contributor)
     db.session.commit()
 
 
@@ -53,15 +53,15 @@ def get_user_by_login(login: str):
     """Get a user by his login name."""
     user = call_github_function(github.github, 'get_user', [login])
     sub_manager = Manager('github_repository', [])
-    manager = Manager('github_contributer', [user.login], sub_manager)
+    manager = Manager('github_contributor', [user.login], sub_manager)
     manager.start()
     manager.run()
 
-    contributer = db.session.query(Contributer) \
-        .filter(Contributer.login.ilike(login)) \
+    contributor = db.session.query(Contributor) \
+        .filter(Contributor.login.ilike(login)) \
         .one()
-    contributer.last_full_scan = datetime.utcnow()
-    db.session.add(contributer)
+    contributor.last_full_scan = datetime.utcnow()
+    db.session.add(contributor)
     db.session.commit()
 
 
@@ -69,11 +69,11 @@ def get_user_repos(user_login: str, skip=True):
     """Get all relevant Information for a single user."""
     try:
         session = new_session()
-        contributer = Contributer.get_contributer(user_login, session, True)
+        contributor = Contributor.get_contributor(user_login, session, True)
         # Checks for already scanned users.
-        if not contributer.should_scan():
+        if not contributor.should_scan():
             return user_up_to_date_message(user_login)
-        if contributer.too_big:
+        if contributor.too_big:
             return user_too_big_message(user_login)
 
         user = call_github_function(github.github, 'get_user', [user_login])
@@ -111,14 +111,14 @@ def get_user_repos(user_login: str, skip=True):
 
         # User has too many repositories. Flag him and return
         if user_too_big:
-            contributer.too_big = True
+            contributor.too_big = True
             sentry.captureMessage(
                 'User too big',
-                extra={'url': contributer.login},
+                extra={'url': contributor.login},
                 level='info',
                 tags={'type': 'too_big', 'entity': 'user'},
             )
-            session.add(contributer)
+            session.add(contributor)
             session.commit()
             return user_too_big_message(user_login)
 

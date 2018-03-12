@@ -2,8 +2,8 @@
 from gitalizer.models import Commit
 
 
-def contributer_travel_path(commits: Commit, path, title):
-    """Print the travel history of a contributer."""
+def contributor_travel_path(commits: Commit, path, title):
+    """Print the travel history of a contributor."""
     current_day = None
     current_timezone = None
     last_timezone = None

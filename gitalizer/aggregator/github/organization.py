@@ -5,7 +5,7 @@ from flask import current_app
 from datetime import datetime, timedelta
 
 from gitalizer.extensions import github
-from gitalizer.models import Contributer, Organization, Repository
+from gitalizer.models import Contributor, Organization, Repository
 from gitalizer.aggregator.github import call_github_function
 from gitalizer.aggregator.parallel import new_session
 from gitalizer.aggregator.parallel.manager import Manager
@@ -20,21 +20,21 @@ def get_github_organizations():
 
     tz = pytz.timezone('Europe/Berlin')
     now = datetime.now(tz)
-    contributers = session.query(Contributer).all()
-    for contributer in contributers:
-        if contributer.last_check and contributer.last_check > now - timedelta(days=2):
+    contributors = session.query(Contributor).all()
+    for contributor in contributors:
+        if contributor.last_check and contributor.last_check > now - timedelta(days=2):
             continue
-        current_app.logger.info(f'Checking {contributer.login}. {github.github.rate_limiting[0]} remaining.')
+        current_app.logger.info(f'Checking {contributor.login}. {github.github.rate_limiting[0]} remaining.')
 
         github_user = call_github_function(github.github, 'get_user',
-                                           [contributer.login])
+                                           [contributor.login])
 
         github_orgs = call_github_function(github_user, 'get_orgs')
         for org in github_orgs:
             organization = Organization.get_organization(org.login, org.url, session)
-            contributer.organizations.append(organization)
-        contributer.last_check = datetime.utcnow()
-        session.add(contributer)
+            contributor.organizations.append(organization)
+        contributor.last_check = datetime.utcnow()
+        session.add(contributor)
         session.commit()
 
 
@@ -77,6 +77,6 @@ def get_github_organization(name: str, members=False):
 
     # Create and start manager with orga repos and memeber_list
     sub_manager = Manager('github_repository', repos_to_scan)
-    manager = Manager('github_contributer', member_list, sub_manager)
+    manager = Manager('github_contributor', member_list, sub_manager)
     manager.start()
     manager.run()

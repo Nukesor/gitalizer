@@ -132,7 +132,7 @@ def register_cli(app):  # pragma: no cover
     @app.cli.command()
     @click.argument('orga')
     def get_organization(orga):
-        """Get github organizations for all known contributers."""
+        """Get github organizations for all known contributors."""
         try:
             get_github_organization(orga)
         except KeyboardInterrupt:
@@ -142,7 +142,7 @@ def register_cli(app):  # pragma: no cover
     @app.cli.command()
     @click.argument('orga')
     def get_organization_with_member(orga):
-        """Get github organizations for all known contributers."""
+        """Get github organizations for all known contributors."""
         try:
             get_github_organization(orga, True)
         except KeyboardInterrupt:
@@ -151,7 +151,7 @@ def register_cli(app):  # pragma: no cover
 
     @app.cli.command()
     def get_organizations():
-        """Get github organizations for all known contributers."""
+        """Get github organizations for all known contributors."""
         try:
             get_github_organizations()
         except KeyboardInterrupt:
@@ -208,13 +208,13 @@ def register_cli(app):  # pragma: no cover
     def test():
         """Complete missing data from previous runs."""
         try:
-            from gitalizer.models import Contributer
+            from gitalizer.models import Contributor
             from gitalizer.plot.user import plot_user_travel_path
-            contributer = db.session.query(Contributer) \
-                .filter(Contributer.login.ilike('Nukesor')) \
+            contributor = db.session.query(Contributor) \
+                .filter(Contributor.login.ilike('Nukesor')) \
                 .one_or_none()
 
-            plot_user_travel_path(contributer, './')
+            plot_user_travel_path(contributor, './')
         except KeyboardInterrupt:
             app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)

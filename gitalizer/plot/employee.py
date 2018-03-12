@@ -10,32 +10,32 @@ from .plotting import (
 )
 
 
-def plot_employee_timeline_with_holiday(contributer, repositories, path):
+def plot_employee_timeline_with_holiday(contributor, repositories, path):
     """Get all commits of repositories of an user."""
-    commits = get_user_commits_from_repositories(contributer, repositories)
-    title = f"{contributer.login}'s commit size history."
+    commits = get_user_commits_from_repositories(contributor, repositories)
+    title = f"{contributor.login}'s commit size history."
     path = os.path.join(path, 'commit_timeline')
 
     plotter = CommitTimeline(commits, path, title)
     plotter.run()
 
 
-def plot_employee_punchcard(contributer, repositories, path):
+def plot_employee_punchcard(contributor, repositories, path):
     """Get all commits of repositories of an user."""
     delta = timedelta(days=364)
-    commits = get_user_commits_from_repositories(contributer, repositories, delta)
+    commits = get_user_commits_from_repositories(contributor, repositories, delta)
     path = os.path.join(path, 'punchcard')
-    title = f"{contributer.login}'s Punchcard"
+    title = f"{contributor.login}'s Punchcard"
 
     plotter = CommitPunchcard(commits, path, title)
     plotter.run()
 
 
-def plot_employee_missing_time(contributer, repositories, path):
+def plot_employee_missing_time(contributor, repositories, path):
     """Plot a timeline with marked missing times."""
     delta = timedelta(days=364)
-    commits = get_user_commits_from_repositories(contributer, repositories, delta)
-    title = f"{contributer.login}'s Missing times"
+    commits = get_user_commits_from_repositories(contributor, repositories, delta)
+    title = f"{contributor.login}'s Missing times"
 
     plotter = MissingTime(commits, path, title)
     plotter.run()

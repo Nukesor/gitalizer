@@ -5,7 +5,7 @@ from sqlalchemy import or_
 from flask import current_app
 
 from gitalizer.extensions import db
-from gitalizer.models.contributer import Contributer
+from gitalizer.models.contributor import Contributor
 from .user import (
     plot_user_punchcard,
     plot_user_repositories_changes,
@@ -31,18 +31,18 @@ def plot_user(login):
     if not os.path.exists(user_dir):
         os.mkdir(user_dir)
 
-    contributer = db.session.query(Contributer) \
-        .filter(Contributer.login.ilike(login)) \
+    contributor = db.session.query(Contributor) \
+        .filter(Contributor.login.ilike(login)) \
         .one_or_none()
 
-    if contributer is None:
-        current_app.logger.info(f'No contributer with name {login}')
+    if contributor is None:
+        current_app.logger.info(f'No contributor with name {login}')
         sys.exit(1)
 
-    plot_user_punchcard(contributer, user_dir)
-#    plot_user_repositories_changes(contributer, user_dir)
-    plot_user_commit_timeline(contributer, user_dir)
-#    plot_user_travel_path(contributer, user_dir)
+    plot_user_punchcard(contributor, user_dir)
+#    plot_user_repositories_changes(contributor, user_dir)
+    plot_user_commit_timeline(contributor, user_dir)
+#    plot_user_travel_path(contributor, user_dir)
 
 
 def plot_employee(login, repositories):
@@ -51,8 +51,8 @@ def plot_employee(login, repositories):
     path = os.path.join(plot_dir, login.lower(), 'employee')
     os.makedirs(path, exist_ok=True)
 
-    contributer = db.session.query(Contributer) \
-        .filter(Contributer.login.ilike(login)) \
+    contributor = db.session.query(Contributor) \
+        .filter(Contributor.login.ilike(login)) \
         .one_or_none()
 
     from gitalizer.models import Repository
@@ -64,16 +64,16 @@ def plot_employee(login, repositories):
         .filter(or_(*conditions)) \
         .all()
 
-    if contributer is None:
-        current_app.logger.info(f'No contributer with name {login}')
+    if contributor is None:
+        current_app.logger.info(f'No contributor with name {login}')
         sys.exit(1)
     elif len(repositories) == 0:
         current_app.logger.info('No repositories found with these names.')
         sys.exit(1)
 
-    plot_employee_punchcard(contributer, repositories, path)
-    plot_employee_timeline_with_holiday(contributer, repositories, path)
-    plot_employee_missing_time(contributer, repositories, path)
+    plot_employee_punchcard(contributor, repositories, path)
+    plot_employee_timeline_with_holiday(contributor, repositories, path)
+    plot_employee_missing_time(contributor, repositories, path)
 
 
 def plot_comparison(logins, repositories):
@@ -82,12 +82,12 @@ def plot_comparison(logins, repositories):
     path = os.path.join(plot_dir, 'comparison')
     os.makedirs(path, exist_ok=True)
 
-    contributers = []
+    contributors = []
     for login in logins.split(','):
-        contributer = db.session.query(Contributer) \
-            .filter(Contributer.login.ilike(login)) \
+        contributor = db.session.query(Contributor) \
+            .filter(Contributor.login.ilike(login)) \
             .one()
-        contributers.append(contributer)
+        contributors.append(contributor)
 
     from gitalizer.models import Repository
     conditions = []
@@ -98,4 +98,4 @@ def plot_comparison(logins, repositories):
         .filter(or_(*conditions)) \
         .all()
 
-    plot_compare_employee_missing_time(contributers, repositories, path)
+    plot_compare_employee_missing_time(contributors, repositories, path)

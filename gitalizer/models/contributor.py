@@ -1,4 +1,4 @@
-"""Representation of a git repository contributer."""
+"""Representation of a git repository contributor."""
 
 from flask import current_app
 from datetime import datetime, timezone
@@ -9,11 +9,11 @@ from sqlalchemy.orm import joinedload
 from gitalizer.extensions import db
 
 
-contributer_repository = db.Table(
-    'contributer_repository',
-    db.Column('contributer_login',
+contributor_repository = db.Table(
+    'contributor_repository',
+    db.Column('contributor_login',
               db.String(240),
-              ForeignKey('contributer.login', ondelete='CASCADE',
+              ForeignKey('contributor.login', ondelete='CASCADE',
                          onupdate='CASCADE', deferrable=True),
               index=True),
     db.Column('repository_clone_url',
@@ -21,15 +21,15 @@ contributer_repository = db.Table(
               ForeignKey('repository.clone_url', ondelete='CASCADE',
                          onupdate='CASCADE', deferrable=True),
               index=True),
-    db.UniqueConstraint('repository_clone_url', 'contributer_login'),
+    db.UniqueConstraint('repository_clone_url', 'contributor_login'),
 )
 
 
-contributer_organizations = db.Table(
-    'contributer_organizations',
-    db.Column('contributer_login',
+contributor_organizations = db.Table(
+    'contributor_organizations',
+    db.Column('contributor_login',
               db.String(240),
-              ForeignKey('contributer.login', ondelete='CASCADE',
+              ForeignKey('contributor.login', ondelete='CASCADE',
                          onupdate='CASCADE', deferrable=True),
               index=True),
     db.Column('organization_login',
@@ -37,24 +37,24 @@ contributer_organizations = db.Table(
               ForeignKey('organization.login', ondelete='CASCADE',
                          onupdate='CASCADE', deferrable=True),
               index=True),
-    db.UniqueConstraint('contributer_login', 'organization_login'),
+    db.UniqueConstraint('contributor_login', 'organization_login'),
 )
 
 
-class Contributer(db.Model):
-    """Contributer model."""
+class Contributor(db.Model):
+    """Contributor model."""
 
-    __tablename__ = 'contributer'
+    __tablename__ = 'contributor'
 
     login = db.Column(db.String(240), primary_key=True, nullable=False)
-    emails = db.relationship("Email", back_populates="contributer")
+    emails = db.relationship("Email", back_populates="contributor")
     repositories = db.relationship(
         "Repository",
-        secondary=contributer_repository,
+        secondary=contributor_repository,
         back_populates="contributors")
     organizations = db.relationship(
         "Organization",
-        secondary=contributer_organizations,
+        secondary=contributor_organizations,
         back_populates="contributors")
 
     too_big = db.Column(db.Boolean, default=False, server_default='FALSE', nullable=False)
@@ -69,8 +69,8 @@ class Contributer(db.Model):
         return f'<User {self.login}>'
 
     @staticmethod
-    def get_contributer(login: str, session, eager_repositories=False, do_commit=True):
-        """Create new contributer or add repository to it's list.
+    def get_contributor(login: str, session, eager_repositories=False, do_commit=True):
+        """Create new contributor or add repository to it's list.
 
         Try multiple times, as we can get Multiple additions through threading.
         """
@@ -79,20 +79,20 @@ class Contributer(db.Model):
         exception = None
         while _try <= tries:
             try:
-                contributer = session.query(Contributer)
+                contributor = session.query(Contributor)
                 if eager_repositories:
-                    contributer.options(joinedload(Contributer.repositories))
-                contributer = contributer.get(login)
-                if not contributer:
+                    contributor.options(joinedload(Contributor.repositories))
+                contributor = contributor.get(login)
+                if not contributor:
                     # Commit to prevent data loss in case we get an
                     # integrity error and need to rollback.
-                        contributer = Contributer(login)
-                session.add(contributer)
+                        contributor = Contributor(login)
+                session.add(contributor)
                 if do_commit:
                     session.commit()
-                return contributer
+                return contributor
             except IntegrityError as e:
-                print(f'Got an Contributer IntegrityError, Try {_try} of {tries}')
+                print(f'Got an Contributor IntegrityError, Try {_try} of {tries}')
                 session.rollback()
                 _try += 1
                 exception = e

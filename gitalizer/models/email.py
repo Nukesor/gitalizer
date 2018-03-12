@@ -13,11 +13,11 @@ class Email(db.Model):
 
     email = db.Column(db.String(240), primary_key=True)
 
-    # Contributer
-    contributer_login = db.Column(
-        db.String(240), ForeignKey('contributer.login'), index=True,
+    # Contributor
+    contributor_login = db.Column(
+        db.String(240), ForeignKey('contributor.login'), index=True,
     )
-    contributer = db.relationship("Contributer", back_populates="emails")
+    contributor = db.relationship("Contributor", back_populates="emails")
 
     # Commits relationships
     author_commits = db.relationship(
@@ -30,10 +30,10 @@ class Email(db.Model):
     )
     unknown = db.Column(db.Boolean(), default=False)
 
-    def __init__(self, email, contributer=None):
+    def __init__(self, email, contributor=None):
         """Constructor."""
         self.email = email
-        self.contributer = contributer
+        self.contributor = contributor
 
     @staticmethod
     def get_email(email_address: str, session, do_commit=True):

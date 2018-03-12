@@ -6,33 +6,33 @@ from datetime import timedelta
 from gitalizer.extensions import db
 from gitalizer.models.email import Email
 from gitalizer.models.commit import Commit
-from gitalizer.models.contributer import Contributer
+from gitalizer.models.contributor import Contributor
 
 from .helper.db import get_user_repositories, get_user_commits
 from .plotting import (
     CommitTimeline,
     CommitPunchcard,
     plot_repository_changes,
-    contributer_travel_path,
+    contributor_travel_path,
 )
 
 
-def plot_user_commit_timeline(contributer, path):
+def plot_user_commit_timeline(contributor, path):
     """Get all commits of repositories of an user."""
-    commits = get_user_commits(contributer)
-    title = f"{contributer.login}'s commit size history."
+    commits = get_user_commits(contributor)
+    title = f"{contributor.login}'s commit size history."
     path = os.path.join(path, 'commit_timeline')
 
     plotter = CommitTimeline(commits, path, title)
     plotter.run()
 
 
-def plot_user_repositories_changes(contributer, path):
+def plot_user_repositories_changes(contributor, path):
     """Box plot the contributions to a specific repository."""
     path = os.path.join(path, 'repo_changes')
     if not os.path.exists(path):
         os.makedirs(path)
-    repositories = get_user_repositories(contributer)
+    repositories = get_user_repositories(contributor)
     for repository in repositories:
         commits = db.session.query(Commit) \
             .filter(Commit.repository == repository) \
@@ -40,8 +40,8 @@ def plot_user_repositories_changes(contributer, path):
                 Email.email == Commit.author_email_address,
                 Email.email == Commit.committer_email_address,
             )) \
-            .join(Contributer, Email.contributer_login == Contributer.login) \
-            .filter(Contributer.login == contributer.login) \
+            .join(Contributor, Email.contributor_login == Contributor.login) \
+            .filter(Contributor.login == contributor.login) \
             .all()
 
         # Don't plot for too few contributions
@@ -51,26 +51,26 @@ def plot_user_repositories_changes(contributer, path):
         name = repository.full_name.replace('/', '---')
         plot_path = os.path.join(path, name)
         title = ('Commit size history for repository '
-                 f'`{repository.name}` and contributer `{contributer.login}`')
+                 f'`{repository.name}` and contributor `{contributor.login}`')
         plot_repository_changes(commits, plot_path, title)
 
 
-def plot_user_punchcard(contributer, path):
+def plot_user_punchcard(contributor, path):
     """Get all commits of repositories of an user."""
     delta = timedelta(days=364)
-    commits = get_user_commits(contributer, delta)
+    commits = get_user_commits(contributor, delta)
 
     path = os.path.join(path, 'punchcard')
 
-    title = f"{contributer.login}'s Punchcard"
+    title = f"{contributor.login}'s Punchcard"
 
     plotter = CommitPunchcard(commits, path, title)
     plotter.run()
 
 
-def plot_user_travel_path(contributer, path):
+def plot_user_travel_path(contributor, path):
     """Get the user utcoffset changes."""
-    commits = get_user_commits(contributer)
+    commits = get_user_commits(contributor)
 
-    title = f"{contributer.login}'s Travel history"
-    contributer_travel_path(commits, path, title)
+    title = f"{contributor.login}'s Travel history"
+    contributor_travel_path(commits, path, title)

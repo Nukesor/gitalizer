@@ -39,7 +39,7 @@ def get_github_repository_users(full_name: str):
     collaborator_list = [c.login for c in collaborators]
 
     sub_manager = Manager('github_repository', [])
-    manager = Manager('github_contributer', collaborator_list, sub_manager)
+    manager = Manager('github_contributor', collaborator_list, sub_manager)
     manager.start()
     manager.run()
 

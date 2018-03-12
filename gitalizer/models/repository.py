@@ -8,7 +8,7 @@ from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from gitalizer.extensions import db
 from gitalizer.models.commit import commit_repository
-from gitalizer.models.contributer import contributer_repository
+from gitalizer.models.contributor import contributor_repository
 
 
 class Repository(db.Model):
@@ -54,8 +54,8 @@ class Repository(db.Model):
     )
 
     contributors = db.relationship(
-        "Contributer",
-        secondary=contributer_repository,
+        "Contributor",
+        secondary=contributor_repository,
         back_populates="repositories",
     )
 

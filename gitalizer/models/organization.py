@@ -2,7 +2,7 @@
 from sqlalchemy.exc import IntegrityError
 
 from gitalizer.extensions import db
-from gitalizer.models.contributer import contributer_organizations
+from gitalizer.models.contributor import contributor_organizations
 
 
 class Organization(db.Model):
@@ -14,8 +14,8 @@ class Organization(db.Model):
     url = db.Column(db.String(240))
 
     contributors = db.relationship(
-        "Contributer",
-        secondary=contributer_organizations,
+        "Contributor",
+        secondary=contributor_organizations,
         back_populates="organizations")
 
     def __init__(self, login, url):

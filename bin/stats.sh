@@ -24,14 +24,14 @@ echo "    Filtered: $filtered_repository_count"
 echo "    Finished: $finished_repository_count"
 
 
-contributer_count=$(psql -d $db -t -c 'SELECT count(*) FROM contributer;')
-too_big_contributer_count=$(psql -d $db -t -c 'SELECT count(*) FROM contributer WHERE too_big = TRUE;')
-contributer_repository_count=$(psql -d $db -t -c 'SELECT count(*) FROM contributer_repository;')
+contributor_count=$(psql -d $db -t -c 'SELECT count(*) FROM contributor;')
+too_big_contributor_count=$(psql -d $db -t -c 'SELECT count(*) FROM contributor WHERE too_big = TRUE;')
+contributor_repository_count=$(psql -d $db -t -c 'SELECT count(*) FROM contributor_repository;')
 echo ""
-echo "Contributer:"
-echo "    Total: $contributer_count"
-echo "    Too big: $too_big_contributer_count"
-echo "    Repository references: $contributer_repository_count"
+echo "Contributor:"
+echo "    Total: $contributor_count"
+echo "    Too big: $too_big_contributor_count"
+echo "    Repository references: $contributor_repository_count"
 
 email_count=$(psql -d $db -t -c 'SELECT count(*) FROM email;')
 unknown_email_count=$(psql -d $db -t -c 'SELECT count(*) FROM email WHERE unknown = TRUE;')

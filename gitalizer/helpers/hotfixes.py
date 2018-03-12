@@ -7,7 +7,7 @@ from gitalizer.extensions import db, github
 from gitalizer.models import (
     Repository,
     Commit,
-    contributer_repository,
+    contributor_repository,
     commit_repository,
 )
 from gitalizer.aggregator.parallel import new_session

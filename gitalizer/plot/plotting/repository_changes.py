@@ -10,7 +10,7 @@ from gitalizer.plot.helper.plot import plot_figure
 
 
 def plot_repository_changes(commits, path, title):
-    """Plot the changes for a specific contributer and repository."""
+    """Plot the changes for a specific contributor and repository."""
     data = []
     for c in commits:
         if not c.additions or not c.deletions:

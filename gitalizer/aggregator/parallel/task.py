@@ -11,7 +11,7 @@ class Task(object):
 
     def __call__(self):
         """Actual work logic."""
-        if self.task_type == "github_contributer":
+        if self.task_type == "github_contributor":
             from gitalizer.aggregator.github.user import get_user_repos
             return get_user_repos(self.task)
         elif self.task_type == "github_repository":
