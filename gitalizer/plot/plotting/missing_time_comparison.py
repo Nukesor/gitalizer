@@ -44,7 +44,7 @@ class MissingTimeComparison():
 
     def add_ax(self, index):
         """Create and specify figure."""
-        ax = self.fig.add_subplot(index+1, 1, index+1)
+        ax = self.fig.add_subplot(len(self.results), 1, index+1)
 
         # We only want to see years as xaxis labels .
         years = mdates.YearLocator()
@@ -63,8 +63,8 @@ class MissingTimeComparison():
         """Plot the figure."""
         for index, _ in enumerate(self.results):
             ax = self.add_ax(index)
-            ax.set_ylim([20, 20])
-            ax = self.results[index].get_ax(ax)
+            ax.set_ylim([-10, 10])
+            ax = self.results[index].get_ax(parent_ax=ax)
 
             handles, labels = ax.get_legend_handles_labels()
             handles = [
@@ -78,14 +78,16 @@ class MissingTimeComparison():
                 'Work pattern anomaly',
             ]
             ax.legend(handles, labels)
+            ax.set_title(self.user[index].login, fontsize=20)
+            ax.get_yaxis().set_ticks([])
+            ax.scatter()
 
-        self.fig.set_figheight(20*len(self.user))
+        self.fig.set_figheight(20)
         self.fig.set_figwidth(40)
         self.fig.suptitle(self.title, fontsize=30)
-        print(self.results)
-        print(self.user)
-        print(self.fig.axes)
 
-        plot_figure(self.path, self.fig)
+        plt.xticks(rotation=30)
+        self.fig.savefig(self.path)
+        plt.close(self.fig)
 
         return
