@@ -1,10 +1,10 @@
 """Plot the timeline of additions and deletions."""
+from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.dates as mdates
 
 from gitalizer.plot.helper.db import get_user_commits_from_repositories
-from gitalizer.plot.helper.plot import plot_figure
 from gitalizer.plot.plotting import MissingTime
 
 week_days = ['Mon', 'Tue', 'Wen', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -18,6 +18,11 @@ class MissingTimeComparison():
         self.user = user
         self.repositories = repositories
         self.delta = delta
+
+        self.scatter_draw = [
+            [datetime.utcnow()-self.delta, datetime.utcnow()],
+            [0, 0]
+        ]
 
         self.path = path
         self.title = title
@@ -80,7 +85,7 @@ class MissingTimeComparison():
             ax.legend(handles, labels)
             ax.set_title(self.user[index].login, fontsize=20)
             ax.get_yaxis().set_ticks([])
-            ax.scatter()
+            ax.scatter(self.scatter_draw[0], self.scatter_draw[1])
 
         self.fig.set_figheight(20)
         self.fig.set_figwidth(40)
