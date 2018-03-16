@@ -325,7 +325,10 @@ class MissingTime():
                 entry_text += f'Working Days: {", ".join(days)}'
             self.entry_texts.append(entry_text)
 
-            height = ymax/3
+            if parent_ax is None:
+                height = ymax/3
+            else:
+                height = ymax
             patch = patches.Rectangle(
                 (start_date, -height/2),
                 end_date - start_date,
@@ -345,7 +348,11 @@ class MissingTime():
 
             self.anomaly_texts.append(f'Anomaly in week {entry[0]}-{entry[1]}: {datetime.strptime(start, "%Y-%W-%w")}')
 
-            height = ymax/7
+            if parent_ax is None:
+                height = ymax/7
+            else:
+                height = ymax/2
+
             patch = patches.Rectangle(
                 (start_date, -height/2),
                 end_date - start_date,
