@@ -16,10 +16,12 @@ from gitalizer.plot import (
     plot_employee,
     plot_comparison as plot_comparison_func,
 )
+from gitalizer.timezone.database import create_timezone_database
 from gitalizer.models import (
     Commit,
     commit_repository,
     Repository,
+    TimezoneInterval,
     User,
 )
 from gitalizer.helpers.hotfixes import (
@@ -79,9 +81,15 @@ def register_cli(app):  # pragma: no cover
         create_database(db_url)
 
         db.create_all()
+        db.session.commit()
 
-        user = User("test@example.com", "test")
-        db.session.add(user)
+    @app.cli.command()
+    def rebuild_time_db():
+        """Drop and recreate all utc offset timeinterval database entries."""
+        db.create_all()
+
+        db.session.query(TimezoneInterval).delete()
+        create_timezone_database()
         db.session.commit()
 
     @app.cli.command()
