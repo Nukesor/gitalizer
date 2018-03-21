@@ -32,3 +32,5 @@ pytz~=2018.3
 # Visualization
 pandas~=0.21
 seaborn~=0.8.1
+cython~=0.28
+cartopy~=0.15
