@@ -54,7 +54,7 @@ class CommitTimeline():
         self.data = data
 
     def get_ax(self):
-        """Create and specify figure."""
+        """Create and populate new axes object."""
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
@@ -98,7 +98,10 @@ class CommitTimeline():
         fig.suptitle(self.title, fontsize=30)
 
         ax.legend()
-        plot_figure(self.path, fig)
+
+        plt.xticks(rotation=30)
+        fig.savefig(self.path)
+        plt.close(fig)
 
         return
 
@@ -394,6 +397,8 @@ class MissingTime():
         for text in self.entry_texts:
             print(text)
 
-        plot_figure(self.path, fig)
+        plt.xticks(rotation=30)
+        fig.savefig(self.path)
+        plt.close(fig)
 
         return

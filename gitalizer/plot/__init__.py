@@ -21,6 +21,7 @@ from .comparison import (
     plot_compare_employee_missing_time,
 )
 
+
 def plot_user(login):
     """Plot all user related graphs."""
     plot_dir = current_app.config['PLOT_DIR']
@@ -39,10 +40,9 @@ def plot_user(login):
         current_app.logger.info(f'No contributor with name {login}')
         sys.exit(1)
 
-    plot_user_punchcard(contributor, user_dir)
-#    plot_user_repositories_changes(contributor, user_dir)
-    plot_user_commit_timeline(contributor, user_dir)
-#    plot_user_travel_path(contributor, user_dir)
+    plot_user_travel_path(contributor, user_dir)
+#    plot_user_punchcard(contributor, user_dir)
+#    plot_user_commit_timeline(contributor, user_dir)
 
 
 def plot_employee(login, repositories):

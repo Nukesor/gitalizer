@@ -13,7 +13,7 @@ from .plotting import (
     CommitTimeline,
     CommitPunchcard,
     plot_repository_changes,
-    contributor_travel_path,
+    TravelPath,
 )
 
 
@@ -69,8 +69,10 @@ def plot_user_punchcard(contributor, path):
 
 
 def plot_user_travel_path(contributor, path):
-    """Get the user utcoffset changes."""
-    commits = get_user_commits(contributor)
+    """Visualize the user utcoffset changes."""
+    delta = timedelta(days=2*364)
+    commits = get_user_commits(contributor, delta)
+    path = os.path.join(path, 'travel_path')
 
-    title = f"{contributor.login}'s Travel history"
-    contributor_travel_path(commits, path, title)
+    plotter = TravelPath(commits, path)
+    plotter.run()

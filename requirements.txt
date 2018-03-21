@@ -23,6 +23,10 @@ blinker
 pendulum~=1.4
 pytzdata~=2018.3
 
+# Location handling
+cartopy~=0.15
+pycountry~=18.2
+
 # Aggregator
 pygithub~=1.35
 pygit2~=0.26
@@ -33,4 +37,3 @@ pytz~=2018.3
 pandas~=0.21
 seaborn~=0.8.1
 cython~=0.28
-cartopy~=0.15
