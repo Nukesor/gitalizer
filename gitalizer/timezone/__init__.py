@@ -1,5 +1,6 @@
 """Helper for time zone handling."""
 from pytz import country_timezones
+from geopy.geocoders import Nominatim
 
 
 timezone_country = {}
@@ -7,6 +8,28 @@ for countrycode in country_timezones:
     timezones = country_timezones[countrycode]
     for timezone in timezones:
         timezone_country[timezone] = countrycode
+
+
+def map_timezone_to_state(name):
+    """Map a timezone to a state."""
+    components = name.split('/')
+
+    # If there are three components, the middle component is the state
+    if len(components) == 3:
+        return components[1]
+
+    try:
+        search_string = ', '.join(components)
+        search_string = search_string.replace('_', ' ')
+        geolocator = Nominatim()
+        location = geolocator.geocode(search_string)
+        location = geolocator.reverse([location.raw['lat'], location.raw['lon']])
+
+        state = location.raw['state']
+        return state
+
+    except BaseException:
+        return None
 
 
 def map_timezone_to_utc(name):

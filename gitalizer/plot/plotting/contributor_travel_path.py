@@ -8,10 +8,15 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from datetime import timedelta, datetime
 from pycountry import countries as pycountries
+from pprint import pprint
 
 from gitalizer.extensions import db
 from gitalizer.models import Commit, TimezoneInterval
-from gitalizer.timezone import timezone_country, map_timezone_to_utc
+from gitalizer.timezone import (
+    timezone_country,
+    map_timezone_to_utc,
+    map_timezone_to_state,
+)
 
 
 class TravelPath():
@@ -166,7 +171,7 @@ class TravelPath():
         self.states = list(shpreader.Reader(states_provinces_shp).records())
         self.states_by_name = {}
         for state in shpreader.Reader(states_provinces_shp).records():
-            self.states_by_name[state.attributes['name']] = country
+            self.states_by_name[state.attributes['name']] = state
 
         # Get all timezones and create a dictionary by name
         timezones_shp = shpreader.natural_earth(
@@ -191,7 +196,7 @@ class TravelPath():
         timezone = list([x for x in data if 'UTC' in x])
 
         timezone_start = tuple((x/255 for x in (0, 255, 0, 100)))
-        country_start = tuple((x/255 for x in (0, 150, 0)))
+        country_start = tuple((x/255 for x in (0, 100, 0)))
         # We ignore some countries, as they are too big and need a higher
         # resolution for precise timezone assignment.
         ignored_countries = ['United States', 'Australia', 'Brazil', 'Canada']
@@ -258,7 +263,28 @@ class TravelPath():
                 else:
                     country = self.countries_by_iso_a2[country_code]
 
+                # This country is too big and has many timezones it it.
+                # Try to get the state name and to color only the interesting states.
                 if country.attributes['NAME_LONG'] in ignored_countries:
+                    state = map_timezone_to_state(name)
+
+                    # We couldn't find a state for this timezone
+                    if state is None:
+                        continue
+
+                    # We don't have this state name in our world data
+                    if state not in self.states_by_name:
+                        continue
+
+                    # Found a state
+                    state = self.states_by_name[state]
+                    ax.add_geometries(
+                        state.geometry,
+                        ccrs.PlateCarree(),
+                        facecolor=country_start,
+                        edgecolor='black',
+                        label=state.attributes['name'],
+                    )
                     continue
 
                 # Avoid to draw the same country multiple times
@@ -275,15 +301,11 @@ class TravelPath():
                     label=country_name,
                 )
 
-
-#        import sys
-#        sys.exit()
         return ax
 
     def plot(self):
         """Plot the figure."""
         title = ''
-        from pprint import pprint
         pprint(self.data)
         for _, timezone_set in enumerate(self.data):
             title = f"From {timezone_set['start']} to {timezone_set['end']}"
