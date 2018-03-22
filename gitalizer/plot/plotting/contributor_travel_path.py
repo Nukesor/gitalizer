@@ -109,7 +109,7 @@ class TravelPath():
 
             # The current_timezones set exists only for a single day.
             # This is most likely an outlier. Thereby drop it and restore the last timezone.
-            if duration < timedelta(days=1):
+            if duration < timedelta(days=1) and len(timezone_sets) > 0:
                 last_timezone = timezone_sets.pop()
                 last_timezone['end'] = current_timezones['end']
                 current_timezones = last_timezone
