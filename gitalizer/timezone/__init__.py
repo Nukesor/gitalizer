@@ -19,13 +19,12 @@ def map_timezone_to_state(name):
         return components[1]
 
     try:
-        search_string = ', '.join(components)
-        search_string = search_string.replace('_', ' ')
+        search_string = components[1].replace('_', ' ')
         geolocator = Nominatim()
         location = geolocator.geocode(search_string)
         location = geolocator.reverse([location.raw['lat'], location.raw['lon']])
 
-        state = location.raw['state']
+        state = location.raw['address']['state']
         return state
 
     except BaseException:
