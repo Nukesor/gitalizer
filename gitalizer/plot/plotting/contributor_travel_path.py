@@ -168,9 +168,11 @@ class TravelPath():
             category='cultural',
             name='admin_1_states_provinces',
         )
+#        full_list = list(shpreader.Reader(states_provinces_shp).records())
+#        self.states = [x for x in full_list if x.attributes['type_en'] == 'State']
         self.states = list(shpreader.Reader(states_provinces_shp).records())
         self.states_by_name = {}
-        for state in shpreader.Reader(states_provinces_shp).records():
+        for state in self.states:
             self.states_by_name[state.attributes['name']] = state
 
         # Get all timezones and create a dictionary by name
@@ -219,6 +221,11 @@ class TravelPath():
 
         collected_countries = []
         collected_timezones = []
+        collected_states = []
+
+        timezones_to_draw = []
+        countries_to_draw = []
+        states_to_draw = []
         for name in data:
             # Color the timezone if we find one
             name = map_timezone_to_utc(name)
@@ -229,13 +236,7 @@ class TravelPath():
                 utc_name = timezone.attributes['utc_format']
                 if utc_name not in collected_timezones:
                     collected_timezones.append(utc_name)
-
-                    ax.add_geometries(
-                        timezone.geometry,
-                        ccrs.PlateCarree(),
-                        facecolor=timezone_start,
-                        label=name,
-                    )
+                    timezones_to_draw.append(timezone)
 
             # Check if we find a country for this timezone and draw it
             if name in timezone_country:
@@ -276,15 +277,15 @@ class TravelPath():
                     if state not in self.states_by_name:
                         continue
 
+                    # We already have this state
+                    if state in collected_states:
+                        continue
+
                     # Found a state
+                    collected_states.append(state)
                     state = self.states_by_name[state]
-                    ax.add_geometries(
-                        state.geometry,
-                        ccrs.PlateCarree(),
-                        facecolor=country_start,
-                        edgecolor='black',
-                        label=state.attributes['name'],
-                    )
+                    states_to_draw.append(state)
+
                     continue
 
                 # Avoid to draw the same country multiple times
@@ -293,20 +294,41 @@ class TravelPath():
                     continue
 
                 collected_countries.append(country_name)
-                ax.add_geometries(
-                    country.geometry,
-                    ccrs.PlateCarree(),
-                    facecolor=country_start,
-                    edgecolor='black',
-                    label=country_name,
-                )
+                countries_to_draw.append(country)
+
+        # Draw everything at the end.
+        # Otherwise timezones might draw over countries and fuck up the image.
+        for timezone in timezones_to_draw:
+            ax.add_geometries(
+                timezone.geometry,
+                ccrs.PlateCarree(),
+                facecolor=timezone_start,
+                label=name,
+            )
+
+        for country in countries_to_draw:
+            ax.add_geometries(
+                country.geometry,
+                ccrs.PlateCarree(),
+                facecolor=country_start,
+                edgecolor='black',
+                label=country_name,
+            )
+
+        for state in states_to_draw:
+            ax.add_geometries(
+                state.geometry,
+                ccrs.PlateCarree(),
+                facecolor=country_start,
+                edgecolor='black',
+                label=state.attributes['name'],
+            )
 
         return ax
 
     def plot(self):
         """Plot the figure."""
         title = ''
-        pprint(self.data)
         for _, timezone_set in enumerate(self.data):
             title = f"From {timezone_set['start']} to {timezone_set['end']}"
             name = f"{timezone_set['start'].strftime('%Y_%m_%d')}_to_{timezone_set['end'].strftime('%Y_%m_%d')}"
