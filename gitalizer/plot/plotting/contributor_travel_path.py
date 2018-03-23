@@ -27,6 +27,7 @@ class TravelPath():
         self.path = path
         self.raw_data = commits
         self.data = None
+        self.home_zone = None
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -145,6 +146,36 @@ class TravelPath():
         current_timezones['end'] = datetime.now().date()
         timezone_sets.append(current_timezones)
 
+        selected_sets = []
+        biggest_set = None
+        found = False
+        # Try to find the current home timezone:
+        for timezone_set in timezone_sets:
+            duration = timezone_set['end'] - timezone_set['start']
+
+            # Try to find a set which intersects with the current set
+            for selected_set in selected_sets:
+                intersection = timezone_set['set'] & selected_set['set']
+                # Found an intersection, set the new intersection and increment days
+                if len(intersection) > 0:
+                    selected_set['set'] = intersection
+                    selected_set['days'] += duration.days
+                    found = True
+                    if selected_set['days'] > biggest_set['days']:
+                        biggest_set = selected_set
+
+                    break
+
+            if not found:
+                timezone_set['days'] = duration.days
+                selected_sets.append(timezone_set)
+            else:
+                found = False
+
+            if not biggest_set:
+                biggest_set = timezone_set
+
+        self.home_zone = biggest_set
         self.data = timezone_sets
 
     def get_geo_data(self):
@@ -349,5 +380,25 @@ class TravelPath():
             fig.savefig(path)
 
             plt.close(fig)
+
+        title = "Main timezone"
+        name = "main_timezone"
+        path = os.path.join(self.path, name)
+
+        ax = self.get_ax(self.home_zone['set'])
+        handles, labels = ax.get_legend_handles_labels()
+        new_handles = [patches.Patch(color='green', label='Possible countries for timezone.')]
+        new_labels = ['Possible countries in time window.']
+        handles += new_handles
+        labels += new_labels
+        ax.legend(handles, labels)
+        fig = ax.get_figure()
+        fig.set_figheight(40)
+        fig.set_figwidth(80)
+
+        fig.suptitle(title, fontsize=30)
+        fig.savefig(path)
+
+        plt.close(fig)
 
         return
