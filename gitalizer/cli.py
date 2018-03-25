@@ -40,6 +40,9 @@ from gitalizer.aggregator.github.user import (
     get_user_by_login,
     get_friends_by_name,
 )
+from gitalizer.analysis import (
+    analyse_travel_path,
+)
 
 
 def register_cli(app):  # pragma: no cover
@@ -197,6 +200,16 @@ def register_cli(app):  # pragma: no cover
         # The logins are comma seperated ('test1,test2,rofl,wtf,omfg')
         try:
             plot_comparison_func(logins, repositories)
+        except KeyboardInterrupt:
+            app.logger.info("CTRL-C Exiting Gracefully")
+            sys.exit(1)
+
+    # ----- Analysis -------
+    @app.cli.command()
+    def analyse_travel():
+        """Analyse missing time stuff."""
+        try:
+            analyse_travel_path()
         except KeyboardInterrupt:
             app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
