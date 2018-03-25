@@ -24,7 +24,7 @@ def analyse_travel_path():
     count = 0
     big_contributors = []
     for contributor in contributors:
-        commits = db.session.query(Commit.sha) \
+        commit_count = db.session.query(func.count(Commit.sha)) \
             .filter(Commit.commit_time >= time_span) \
             .join(Email, or_(
                 Email.email == Commit.author_email_address,
@@ -32,22 +32,29 @@ def analyse_travel_path():
             )) \
             .join(Contributor, Email.contributor_login == contributor.login) \
             .filter(Contributor.login == contributor.login) \
-            .all()
+            .one()
 
-        if len(commits) > 200:
-            big_contributors.append((contributor, commits))
+        if commit_count[0] > 200:
+            big_contributors.append(contributor)
 
         count += 1
         if count % 100 == 0:
             current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
 
+    # Finished searching for contributors with enough commits.
+    current_app.logger.info(f'Analysing {len(big_contributors)} contributors.')
+
+    count = 0
     found_change = 0
-    for contributor, commits in big_contributors:
-        plotter = TravelPath(contributor, commits)
+    for contributor in big_contributors:
+        plotter = TravelPath(get_user_commits(contributor), '/')
         plotter.preprocess()
 
         if len(plotter.data) > 1:
             found_change += 1
+        count += 1
+        if count % 100 == 0:
+            current_app.logger.info(f'Analysed {count} contributors')
 
     current_app.logger.info(f'Looked at {len(contributors)} contributors.')
     current_app.logger.info(f'{len(big_contributors)} are relevant.')
