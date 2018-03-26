@@ -7,9 +7,9 @@ from github.GithubException import GithubException
 from gitalizer.models import Repository, Contributor
 from gitalizer.extensions import github, sentry, db
 from gitalizer.aggregator.github import call_github_function, get_github_object
-from gitalizer.aggregator.parallel import new_session
-from gitalizer.aggregator.parallel.manager import Manager
-from gitalizer.aggregator.parallel.messages import (
+from gitalizer.helpers.parallel import new_session
+from gitalizer.helpers.parallel.manager import Manager
+from gitalizer.helpers.parallel.messages import (
     user_too_big_message,
     user_up_to_date_message,
 )

@@ -4,7 +4,7 @@ from sqlalchemy import or_, func
 from datetime import timedelta, datetime
 
 from gitalizer.extensions import db
-from gitalizer.plot.helper.db import get_user_commits
+from gitalizer.helpers.db import get_user_commits
 from gitalizer.plot.plotting import TravelPath
 from gitalizer.models import (
     Commit,
@@ -34,7 +34,7 @@ def analyse_travel_path():
             .filter(Contributor.login == contributor.login) \
             .one()
 
-        if commit_count[0] > 200:
+        if commit_count[0] > 200 and commit_count[0] < 20000:
             big_contributors.append(contributor)
 
         count += 1

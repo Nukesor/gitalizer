@@ -2,7 +2,7 @@
 import os
 from datetime import timedelta
 
-from .helper.db import get_user_commits_from_repositories
+from gitalizer.helpers.db import get_user_commits_from_repositories
 from .plotting import (
     CommitTimeline,
     CommitPunchcard,

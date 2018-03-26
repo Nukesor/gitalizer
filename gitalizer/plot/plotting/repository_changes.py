@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 
 from matplotlib.ticker import FixedFormatter
 
-from gitalizer.plot.helper.plot import plot_figure
-
 
 def plot_repository_changes(commits, path, title):
     """Plot the changes for a specific contributor and repository."""
@@ -49,6 +47,11 @@ def plot_repository_changes(commits, path, title):
     box.xaxis.set_major_formatter(FixedFormatter(dates))
 
     plt.title(title)
-    plot_figure(path, box)
+
+    plt.xticks(rotation=30)
+    plt.figure(figsize=(20, 10))
+    box.savefig(path)
+
+    plt.close(box)
 
     return

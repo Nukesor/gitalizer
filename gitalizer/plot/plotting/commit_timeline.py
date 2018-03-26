@@ -6,8 +6,6 @@ import matplotlib.patches as patches
 import matplotlib.dates as mdates
 from datetime import date, datetime
 
-from gitalizer.plot.helper.plot import plot_figure
-
 week_days = ['Mon', 'Tue', 'Wen', 'Thu', 'Fri', 'Sat', 'Sun']
 
 

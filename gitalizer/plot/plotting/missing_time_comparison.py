@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.dates as mdates
 
-from gitalizer.plot.helper.db import get_user_commits_from_repositories
+from gitalizer.helpers.db import get_user_commits_from_repositories
 from gitalizer.plot.plotting import MissingTime
 
 week_days = ['Mon', 'Tue', 'Wen', 'Thu', 'Fri', 'Sat', 'Sun']

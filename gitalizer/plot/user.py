@@ -7,8 +7,8 @@ from gitalizer.extensions import db
 from gitalizer.models.email import Email
 from gitalizer.models.commit import Commit
 from gitalizer.models.contributor import Contributor
+from gitalizer.helpers.db import get_user_repositories, get_user_commits
 
-from .helper.db import get_user_repositories, get_user_commits
 from .plotting import (
     CommitTimeline,
     CommitPunchcard,

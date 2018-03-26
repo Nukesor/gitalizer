@@ -9,9 +9,9 @@ from flask import current_app
 
 from gitalizer.extensions import github, sentry
 from gitalizer.models.repository import Repository
-from gitalizer.aggregator.parallel import new_session
-from gitalizer.aggregator.parallel.manager import Manager
-from gitalizer.aggregator.parallel.messages import error_message
+from gitalizer.helpers.parallel import new_session
+from gitalizer.helpers.parallel.manager import Manager
+from gitalizer.helpers.parallel.messages import error_message
 from gitalizer.aggregator.git.commit import CommitScanner
 from gitalizer.aggregator.git.repository import get_git_repository, delete_git_repository
 from gitalizer.aggregator.github import (

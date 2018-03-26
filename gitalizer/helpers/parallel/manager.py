@@ -2,8 +2,8 @@
 import multiprocessing
 from flask import current_app
 
-from gitalizer.aggregator.parallel.task import Task
-from gitalizer.aggregator.parallel.worker import Worker
+from gitalizer.helpers.parallel.task import Task
+from gitalizer.helpers.parallel.worker import Worker
 
 
 class Manager():

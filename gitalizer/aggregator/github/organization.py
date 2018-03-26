@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 from gitalizer.extensions import github
 from gitalizer.models import Contributor, Organization, Repository
 from gitalizer.aggregator.github import call_github_function
-from gitalizer.aggregator.parallel import new_session
-from gitalizer.aggregator.parallel.manager import Manager
+from gitalizer.helpers.parallel import new_session
+from gitalizer.helpers.parallel.manager import Manager
 from gitalizer.aggregator.github.user import check_fork
 
 
