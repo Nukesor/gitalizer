@@ -105,9 +105,9 @@ def analyse_contributer_travel_path(contributors_commits):
 
                 result.different_timezones = len(plotter.data)
                 result.last_change = datetime.now()
+                result.commit_count = len(commits)
                 session.add(result)
 
-            result.commit_count = len(commit_hashes)
             count += 1
             if count % 50 == 0:
                 session.commit()
