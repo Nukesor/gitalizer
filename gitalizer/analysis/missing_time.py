@@ -24,6 +24,7 @@ def chunks(l, n):
 def analyse_travel_path():
     """Analyze the efficiency of the missing time comparison."""
     session = new_session()
+    current_app.logger.info(f'Start Scan.')
 
     # Look at the last two years
     time_span = datetime.now() - timedelta(days=2*365)
