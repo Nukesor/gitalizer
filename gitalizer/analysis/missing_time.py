@@ -45,7 +45,7 @@ def analyse_travel_path():
     count = 0
     big_contributors = []
     for contributor, commits in results:
-        if len(commits) > 200 and len(commits) < 20000:
+        if len(commits) > 100 and len(commits) < 20000:
             big_contributors.append((contributor, commits))
 
         count += 1
