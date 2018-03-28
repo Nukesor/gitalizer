@@ -1,5 +1,9 @@
 # Git analyzer
 
+Installation:
+
+- If you are on Arch-Linux, run the `bin/setup.sh` script.
+- If you're not on Arch-Linux, ignore the pacman part and only setup the virtual env.
 
 
 
