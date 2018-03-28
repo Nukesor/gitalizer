@@ -84,6 +84,7 @@ def analyse_contributer_travel_path(contributors_commits):
     """Analyse the travel path of a few contributers."""
     try:
         session = new_session()
+        count = 0
         for contributor, commit_hashes in contributors_commits:
             # Query result again with current session.
             contributor = session.query(Contributor).get(contributor.login)
@@ -104,6 +105,10 @@ def analyse_contributer_travel_path(contributors_commits):
                 result.different_timezones = len(plotter.data)
                 result.last_change = datetime.now()
                 session.add(result)
+
+            count += 1
+            if count % 50 == 0:
+                session.commit()
 
         session.commit()
     finally:
