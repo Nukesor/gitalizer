@@ -8,6 +8,7 @@ from gitalizer.helpers.parallel import new_session
 from gitalizer.plot.plotting import TravelPath
 from gitalizer.helpers.parallel.list_manager import ListManager
 from gitalizer.models import (
+    AnalysisResult,
     Commit,
     Contributor,
     Email,
@@ -48,7 +49,7 @@ def analyse_travel_path():
         count += 1
         if count % 100 == 0:
             current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
-        if count % 5000 == 0:
+        if count % 400 == 0:
             break
 
     # Finished searching for contributors with enough commits.
@@ -62,11 +63,15 @@ def analyse_travel_path():
     manager.start()
     manager.run()
 
+    results = session.query(AnalysisResult).all()
+
     changed = 0
     unchanged = 0
-    for result in manager.results:
-        changed += result['changed']
-        unchanged += result['unchanged']
+    for result in results:
+        if result.different_timezones > 1:
+            changed += 1
+        else:
+            unchanged += 1
 
     current_app.logger.info(f'Looked at {len(contributors)} contributors.')
     current_app.logger.info(f'{len(big_contributors)} are relevant.')
@@ -80,21 +85,24 @@ def analyse_contributer_travel_path(logins):
     """Analyse the travel path of a few contributers."""
     try:
         session = new_session()
-        changed = 0
-        unchanged = 0
         for login in logins:
             contributor = session.query(Contributor).get(login)
-            plotter = TravelPath(get_user_commits(contributor, session=session), '/')
-            plotter.preprocess()
+            result = contributor.analysis_result
 
-            if len(plotter.data) > 1:
-                changed += 1
-            else:
-                unchanged += 1
+            if result is None:
+                result = AnalysisResult()
+                contributor.analysis_result = result
+                session.add(contributor)
 
+            if result.different_timezones is None:
+                plotter = TravelPath(get_user_commits(contributor, session=session), '/')
+                plotter.preprocess()
+
+                result.different_timezones = len(plotter.data)
+                result.last_change = datetime.now()
+                session.add(result)
+                session.commit()
     finally:
         session.close()
 
-    return {'message': 'Success',
-            'changed': changed,
-            'unchanged': unchanged}
+    return {'message': 'Success'}

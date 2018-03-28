@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
+from sqlalchemy.dialects.postgresql import UUID
 
 from gitalizer.extensions import db
 
@@ -48,6 +49,8 @@ class Contributor(db.Model):
 
     login = db.Column(db.String(240), primary_key=True, nullable=False)
     emails = db.relationship("Email", back_populates="contributor")
+
+    # Relationships
     repositories = db.relationship(
         "Repository",
         secondary=contributor_repository,
@@ -56,6 +59,10 @@ class Contributor(db.Model):
         "Organization",
         secondary=contributor_organizations,
         back_populates="contributors")
+    analysis_result = db.relationship(
+        "AnalysisResult",
+        uselist=False,
+        back_populates="contributor")
 
     too_big = db.Column(db.Boolean, default=False, server_default='FALSE', nullable=False)
     last_full_scan = db.Column(db.DateTime(timezone=True))
