@@ -19,6 +19,7 @@ class AnalysisResult(db.Model):
         index=True)
 
     # Timezone check
+    commit_count = db.Column(db.Integer())
     different_timezones = db.Column(db.Integer())
     last_change = db.Column(db.DateTime())
 

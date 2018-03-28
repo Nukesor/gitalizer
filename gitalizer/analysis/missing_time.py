@@ -88,9 +88,6 @@ def analyse_contributer_travel_path(contributors_commits):
         for contributor, commit_hashes in contributors_commits:
             # Query result again with current session.
             contributor = session.query(Contributor).get(contributor.login)
-            commits = session.query(Commit) \
-                .filter(Commit.sha.in_(commit_hashes)) \
-                .all()
             result = contributor.analysis_result
 
             if result is None:
@@ -99,6 +96,10 @@ def analyse_contributer_travel_path(contributors_commits):
                 session.add(contributor)
 
             if result.different_timezones is None:
+                commits = session.query(Commit) \
+                    .filter(Commit.sha.in_(commit_hashes)) \
+                    .all()
+
                 plotter = TravelPath(commits, '/')
                 plotter.preprocess()
 
@@ -106,6 +107,7 @@ def analyse_contributer_travel_path(contributors_commits):
                 result.last_change = datetime.now()
                 session.add(result)
 
+            result.commit_count = len(commit_hashes)
             count += 1
             if count % 50 == 0:
                 session.commit()
