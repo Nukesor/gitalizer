@@ -11,7 +11,7 @@ from gitalizer.models.contributor import Contributor, contributor_repository
 
 def get_user_repositories(contributor):
     """Get all commits of repositories of an user."""
-    repositories = db.session.query(Repository) \
+    repositories = session.query(Repository) \
         .join(
             contributor_repository,
             contributor_repository.c.repository_clone_url == Repository.clone_url,
@@ -22,12 +22,16 @@ def get_user_repositories(contributor):
     return repositories
 
 
-def get_user_commits(contributor, delta=None):
+def get_user_commits(contributor, delta=None, session=None):
     """Get ALL commits of a contributor in a given timespan."""
+    if session is None:
+        session = db.session
+
     if delta is None:
         delta = timedelta(days=99*365)
+
     time_span = datetime.now() - delta
-    commits = db.session.query(Commit) \
+    commits = session.query(Commit) \
         .filter(Commit.commit_time >= time_span) \
         .join(Email, or_(
             Email.email == Commit.author_email_address,

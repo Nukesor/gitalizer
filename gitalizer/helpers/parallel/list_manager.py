@@ -1,4 +1,3 @@
-"""Module for multiprocessing management."""
 import multiprocessing
 from flask import current_app
 
@@ -6,13 +5,13 @@ from gitalizer.helpers.parallel.task import Task
 from gitalizer.helpers.parallel.worker import Worker
 
 
-class Manager():
+class ListManager():
     """Class for managing various multiprocessing tasks."""
 
     def __init__(self, task_type: str, tasks: list,
                  sub_manager: 'Manager'=None):
         """Create a new manager."""
-        self.tasks = set(tasks)
+        self.tasks = tasks
         self.task_type = task_type
         self.sub_manager = sub_manager
         self.started = False
@@ -20,10 +19,7 @@ class Manager():
         self.task_queue = multiprocessing.JoinableQueue()
         self.result_queue = multiprocessing.Queue()
         self.results = []
-        if task_type == 'github_contributor':
-            self.consumer_count = current_app.config['GIT_USER_SCAN_THREADS']
-        elif task_type == 'github_repository':
-            self.consumer_count = current_app.config['GIT_COMMIT_SCAN_THREADS']
+        self.consumer_count = current_app.config['GIT_COMMIT_SCAN_THREADS']
 
     def start(self):
         """Initialize workers and add initial tasks."""
@@ -40,13 +36,11 @@ class Manager():
     def add_tasks(self, tasks: list):
         """Add some tasks to the queue."""
         # Add unique tasks to queue
-        tasks = set(tasks)
         if self.started:
-            for task in (tasks - self.tasks):
+            for task in tasks:
                 self.task_queue.put(Task(self.task_type, task))
 
-        # Add new tasks to task set.
-        self.tasks |= tasks
+        self.tasks += tasks
 
     def run(self):
         """All tasks are added. Process worker responses and wait for worker to finish."""

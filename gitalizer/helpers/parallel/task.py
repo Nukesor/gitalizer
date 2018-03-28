@@ -11,9 +11,12 @@ class Task(object):
 
     def __call__(self):
         """Actual work logic."""
-        if self.task_type == "github_contributor":
+        if self.task_type == 'github_contributor':
             from gitalizer.aggregator.github.user import get_user_repos
             return get_user_repos(self.task)
-        elif self.task_type == "github_repository":
+        elif self.task_type == 'github_repository':
             from gitalizer.aggregator.github.repository import get_github_repository
             return get_github_repository(self.task)
+        elif self.task_type == 'analyse_travel_path':
+            from gitalizer.analysis.missing_time import analyse_contributer_travel_path
+            return analyse_contributer_travel_path(self.task)
