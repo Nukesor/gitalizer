@@ -24,37 +24,37 @@ def chunks(l, n):
 def analyse_travel_path():
     """Analyze the efficiency of the missing time comparison."""
     session = new_session()
-    contributors = session.query(Contributor).all()
-    current_app.logger.info(f'Scanning {len(contributors)} contributors.')
 
     # Look at the last two years
     time_span = datetime.now() - timedelta(days=2*365)
 
+    results = session.query(Contributor, func.array_agg(Commit.sha)) \
+        .filter(Contributor.login == Contributor.login) \
+        .join(Email, Contributor.login == Email.contributor_login) \
+        .join(Commit, or_(
+            Commit.author_email_address == Email.email,
+            Commit.committer_email_address == Email.email,
+        )) \
+        .filter(Commit.commit_time >= time_span) \
+        .group_by(Contributor.login) \
+        .all()
+
+    current_app.logger.info(f'Scanning {len(results)} contributors.')
+
     count = 0
     big_contributors = []
-    for contributor in contributors:
-        commit_count = session.query(func.count(Commit.sha)) \
-            .filter(Commit.commit_time >= time_span) \
-            .join(Email, or_(
-                Email.email == Commit.author_email_address,
-                Email.email == Commit.committer_email_address,
-            )) \
-            .join(Contributor, Email.contributor_login == contributor.login) \
-            .filter(Contributor.login == contributor.login) \
-            .one()
-
-        if commit_count[0] > 200 and commit_count[0] < 20000:
-            big_contributors.append(contributor)
+    for contributor, commits in results:
+        if len(commits) > 200 and len(commits) < 20000:
+            big_contributors.append((contributor, commits))
 
         count += 1
-        if count % 100 == 0:
+        if count % 5000 == 0:
             current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
 
     # Finished searching for contributors with enough commits.
     current_app.logger.info(f'Analysing {len(big_contributors)} contributors.')
 
     # Chunk the contributor list into chunks of 100
-    big_contributors = [c.login for c in big_contributors]
     big_contributors = chunks(big_contributors, 100)
 
     manager = ListManager('analyse_travel_path', big_contributors)
@@ -71,7 +71,7 @@ def analyse_travel_path():
         else:
             unchanged += 1
 
-    current_app.logger.info(f'Looked at {len(contributors)} contributors.')
+    current_app.logger.info(f'Looked at {len(results)} contributors.')
     current_app.logger.info(f'{len(big_contributors)} are relevant.')
     current_app.logger.info(f'Detected a change in {changed} of those.')
     current_app.logger.info(f'Detected no change in {unchanged} of those.')
@@ -79,12 +79,16 @@ def analyse_travel_path():
     return
 
 
-def analyse_contributer_travel_path(logins):
+def analyse_contributer_travel_path(contributors_commits):
     """Analyse the travel path of a few contributers."""
     try:
         session = new_session()
-        for login in logins:
-            contributor = session.query(Contributor).get(login)
+        for contributor, commit_hashes in contributors_commits:
+            # Query result again with current session.
+            contributor = session.query(Contributor).get(contributor.login)
+            commits = session.query(Commit) \
+                .filter(Commit.sha.in_(commit_hashes)) \
+                .all()
             result = contributor.analysis_result
 
             if result is None:
@@ -93,13 +97,14 @@ def analyse_contributer_travel_path(logins):
                 session.add(contributor)
 
             if result.different_timezones is None:
-                plotter = TravelPath(get_user_commits(contributor, session=session), '/')
+                plotter = TravelPath(commits, '/')
                 plotter.preprocess()
 
                 result.different_timezones = len(plotter.data)
                 result.last_change = datetime.now()
                 session.add(result)
-                session.commit()
+
+        session.commit()
     finally:
         session.close()
 

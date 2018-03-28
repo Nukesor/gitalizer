@@ -72,8 +72,8 @@ class Contributor(db.Model):
         self.login = login
 
     def __repr__(self):
-        """Format a `User` object."""
-        return f'<User {self.login}>'
+        """Format a `Contributor` object."""
+        return f'<Contributor {self.login}>'
 
     @staticmethod
     def get_contributor(login: str, session, eager_repositories=False, do_commit=True):
