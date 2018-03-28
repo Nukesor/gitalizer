@@ -49,8 +49,6 @@ def analyse_travel_path():
         count += 1
         if count % 100 == 0:
             current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
-        if count % 400 == 0:
-            break
 
     # Finished searching for contributors with enough commits.
     current_app.logger.info(f'Analysing {len(big_contributors)} contributors.')
