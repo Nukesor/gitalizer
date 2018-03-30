@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 class CommitPunchcard():
     """Punchcard creator."""
 
-    def __init__(self, raw_data, path, title):
+    def __init__(self, commits, path, title):
         """Create a new instance."""
         self.path = path
         self.title = title
-        self.raw_data = raw_data
+        self.commits = commits
         self.data = None
 
     def run(self):
@@ -22,17 +22,19 @@ class CommitPunchcard():
         """Preprocess data into plottable form."""
         # Find how many plots we are making
         statistic = {}
-        for commit in self.raw_data:
+        for weekday in range(7):
+            statistic[weekday] = {}
+            for i in range(24):
+                statistic[weekday][i] = 0
+
+        for commit in self.commits:
             weekday = commit.local_time().weekday()
             hour = commit.local_time().hour
-            if weekday not in statistic:
-                statistic[weekday] = {}
-                for i in range(24):
-                    statistic[weekday][i] = 0
             statistic[weekday][hour] += 1
 
         punchcard = pd.DataFrame(statistic).transpose().stack().reset_index()
         punchcard.columns = ['day', 'hour', 'count']
+        self.raw_data = punchcard.copy()
         punchcard['count'] = punchcard['count'] * 5 / punchcard['count'].mean()
         self.data = punchcard
 
