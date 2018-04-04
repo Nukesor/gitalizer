@@ -42,6 +42,7 @@ from gitalizer.aggregator.github.user import (
 )
 from gitalizer.analysis import (
     analyse_travel_path,
+    analyse_punch_card,
 )
 
 
@@ -210,6 +211,15 @@ def register_cli(app):  # pragma: no cover
         """Analyse missing time stuff."""
         try:
             analyse_travel_path()
+        except KeyboardInterrupt:
+            app.logger.info("CTRL-C Exiting Gracefully")
+            sys.exit(1)
+
+    @app.cli.command()
+    def analyse_punch():
+        """Analyse missing time stuff."""
+        try:
+            analyse_punch_card()
         except KeyboardInterrupt:
             app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)

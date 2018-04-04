@@ -99,5 +99,5 @@ def plot_comparison(logins, repositories):
         .filter(or_(*conditions)) \
         .all()
 
-    #plot_compare_employee_missing_time(contributors, repositories, path)
+    plot_compare_employee_missing_time(contributors, repositories, path)
     plot_compare_employee_commits(contributors, repositories, path)

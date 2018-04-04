@@ -20,3 +20,6 @@ class Task(object):
         elif self.task_type == 'analyse_travel_path':
             from gitalizer.analysis.missing_time import analyse_contributer_travel_path
             return analyse_contributer_travel_path(self.task)
+        elif self.task_type == 'analyse_punchcard':
+            from gitalizer.analysis.punchcard import get_punchcard_data
+            return get_punchcard_data(self.task)

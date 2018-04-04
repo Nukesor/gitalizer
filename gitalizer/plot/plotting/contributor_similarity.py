@@ -1,4 +1,5 @@
 """Plot a punchcard from a bunch of commits."""
+import math
 import matplotlib.pyplot as plt
 from pprint import pprint
 
@@ -39,10 +40,7 @@ class CommitSimilarity():
             plotter.preprocess()
             punchcard_data[user.login] = plotter.raw_data
 
-        # Normalize data for better comparison
-        for _, df in punchcard_data.items():
-            mean = df['count'].mean()
-            df['count'] = df['count']/mean
+        punchcard_data = self.normalize(punchcard_data)
 
         for name, df in punchcard_data.items():
             self.data[name] = {}
@@ -52,18 +50,21 @@ class CommitSimilarity():
                 if name == comparison_name:
                     continue
 
-                # Get euclidean distance of both series
-                euclidean_distance = comparison_df['count'] - df['count']
-                euclidean_distance = euclidean_distance.abs()
-                euclidean_distance = euclidean_distance.sum()
-
-                # Get matching percentage
-                length = df['count'].size
-                percentage = 100*((2*length-euclidean_distance)/(2*length))
-
-                self.data[name][comparison_name] = percentage
+                self.data[name][comparison_name] = self.euclidean_distance(df, comparison_df)
 
         pprint(self.data)
+
+    def normalize(self, data):
+        """Normalize data for better comparison."""
+        for _, df in data.items():
+            mean = df['count'].mean()
+            df['count'] = df['count']/mean
+
+    def euclidean_distance(self, origin_data, compare_data):
+        """Compute the euclidean distance of two punchcards."""
+        difference = compare_data['count'] - origin_data['count']
+        difference = difference.pow(2)
+        return math.sqrt(difference.sum())
 
     def get_ax(self):
         """Create a new axes object on the main figure."""
