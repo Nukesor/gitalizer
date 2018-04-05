@@ -34,6 +34,9 @@ pygit2~=0.26
 gitpython~=2.1.7
 pytz~=2018.3
 
+# Machine learning
+scikit-learn~=0.19
+
 # Visualization
 pandas~=0.21
 seaborn~=0.8.1

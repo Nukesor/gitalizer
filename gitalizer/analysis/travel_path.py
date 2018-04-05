@@ -88,7 +88,8 @@ def analyse_contributer_travel_path(contributors_commits):
                 contributor.analysis_result = result
                 session.add(contributor)
 
-            if result.different_timezones is None:
+            commits_changed = (len(commit_hashes) != result.commit_count)
+            if result.different_timezones is None or commits_changed:
                 commits = session.query(Commit) \
                     .filter(Commit.sha.in_(commit_hashes)) \
                     .all()

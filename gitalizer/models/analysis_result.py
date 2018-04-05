@@ -1,7 +1,7 @@
 """Representation of a git repository contributor."""
 from uuid import uuid4
 from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from gitalizer.extensions import db
 
@@ -22,6 +22,7 @@ class AnalysisResult(db.Model):
     commit_count = db.Column(db.Integer())
     different_timezones = db.Column(db.Integer())
     last_change = db.Column(db.DateTime())
+    intermediate_results = db.Column(JSONB)
 
     # Relationships
     contributor = db.relationship("Contributor", back_populates="analysis_result")

@@ -18,7 +18,6 @@ class CommitSimilarity():
 
         self.path = path
         self.title = title
-        self.fig = plt.figure()
 
         self.data = {}
 
@@ -73,6 +72,7 @@ class CommitSimilarity():
 
     def plot(self):
         """Plot the data."""
+        self.fig = plt.figure()
         ax = self.get_ax()
 
         ax.set_aspect('equal')

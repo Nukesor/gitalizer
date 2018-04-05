@@ -1,13 +1,18 @@
 """Analyse the efficiency of the travel path comparison."""
-from pprint import pformat
+import numpy as np
+from copy import deepcopy
+from sklearn import metrics
+from sklearn.cluster import DBSCAN
+
 from flask import current_app
 from sqlalchemy import or_, func
 from datetime import timedelta, datetime
 
 from gitalizer.helpers.parallel import new_session, create_chunks
-from gitalizer.plot.plotting import CommitPunchcard, CommitSimilarity
+from gitalizer.plot.plotting import CommitPunchcard
 from gitalizer.helpers.parallel.list_manager import ListManager
 from gitalizer.models import (
+    AnalysisResult,
     Commit,
     Contributor,
     Email,
@@ -20,7 +25,7 @@ def analyse_punch_card():
     current_app.logger.info(f'Start Scan.')
 
     # Look at the last year
-    time_span = datetime.now() - timedelta(days=2*365)
+    time_span = datetime.now() - timedelta(days=365)
 
     results = session.query(Contributor, func.array_agg(Commit.sha)) \
         .filter(Contributor.login == Contributor.login) \
@@ -42,7 +47,7 @@ def analyse_punch_card():
             big_contributors.append((contributor, commits))
 
         count += 1
-        if count % 5000 == 0:
+        if count % 50000 == 0:
             current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
 
     # Finished searching for contributors with enough commits.
@@ -55,36 +60,28 @@ def analyse_punch_card():
     manager.start()
     manager.run()
 
-    helper = CommitSimilarity(None, None, None, None, None)
+    analysis_results = session.query(AnalysisResult) \
+        .filter(AnalysisResult.intermediate_results != None) \
+        .all()
 
-    all_dfs = []
-    for result in manager.results:
-        all_dfs += result['results']
+    vectorized_data = []
+    for result in analysis_results:
+        if 'punchcard' in result.intermediate_results:
+            vectorized_data.append(result.intermediate_results['punchcard'])
 
-    buckets = []
-    counter = 0
-    while len(all_dfs) != 0:
-        counter += 1
-        if counter % 100 == 0:
-            current_app.logger.info(f'Analysed {counter} contributors.')
+    db = DBSCAN(eps=10, min_samples=2).fit(vectorized_data)
+    core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+    core_samples_mask[db.core_sample_indices_] = True
+    labels = db.labels_
 
-        df = all_dfs.pop()
-        for bucket in buckets:
-            if helper.euclidean_distance(bucket['prototype'], df) < 5:
-                bucket['count'] += 1
-                continue
+    # Number of clusters in labels, ignoring noise if present.
+    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+    silhouette = metrics.silhouette_score(vectorized_data, labels)
 
-        buckets.append({'prototype': df, 'count': 1})
-
-    for bucket in buckets:
-        # Round to two decimal places for better readability
-        prototype = bucket['prototype'].round(2)
-        bucket['prototype'] = ', '.join(prototype['count'].astype(str))
-
-    current_app.logger.info(pformat(buckets))
     current_app.logger.info(f'Looked at {len(results)} contributors.')
     current_app.logger.info(f'{len(big_contributors)} are relevant.')
-    current_app.logger.info(f'Found {len(buckets)} buckets.')
+    current_app.logger.info(f'Estimated number of clusters: {n_clusters}')
+    current_app.logger.info("Silhouette Coefficient: {0:.3}".format(silhouette))
 
     return
 
@@ -93,22 +90,49 @@ def get_punchcard_data(contributors_commits):
     """Analyse the travel path of a few contributers."""
     try:
         session = new_session()
-        results = []
-        for _, commit_hashes in contributors_commits:
+        for contributor, commit_hashes in contributors_commits:
             # Query result again with current session.
+            contributor = session.query(Contributor).get(contributor.login)
+            result = contributor.analysis_result
 
-            commits = session.query(Commit) \
-                .filter(Commit.sha.in_(commit_hashes)) \
-                .all()
+            if result is None:
+                result = AnalysisResult()
+                contributor.analysis_result = result
 
-            plotter = CommitPunchcard(commits, '/', '')
-            plotter.preprocess()
-            results.append(plotter.data)
+            if result.intermediate_results is None:
+                result.intermediate_results = {}
+
+            commits_changed = True
+            if 'punchcard' not in result.intermediate_results or commits_changed:
+                # Deepcopy intermediate result, otherwise the jsonb won't refresh.
+                new_intermediate = deepcopy(result.intermediate_results)
+                commits = session.query(Commit) \
+                    .filter(Commit.sha.in_(commit_hashes)) \
+                    .all()
+
+                # Compute the final punchcard evaluation
+                plotter = CommitPunchcard(commits, '/', '')
+                plotter.preprocess()
+
+                # Standartize data
+                df = plotter.data
+                mean = df['count'].mean()
+                df['count'] = df['count']/mean
+
+                # Add data to list
+                vector = df['count'].values.tolist()
+
+                # Save the standartized intermediate result into the database
+                new_intermediate['punchcard'] = vector
+                result.intermediate_results = new_intermediate
+                result.last_change = datetime.now()
+                result.commit_count = len(commits)
+
+            session.add(result)
+            session.add(contributor)
+            session.commit()
 
     finally:
         session.close()
 
-    return {
-        'message': 'Success',
-        'results': results,
-        }
+    return {'message': 'Success'}
