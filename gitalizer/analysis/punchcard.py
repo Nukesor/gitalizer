@@ -102,7 +102,7 @@ def get_punchcard_data(contributors_commits):
             if result.intermediate_results is None:
                 result.intermediate_results = {}
 
-            commits_changed = True
+            commits_changed = (len(commit_hashes) != result.commit_count)
             if 'punchcard' not in result.intermediate_results or commits_changed:
                 # Deepcopy intermediate result, otherwise the jsonb won't refresh.
                 new_intermediate = deepcopy(result.intermediate_results)
