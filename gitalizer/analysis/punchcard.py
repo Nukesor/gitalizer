@@ -21,7 +21,7 @@ from gitalizer.models import (
 )
 
 
-def analyse_punch_card(existing=False):
+def analyse_punch_card(existing=False, eps=150, min_samples=5):
     """Analyze the efficiency of the missing time comparison."""
     session = new_session()
     current_app.logger.info(f'Start Scan.')
@@ -76,9 +76,10 @@ def analyse_punch_card(existing=False):
         if 'punchcard' in result.intermediate_results:
             vectorized_data.append(result.intermediate_results['punchcard'])
 
-    eps = 100
-    min_samples = 10
-    db = DBSCAN(eps=eps, min_samples=min_samples, metric='l1', n_jobs=-1).fit(vectorized_data)
+    eps = 200
+    min_samples = 5
+    metric = 'l1'
+    db = DBSCAN(eps=eps, min_samples=min_samples, metric=metric, n_jobs=-1).fit(vectorized_data)
     core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
     core_samples_mask[db.core_sample_indices_] = True
     labels = db.labels_
@@ -88,8 +89,8 @@ def analyse_punch_card(existing=False):
     occurrences = dict(zip(unique, counts))
 
     # Number of clusters in labels, ignoring noise if present.
-    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-    silhouette = metrics.silhouette_score(vectorized_data, labels)
+#    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+#    silhouette = metrics.silhouette_score(vectorized_data, labels)
 
     # Prepare the plot dir for prototype plotting
     plot_dir = current_app.config['PLOT_DIR']
@@ -101,8 +102,9 @@ def analyse_punch_card(existing=False):
     # Get the mean-center prototypes for each label and plot them
     prototypes = get_core_sample_prototypes(db, vectorized_data)
     for label, prototype in prototypes.items():
-        path = os.path.join(plot_dir, str(label))
-        plotter = CommitPunchcard([], path, f'Prototype for {label}')
+        name = f'{metric}-{min_samples}-{eps}-{label}'
+        path = os.path.join(plot_dir, name)
+        plotter = CommitPunchcard([], path, f'Prototype for {name}')
         plotter.preprocess()
         plotter.data['count'] = np.array(prototype) * 5
         plotter.plot()
@@ -110,12 +112,12 @@ def analyse_punch_card(existing=False):
     current_app.logger.info(f'DBSCAN with EPS: {eps} and {min_samples} min samples.')
     current_app.logger.info('Amount of entities in clusters. -1 is an outlier:')
     current_app.logger.info(pformat(occurrences))
-    current_app.logger.info('Mean-core prototypes:')
-    current_app.logger.info(pformat(prototypes))
+#    current_app.logger.info('Mean-core prototypes:')
+#    current_app.logger.info(pformat(prototypes))
     current_app.logger.info(f'Core samples: {len(db.core_sample_indices_)}')
     current_app.logger.info(f'{len(analysis_results)} contributers are relevant.')
-    current_app.logger.info(f'Estimated number of clusters: {n_clusters}')
-    current_app.logger.info("Silhouette Coefficient: {0:.3}".format(silhouette))
+#    current_app.logger.info(f'Estimated number of clusters: {n_clusters}')
+#    current_app.logger.info("Silhouette Coefficient: {0:.3}".format(silhouette))
 
     return
 

@@ -220,7 +220,9 @@ def register_cli(app):  # pragma: no cover
     def analyse_punch(existing):
         """Analyse missing time stuff."""
         try:
-            analyse_punch_card(existing)
+            for min_samples in range(5, 10, 5):
+                for eps in range(100, 250, 10):
+                    analyse_punch_card(existing, eps, min_samples)
         except KeyboardInterrupt:
             app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)

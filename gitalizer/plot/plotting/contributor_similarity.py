@@ -39,7 +39,7 @@ class CommitSimilarity():
             plotter.preprocess()
             punchcard_data[user.login] = plotter.raw_data
 
-        punchcard_data = self.normalize(punchcard_data)
+        self.normalize(punchcard_data)
 
         for name, df in punchcard_data.items():
             self.data[name] = {}
