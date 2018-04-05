@@ -216,10 +216,11 @@ def register_cli(app):  # pragma: no cover
             sys.exit(1)
 
     @app.cli.command()
-    def analyse_punch():
+    @click.option('--existing/-e', default=False)
+    def analyse_punch(existing):
         """Analyse missing time stuff."""
         try:
-            analyse_punch_card()
+            analyse_punch_card(existing)
         except KeyboardInterrupt:
             app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
