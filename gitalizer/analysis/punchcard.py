@@ -84,28 +84,39 @@ def analyse_punch_card(existing, method, eps=150, min_samples=5):
     # Cluster using DBSCAN algorithm
     if method == 'dbscan':
         metric = 'l1'
-        cluster_result = DBSCAN(eps=eps, min_samples=min_samples, metric=metric, n_jobs=-1).fit(vectorized_data)
+        cluster_result = DBSCAN(
+            eps=eps,
+            min_samples=min_samples,
+            metric=metric,
+            n_jobs=-1,
+        ).fit(vectorized_data)
         core_samples_mask = np.zeros_like(cluster_result.labels_, dtype=bool)
         core_samples_mask[cluster_result.core_sample_indices_] = True
 
     # Cluster using Mean-Shift algorithm
     elif method == 'mean-shift':
-        quantile = 0.2
-        n_samples = 500
+        quantile = 0.6
+        n_samples = -1
         current_app.logger.info(f'Computing bandwidth.')
         bandwidth = estimate_bandwidth(
             vectorized_data,
             quantile=quantile,
             n_samples=n_samples,
+            n_jobs=-1,
         )
         current_app.logger.info(f'Bandwidth computed.')
-        cluster_result = MeanShift(bandwidth=bandwidth, bin_seeding=True) \
-            .fit(vectorized_data)
+
+        cluster_result = MeanShift(
+            bandwidth=bandwidth,
+            bin_seeding=True,
+            n_jobs=-1,
+        ).fit(vectorized_data)
     # Cluster using Affinity Propagation algorithm
     elif method == 'affinity':
         preference = None
-        cluster_result = AffinityPropagation(preference=preference) \
-            .fit(vectorized_data)
+        cluster_result = AffinityPropagation(
+            preference=preference,
+        ).fit(vectorized_data)
 
     # Number of entities per label
     labels = cluster_result.labels_
@@ -120,8 +131,13 @@ def analyse_punch_card(existing, method, eps=150, min_samples=5):
     if not os.path.exists(plot_dir):
         os.makedirs(plot_dir)
 
+    current_app.logger.info(f'Found {len(occurrences)}')
     # Get the mean-center prototypes for each label and plot them
-    prototypes = get_mean_center_prototypes(cluster_result, vectorized_data)
+    prototypes = get_mean_center_prototypes(cluster_result,
+                                            vectorized_data,
+                                            min_samples)
+
+    current_app.logger.info(f'Found {len(prototypes)} valid clusters')
     for label, prototype in prototypes.items():
         if method == 'dbscan':
             name = f'{metric}-{min_samples}-{eps}-{label}'
@@ -129,12 +145,14 @@ def analyse_punch_card(existing, method, eps=150, min_samples=5):
             name = f'{label}'
 
         path = os.path.join(plot_dir, name)
-        plotter = CommitPunchcard([], path, f'Prototype for {name}')
+        title = f'Prototype for {name} with {occurrences[label]} elements'
+        plotter = CommitPunchcard([], path, title)
         plotter.preprocess()
         plotter.data['count'] = np.array(prototype) * 5
         plotter.plot()
 
-    current_app.logger.info(f'DBSCAN with EPS: {eps} and {min_samples} min samples.')
+    if method == 'dbscan':
+        current_app.logger.info(f'DBSCAN with EPS: {eps} and {min_samples} min samples.')
     current_app.logger.info('Amount of entities in clusters. -1 is an outlier:')
     current_app.logger.info(pformat(occurrences))
     current_app.logger.info(f'{len(analysis_results)} contributers are relevant.')
@@ -146,11 +164,9 @@ def analyse_punch_card(existing, method, eps=150, min_samples=5):
     return
 
 
-def get_mean_center_prototypes(cluster_result, data):
+def get_mean_center_prototypes(cluster_result, data, min_samples):
     """Return the representative mean-center prototype of each cluster."""
-    labels = cluster_result.labels_
-
-    # Sort all core sample indices by their lable
+    # Sort all core sample indices by their label
     sample_indices_by_label = {}
     for index, label in enumerate(cluster_result.labels_):
         # Create label list if it doesn't exist
@@ -161,6 +177,9 @@ def get_mean_center_prototypes(cluster_result, data):
 
     prototypes = {}
     for label, indices in sample_indices_by_label.items():
+        if len(indices) < min_samples:
+            continue
+
         runner = [0] * 168
         for index in indices:
             runner = np.add(runner, data[index])
