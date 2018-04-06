@@ -3,8 +3,12 @@ import os
 import numpy as np
 from pprint import pformat
 from copy import deepcopy
-from sklearn import metrics
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import (
+    AffinityPropagation,
+    DBSCAN,
+    MeanShift,
+    estimate_bandwidth,
+)
 
 from flask import current_app
 from sqlalchemy import or_, func
@@ -21,7 +25,7 @@ from gitalizer.models import (
 )
 
 
-def analyse_punch_card(existing=False, eps=150, min_samples=5):
+def analyse_punch_card(existing, method, eps=150, min_samples=5):
     """Analyze the efficiency of the missing time comparison."""
     session = new_session()
     current_app.logger.info(f'Start Scan.')
@@ -71,38 +75,59 @@ def analyse_punch_card(existing=False, eps=150, min_samples=5):
     if existing:
         current_app.logger.info(f'Analysing {len(analysis_results)} results.')
 
+    current_app.logger.info(f'Using {method} clustering')
     vectorized_data = []
     for result in analysis_results:
         if 'punchcard' in result.intermediate_results:
             vectorized_data.append(result.intermediate_results['punchcard'])
 
-    eps = 200
-    min_samples = 5
-    metric = 'l1'
-    db = DBSCAN(eps=eps, min_samples=min_samples, metric=metric, n_jobs=-1).fit(vectorized_data)
-    core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
-    core_samples_mask[db.core_sample_indices_] = True
-    labels = db.labels_
+    # Cluster using DBSCAN algorithm
+    if method == 'dbscan':
+        metric = 'l1'
+        cluster_result = DBSCAN(eps=eps, min_samples=min_samples, metric=metric, n_jobs=-1).fit(vectorized_data)
+        core_samples_mask = np.zeros_like(cluster_result.labels_, dtype=bool)
+        core_samples_mask[cluster_result.core_sample_indices_] = True
+
+    # Cluster using Mean-Shift algorithm
+    elif method == 'mean-shift':
+        quantile = 0.2
+        n_samples = 500
+        current_app.logger.info(f'Computing bandwidth.')
+        bandwidth = estimate_bandwidth(
+            vectorized_data,
+            quantile=quantile,
+            n_samples=n_samples,
+        )
+        current_app.logger.info(f'Bandwidth computed.')
+        cluster_result = MeanShift(bandwidth=bandwidth, bin_seeding=True) \
+            .fit(vectorized_data)
+    # Cluster using Affinity Propagation algorithm
+    elif method == 'affinity':
+        preference = None
+        cluster_result = AffinityPropagation(preference=preference) \
+            .fit(vectorized_data)
 
     # Number of entities per label
+    labels = cluster_result.labels_
     unique, counts = np.unique(labels, return_counts=True)
     occurrences = dict(zip(unique, counts))
-
-    # Number of clusters in labels, ignoring noise if present.
-#    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-#    silhouette = metrics.silhouette_score(vectorized_data, labels)
 
     # Prepare the plot dir for prototype plotting
     plot_dir = current_app.config['PLOT_DIR']
     plot_dir = os.path.join(plot_dir, 'analysis')
     plot_dir = os.path.join(plot_dir, 'analyse_punch')
+    plot_dir = os.path.join(plot_dir, method)
     if not os.path.exists(plot_dir):
         os.makedirs(plot_dir)
 
     # Get the mean-center prototypes for each label and plot them
-    prototypes = get_core_sample_prototypes(db, vectorized_data)
+    prototypes = get_mean_center_prototypes(cluster_result, vectorized_data)
     for label, prototype in prototypes.items():
-        name = f'{metric}-{min_samples}-{eps}-{label}'
+        if method == 'dbscan':
+            name = f'{metric}-{min_samples}-{eps}-{label}'
+        else:
+            name = f'{label}'
+
         path = os.path.join(plot_dir, name)
         plotter = CommitPunchcard([], path, f'Prototype for {name}')
         plotter.preprocess()
@@ -112,25 +137,22 @@ def analyse_punch_card(existing=False, eps=150, min_samples=5):
     current_app.logger.info(f'DBSCAN with EPS: {eps} and {min_samples} min samples.')
     current_app.logger.info('Amount of entities in clusters. -1 is an outlier:')
     current_app.logger.info(pformat(occurrences))
-#    current_app.logger.info('Mean-core prototypes:')
-#    current_app.logger.info(pformat(prototypes))
-    current_app.logger.info(f'Core samples: {len(db.core_sample_indices_)}')
     current_app.logger.info(f'{len(analysis_results)} contributers are relevant.')
-#    current_app.logger.info(f'Estimated number of clusters: {n_clusters}')
-#    current_app.logger.info("Silhouette Coefficient: {0:.3}".format(silhouette))
+
+    if method == 'dbscan':
+        core_samples = cluster_result.core_sample_indices_
+        current_app.logger.info(f'Core samples: {len(core_samples)}')
 
     return
 
 
-def get_core_sample_prototypes(db, data):
+def get_mean_center_prototypes(cluster_result, data):
     """Return the representative mean-center prototype of each cluster."""
-    labels = db.labels_
+    labels = cluster_result.labels_
 
     # Sort all core sample indices by their lable
     sample_indices_by_label = {}
-    for index in db.core_sample_indices_:
-        label = labels[index]
-
+    for index, label in enumerate(cluster_result.labels_):
         # Create label list if it doesn't exist
         if label not in sample_indices_by_label:
             sample_indices_by_label[label] = []

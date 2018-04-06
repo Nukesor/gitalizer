@@ -220,9 +220,16 @@ def register_cli(app):  # pragma: no cover
     def analyse_punch(existing):
         """Analyse missing time stuff."""
         try:
-            for min_samples in range(5, 10, 5):
-                for eps in range(100, 250, 10):
-                    analyse_punch_card(existing, eps, min_samples)
+            for method in ['mean-shift', 'affinity']:
+                if method == 'dbscan':
+                    for min_samples in range(5, 10, 5):
+                        for eps in range(140, 150, 2):
+                            analyse_punch_card(
+                                existing, method,
+                                eps=eps, min_samples=min_samples,
+                            )
+                else:
+                    analyse_punch_card(existing, method)
         except KeyboardInterrupt:
             app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
