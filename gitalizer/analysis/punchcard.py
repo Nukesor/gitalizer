@@ -25,7 +25,8 @@ from gitalizer.models import (
 )
 
 
-def analyse_punch_card(existing, method, eps=150, min_samples=5):
+def analyse_punch_card(existing, method,
+                       eps=150, min_samples=5):
     """Analyze the efficiency of the missing time comparison."""
     session = new_session()
     current_app.logger.info(f'Start Scan.')
@@ -95,7 +96,7 @@ def analyse_punch_card(existing, method, eps=150, min_samples=5):
 
     # Cluster using Mean-Shift algorithm
     elif method == 'mean-shift':
-        quantile = 0.6
+        quantile = 0.1
         n_samples = -1
         current_app.logger.info(f'Computing bandwidth.')
         bandwidth = estimate_bandwidth(
@@ -114,9 +115,8 @@ def analyse_punch_card(existing, method, eps=150, min_samples=5):
     # Cluster using Affinity Propagation algorithm
     elif method == 'affinity':
         preference = None
-        cluster_result = AffinityPropagation(
-            preference=preference,
-        ).fit(vectorized_data)
+        cluster_result = AffinityPropagation(preference=preference) \
+            .fit(vectorized_data)
 
     # Number of entities per label
     labels = cluster_result.labels_
@@ -125,9 +125,8 @@ def analyse_punch_card(existing, method, eps=150, min_samples=5):
 
     # Prepare the plot dir for prototype plotting
     plot_dir = current_app.config['PLOT_DIR']
-    plot_dir = os.path.join(plot_dir, 'analysis')
-    plot_dir = os.path.join(plot_dir, 'analyse_punch')
-    plot_dir = os.path.join(plot_dir, method)
+    plot_dir = os.path.join(plot_dir, 'analysis', 'analyse_punch', method)
+
     if not os.path.exists(plot_dir):
         os.makedirs(plot_dir)
 

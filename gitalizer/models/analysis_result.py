@@ -1,4 +1,4 @@
-"""Representation of a git repository contributor."""
+"""Representation of analysis results."""
 from uuid import uuid4
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
