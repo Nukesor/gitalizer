@@ -49,6 +49,7 @@ class Contributor(db.Model):
 
     login = db.Column(db.String(240), primary_key=True, nullable=False)
     emails = db.relationship("Email", back_populates="contributor")
+    location = db.Column(db.String(240))
 
     # Relationships
     repositories = db.relationship(

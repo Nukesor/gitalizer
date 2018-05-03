@@ -247,7 +247,7 @@ def register_cli(app):  # pragma: no cover
 
     @app.cli.command()
     def test():
-        """Complete missing data from previous runs."""
+        """Command for testing stuff. Look at the code first."""
         try:
             from gitalizer.models import Contributor
             from gitalizer.plot.user import plot_user_travel_path

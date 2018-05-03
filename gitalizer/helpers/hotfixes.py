@@ -1,21 +1,17 @@
 """Clean stuff from db, which occured through bugs."""
 from flask import current_app
-from datetime import datetime
-from sqlalchemy import or_
+from datetime import datetime, timedelta
+from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload
-from gitalizer.extensions import db, github
+from gitalizer.extensions import db
 from gitalizer.models import (
     Repository,
     Commit,
-    contributor_repository,
-    commit_repository,
+    Contributor,
+    Email,
 )
 from gitalizer.helpers.parallel import new_session
 from gitalizer.helpers.parallel.manager import Manager
-from gitalizer.aggregator.github.user import check_fork
-from gitalizer.aggregator.github import (
-    call_github_function,
-)
 
 
 def clean_db():
@@ -45,7 +41,7 @@ def clean_db():
 
 
 def complete_data():
-    """Clean stuff."""
+    """Complete missing entities."""
     complete_repos()
 
 
@@ -67,7 +63,6 @@ def complete_repos():
     current_app.logger.info(f'Found {len(repos)}')
 
     full_names = [r.full_name for r in repos]
-    repo_count = 0
     repos_to_scan = set(full_names)
 
     manager = Manager('github_repository', repos_to_scan)
@@ -75,3 +70,43 @@ def complete_repos():
     manager.run()
 
     session.close()
+
+
+def complete_contributor():
+    """Complete contributor."""
+    session = new_session()
+    current_app.logger.info(f'Start Scan.')
+
+    # Look at the last two years
+    time_span = datetime.now() - timedelta(days=2*365)
+
+    results = session.query(Contributor, func.array_agg(Commit.sha)) \
+        .filter(Contributor.login == Contributor.login) \
+        .join(Email, Contributor.login == Email.contributor_login) \
+        .join(Commit, or_(
+            Commit.author_email_address == Email.email,
+            Commit.committer_email_address == Email.email,
+        )) \
+        .filter(Commit.commit_time >= time_span) \
+        .filter(or_(
+            Contributor.location == None,
+        )) \
+        .group_by(Contributor.login) \
+        .all()
+
+    current_app.logger.info(f'Scanning {len(results)} contributors.')
+
+    count = 0
+    big_contributors = []
+    for contributor, commits in results:
+        if len(commits) > 100 and len(commits) < 20000:
+            big_contributors.append((contributor, commits))
+
+        count += 1
+        if count % 5000 == 0:
+            current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
+
+
+    manager = Manager('github_user', big_contributors)
+    manager.start()
+    manager.run()

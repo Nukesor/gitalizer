@@ -383,7 +383,7 @@ class MissingTime():
         ]
         handles += new_handles
         labels += new_labels
-        ax.legend(handles, labels)
+        ax.legend(handles, labels, prop={'size': 20})
         fig = ax.get_figure()
         fig.set_figheight(20)
         fig.set_figwidth(40)

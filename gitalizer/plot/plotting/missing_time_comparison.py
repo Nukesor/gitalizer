@@ -87,7 +87,7 @@ class MissingTimeComparison():
             ax.get_yaxis().set_ticks([])
             ax.scatter(self.scatter_draw[0], self.scatter_draw[1])
 
-        self.fig.set_figheight(20)
+        self.fig.set_figheight(5*len(self.results))
         self.fig.set_figwidth(40)
         self.fig.suptitle(self.title, fontsize=30)
 

@@ -23,3 +23,6 @@ class Task(object):
         elif self.task_type == 'analyse_punchcard':
             from gitalizer.analysis.punchcard import get_punchcard_data
             return get_punchcard_data(self.task)
+        elif self.task_type == 'github_user':
+            from gitalizer.aggrregator.github.user import get_user_data
+            return get_user_data(self.task)

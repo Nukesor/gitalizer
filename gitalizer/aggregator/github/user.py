@@ -183,6 +183,34 @@ def get_user_repos(user_login: str, skip=True):
     return response
 
 
+def get_user_data(login: str):
+    """Get all missing data from a user."""
+    try:
+        session = new_session()
+        contributor = Contributor.get_contributor(login, session, True)
+
+        user = call_github_function(github.github, 'get_user', [login])
+        if user.location:
+            contributor.location = user.location
+
+        session.add(contributor)
+        session.commit
+        response = {'message': f'Scanned user {login}'}
+
+    except BaseException as e:
+        # Catch any exception and print it, as we won't get any information due to threading otherwise.
+        sentry.sentry.captureException()
+        response = {
+            'message': f'Error while getting repos for {login}:\n',
+            'error': traceback.format_exc(),
+        }
+        pass
+    finally:
+        session.close()
+
+    return response
+
+
 def check_fork(github_repo, session, repository, scan_list, user_login=None):
     """Handle github_repo forks."""
     # We already scanned this repository and only need to check
