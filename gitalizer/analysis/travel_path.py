@@ -1,4 +1,5 @@
 """Analyse the efficiency of the travel path comparison."""
+from copy import deepcopy
 from flask import current_app
 from sqlalchemy import or_, func
 from datetime import timedelta, datetime
@@ -87,15 +88,38 @@ def analyse_contributer_travel_path(contributors_commits):
                 result = AnalysisResult()
                 contributor.analysis_result = result
                 session.add(contributor)
+                session.add(result)
 
             commits_changed = (len(commit_hashes) != result.commit_count)
-            if result.different_timezones is None or commits_changed:
+
+            # Look at the jsonb intermediate_result to see if we already wrote the data into it
+            json_results = result.intermediate_results
+            if json_results is None:
+                json_results = {}
+                result.intermediate_results = json_results
+
+            if result.different_timezones is None \
+                    or commits_changed \
+                    or json_results.get('travel') is None \
+                    or json_results.get('home') is None:
                 commits = session.query(Commit) \
                     .filter(Commit.sha.in_(commit_hashes)) \
                     .all()
 
                 plotter = TravelPath(commits, '/')
                 plotter.preprocess()
+
+                json_results = deepcopy(result.intermediate_results)
+
+                for timezone_set in plotter.data:
+                    del(timezone_set['start'])
+                    del(timezone_set['end'])
+                    timezone_set['set'] = list(timezone_set['set'])
+                    timezone_set['set'] = list(timezone_set['set'])
+
+                json_results['home'] = plotter.home_zone
+                json_results['travel'] = plotter.data
+                result.intermediate_results = json_results
 
                 result.different_timezones = len(plotter.data)
                 result.last_change = datetime.now()

@@ -21,7 +21,7 @@ class MissingTimeComparison():
 
         self.scatter_draw = [
             [datetime.utcnow()-self.delta, datetime.utcnow()],
-            [0, 0]
+            [0, 0],
         ]
 
         self.path = path
