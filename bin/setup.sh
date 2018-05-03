@@ -1,7 +1,5 @@
 #!/usr/bin/bash
 
-#pacman -S proj, geos
-
 virtualenv -p python venv
 venv/bin/pip install --upgrade pip
 

@@ -3,8 +3,10 @@
 Installation:
 
 - If you are on Arch-Linux, run the `bin/setup.sh` script.
-- If you're not on Arch-Linux, ignore the pacman part and only setup the virtual env.
-
+- Install following packages:
+    1. proj
+    2. geos
+    3. agg
 
 
 ## Handy postgresql stuff

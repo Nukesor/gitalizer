@@ -12,6 +12,7 @@ from gitalizer.models import (
 )
 from gitalizer.helpers.parallel import new_session
 from gitalizer.helpers.parallel.manager import Manager
+from gitalizer.helpers.parallel.list_manager import ListManager
 
 
 def clean_db():
@@ -108,6 +109,6 @@ def complete_contributor():
             current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
 
 
-    manager = Manager('github_user', big_contributors)
+    manager = ListManager('github_user', big_contributors)
     manager.start()
     manager.run()

@@ -183,9 +183,13 @@ def get_user_repos(user_login: str, skip=True):
     return response
 
 
-def get_user_data(login: str):
+def get_user_data(user_data: tuple):
     """Get all missing data from a user."""
     try:
+        contributor = user_data[0]
+        login = contributor.login
+        commits = user_data[1]
+
         session = new_session()
         contributor = Contributor.get_contributor(login, session, True)
 
@@ -194,8 +198,14 @@ def get_user_data(login: str):
             contributor.location = user.location
 
         session.add(contributor)
-        session.commit
+        session.commit()
         response = {'message': f'Scanned user {login}'}
+
+    except GithubException as e:
+        # Forbidden or not found (Just made private or deleted)
+        if e.status == 404:
+            response = {'message': f'User {login} not found.'}
+        pass
 
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
