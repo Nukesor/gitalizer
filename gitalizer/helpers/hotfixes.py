@@ -42,6 +42,7 @@ def clean_db():
 
 def complete_data():
     """Complete missing entities."""
+    complete_contributor()
     complete_repos()
 
 
