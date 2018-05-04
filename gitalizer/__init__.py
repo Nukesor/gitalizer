@@ -7,6 +7,8 @@ import os
 import sys
 from flask import Flask
 from gitalizer.helpers.logger import init_logging
+import matplotlib
+matplotlib.use("Agg")
 
 
 def create_app(config_name='develop'):
