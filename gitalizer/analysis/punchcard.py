@@ -72,28 +72,23 @@ def analyse_punch_card(existing, method,
 
     # Only look at commits of the last year
     time_span = datetime.now() - timedelta(days=365)
-    contributors = session.query(Contributor) \
-        .filter(Contributor.login == Contributor.login) \
-        .join(Email, Contributor.login == Email.contributor_login) \
-        .join(Commit, or_(
-            Commit.author_email_address == Email.email,
-            Commit.committer_email_address == Email.email,
-        )) \
-        .filter(Commit.commit_time >= time_span) \
-        .options(joinedload('analysis_result')) \
+    analysis_results = session.query(AnalysisResult) \
+        .filter(AnalysisResult.intermediate_results != None) \
+        .filter(AnalysisResult.commit_count > 100) \
+        .filter(AnalysisResult.commit_count < 20000) \
+        .options(joinedload('contributor')) \
         .all()
 
     if existing:
-        current_app.logger.info(f'Analysing {len(contributors)} results.')
+        current_app.logger.info(f'Analysing {len(analysis_results)} results.')
 
     current_app.logger.info(f'Using {method} clustering')
     vectorized_data = []
     contributors = []
-    for contributor in contributors:
-        result = contributor.analysis_result
+    for result in analysis_results:
         if 'punchcard' in result.intermediate_results:
             vectorized_data.append(result.intermediate_results['punchcard'])
-            contributors.append(contributor)
+            contributors.append(result.contributor)
 
     # Cluster using DBSCAN algorithm
     if method == 'dbscan':
