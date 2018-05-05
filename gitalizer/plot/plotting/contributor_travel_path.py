@@ -67,31 +67,31 @@ class TravelPath():
                 last_valid_location = commit_time.date()
 
                 continue
-            # We got a timezone and need to check if we are still in it or if there is a change
-            else:
-                # Get possible timezone candidates for this commit and intersect them with the current_location set
-                location = set([z[0] for z in zones])
-                intersection = location & current_location['set']
-                # Check if the possible timezones of this commit matches any timezone of the current set.
-                if len(intersection) > 0:
-                    # By reassigning the intersected set we gain additional precision by considering possible specific DST changes
-                    current_location['set'] = intersection
-                    current_location['end'] = commit_time.date()
-                    last_valid_location = commit_time.date()
 
-                # There is no match between the possible timezones and the current set.
-                # In this case we need to check if this is a single occurrence (anomaly) or
-                # If this is an actual change.
-                else:
-                    # No change_at_day exists, but we detected a change
-                    # Remember the change. If this change lasts for at least a day it will be marked.
-                    if change_at_day is None:
-                        change_at_day = commit.commit_time.date()
-                        location_candidate = {
-                            'set': set([z[0] for z in zones]),
-                            'start': commit_time.date(),
-                            'end': commit_time.date(),
-                        }
+            # We got a timezone and need to check if we are still in it or if there is a change
+            # Get possible timezone candidates for this commit and intersect them with the current_location set
+            location = set([z[0] for z in zones])
+            intersection = location & current_location['set']
+            # Check if the possible timezones of this commit matches any timezone of the current set.
+            if len(intersection) > 0:
+                # By reassigning the intersected set we gain additional precision by considering possible specific DST changes
+                current_location['set'] = intersection
+                current_location['end'] = commit_time.date()
+                last_valid_location = commit_time.date()
+
+            # There is no match between the possible timezones and the current set.
+            # In this case we need to check if this is a single occurrence (anomaly) or
+            # If this is an actual change.
+            else:
+                # No change_at_day exists, but we detected a change
+                # Remember the change. If this change lasts for at least a day it will be marked.
+                if change_at_day is None:
+                    change_at_day = commit.commit_time.date()
+                    location_candidate = {
+                        'set': set([z[0] for z in zones]),
+                        'start': commit_time.date(),
+                        'end': commit_time.date(),
+                    }
 
             # No change detected
             if change_at_day is None:
