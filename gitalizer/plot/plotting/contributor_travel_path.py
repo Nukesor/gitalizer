@@ -39,11 +39,11 @@ class TravelPath():
 
     def preprocess(self):
         """Print the travel history of a contributor."""
-        timezone_sets = []
-        current_timezones = None
-        last_valid = None
+        travel_path = []
+        current_location = None
+        last_valid_location = None
         change_at_day = None
-        timezones_candidate = None
+        location_candidate = None
 
         for commit in self.raw_data:
             commit_time = commit.commit_time
@@ -58,26 +58,26 @@ class TravelPath():
                 .all()
 
             # Create the initial timezone
-            if current_timezones is None:
-                current_timezones = {
+            if current_location is None:
+                current_location = {
                     'set': set([z[0] for z in zones]),
                     'start': commit_time.date(),
                     'end': commit_time.date(),
                 }
-                last_valid = commit_time.date()
+                last_valid_location = commit_time.date()
 
                 continue
             # We got a timezone and need to check if we are still in it or if there is a change
             else:
-                # Get possible timezone candidates for this commit and intersect them with the current_timezones set
-                timezone_set = set([z[0] for z in zones])
-                intersection = timezone_set & current_timezones['set']
+                # Get possible timezone candidates for this commit and intersect them with the current_location set
+                location = set([z[0] for z in zones])
+                intersection = location & current_location['set']
                 # Check if the possible timezones of this commit matches any timezone of the current set.
                 if len(intersection) > 0:
                     # By reassigning the intersected set we gain additional precision by considering possible specific DST changes
-                    current_timezones['set'] = intersection
-                    current_timezones['end'] = commit_time.date()
-                    last_valid = commit_time.date()
+                    current_location['set'] = intersection
+                    current_location['end'] = commit_time.date()
+                    last_valid_location = commit_time.date()
 
                 # There is no match between the possible timezones and the current set.
                 # In this case we need to check if this is a single occurrence (anomaly) or
@@ -87,7 +87,7 @@ class TravelPath():
                     # Remember the change. If this change lasts for at least a day it will be marked.
                     if change_at_day is None:
                         change_at_day = commit.commit_time.date()
-                        timezones_candidate = {
+                        location_candidate = {
                             'set': set([z[0] for z in zones]),
                             'start': commit_time.date(),
                             'end': commit_time.date(),
@@ -99,63 +99,63 @@ class TravelPath():
 
             # There was an anomaly, but not for a whole day.
             # This could for instance be a developer committing from a remote server.
-            if change_at_day <= last_valid:
+            if change_at_day <= last_valid_location:
                 change_at_day = None
-                timezones_candidate = None
+                location_candidate = None
 
                 continue
 
             # The change is not older than a day
             # ignore it until the change lasts for longer than a day
-            if change_at_day <= last_valid:
+            if change_at_day <= last_valid_location:
                 continue
 
             # There exists a change from the last day.
-            duration = current_timezones['end'] - current_timezones['start']
+            duration = current_location['end'] - current_location['start']
 
-            # The current_timezones set exists only for a single day.
+            # The current_location set exists only for a single day.
             # This is most likely an outlier. Thereby drop it and restore the last timezone.
-            if duration < timedelta(days=1) and len(timezone_sets) > 0:
-                last_timezone = timezone_sets.pop()
-                last_timezone['end'] = current_timezones['end']
-                current_timezones = last_timezone
+            if duration < timedelta(days=1) and len(travel_path) > 0:
+                last_location = travel_path.pop()
+                last_location['end'] = current_location['end']
+                current_location = last_location
 
-                # Check if the old timezone_set and the current candidate actually match
-                # If that's the case drop the candidate and completely replace the current_timezones set
-                intersection = timezones_candidate['set'] & current_timezones['set']
+                # Check if the old location and the current candidate actually match
+                # If that's the case drop the candidate and completely replace the current_location set
+                intersection = location_candidate['set'] & current_location['set']
                 if len(intersection) > 0:
                     # Update current_timezone
-                    current_timezones['set'] = intersection
-                    current_timezones['end'] = commit_time.date()
+                    current_location['set'] = intersection
+                    current_location['end'] = commit_time.date()
 
-                    # Reset candidate and last_valid occurrence
-                    last_valid = commit_time.date()
+                    # Reset candidate and last_valid_location occurrence
+                    last_valid_location = commit_time.date()
                     change_at_day = None
-                    timezones_candidate = None
+                    location_candidate = None
 
                     continue
 
             # We detected a change and it seems to be valid.
             # Save the current timezone and set the candidate as the current timezone.
-            timezone_sets.append(current_timezones)
-            current_timezones = timezones_candidate
+            travel_path.append(current_location)
+            current_location = location_candidate
             change_at_day = None
-            timezones_candidate = None
-            last_valid = commit_time.date()
+            location_candidate = None
+            last_valid_location = commit_time.date()
 
-        current_timezones['end'] = datetime.now().date()
-        timezone_sets.append(current_timezones)
+        current_location['end'] = datetime.now().date()
+        travel_path.append(current_location)
 
         selected_sets = []
         biggest_set = None
         found = False
         # Try to find the current home timezone:
-        for timezone_set in timezone_sets:
-            duration = timezone_set['end'] - timezone_set['start']
+        for location in travel_path:
+            duration = location['end'] - location['start']
 
             # Try to find a set which intersects with the current set
             for selected_set in selected_sets:
-                intersection = timezone_set['set'] & selected_set['set']
+                intersection = location['set'] & selected_set['set']
                 # Found an intersection, set the new intersection and increment days
                 if len(intersection) > 0:
                     selected_set['set'] = intersection
@@ -167,16 +167,16 @@ class TravelPath():
                     break
 
             if not found:
-                timezone_set['days'] = duration.days
-                selected_sets.append(timezone_set)
+                location['days'] = duration.days
+                selected_sets.append(location)
             else:
                 found = False
 
             if not biggest_set:
-                biggest_set = timezone_set
+                biggest_set = location
 
         self.home_zone = biggest_set
-        self.data = timezone_sets
+        self.data = travel_path
 
     def get_geo_data(self):
         """Get Geo data from natural earth."""
@@ -360,12 +360,12 @@ class TravelPath():
     def plot(self):
         """Plot the figure."""
         title = ''
-        for _, timezone_set in enumerate(self.data):
-            title = f"From {timezone_set['start']} to {timezone_set['end']}"
-            name = f"{timezone_set['start'].strftime('%Y_%m_%d')}_to_{timezone_set['end'].strftime('%Y_%m_%d')}"
+        for _, location in enumerate(self.data):
+            title = f"From {location['start']} to {location['end']}"
+            name = f"{location['start'].strftime('%Y_%m_%d')}_to_{location['end'].strftime('%Y_%m_%d')}"
             path = os.path.join(self.path, name)
 
-            ax = self.get_ax(timezone_set['set'])
+            ax = self.get_ax(location['set'])
             handles, labels = ax.get_legend_handles_labels()
             new_handles = [patches.Patch(color='green', label='Possible countries in time window.')]
             new_labels = ['Possible countries in time window.']
