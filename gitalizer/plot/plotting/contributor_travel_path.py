@@ -147,7 +147,7 @@ class TravelPath():
         travel_path.append(current_location)
 
         selected_sets = []
-        biggest_set = None
+        home_location = None
         found = False
         # Try to find the current home timezone:
         for location in travel_path:
@@ -161,8 +161,8 @@ class TravelPath():
                     selected_set['set'] = intersection
                     selected_set['days'] += duration.days
                     found = True
-                    if selected_set['days'] > biggest_set['days']:
-                        biggest_set = selected_set
+                    if selected_set['days'] > home_location['days']:
+                        home_location = selected_set
 
                     break
 
@@ -172,10 +172,10 @@ class TravelPath():
             else:
                 found = False
 
-            if not biggest_set:
-                biggest_set = location
+            if not home_location:
+                home_location = location
 
-        self.home_zone = biggest_set
+        self.home_zone = home_location
         self.data = travel_path
 
     def get_geo_data(self):
