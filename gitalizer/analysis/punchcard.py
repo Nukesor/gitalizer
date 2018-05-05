@@ -12,6 +12,7 @@ from sklearn.cluster import (
 
 from flask import current_app
 from sqlalchemy import or_, func
+from sqlalchemy.orm import joinedload
 from datetime import timedelta, datetime
 
 from gitalizer.helpers.parallel import new_session, create_chunks
@@ -69,18 +70,30 @@ def analyse_punch_card(existing, method,
         manager.start()
         manager.run()
 
-    analysis_results = session.query(AnalysisResult) \
-        .filter(AnalysisResult.intermediate_results != None) \
+    # Only look at commits of the last year
+    time_span = datetime.now() - timedelta(days=365)
+    contributors = session.query(Contributor) \
+        .filter(Contributor.login == Contributor.login) \
+        .join(Email, Contributor.login == Email.contributor_login) \
+        .join(Commit, or_(
+            Commit.author_email_address == Email.email,
+            Commit.committer_email_address == Email.email,
+        )) \
+        .filter(Commit.commit_time >= time_span) \
+        .options(joinedload('analysis_result')) \
         .all()
 
     if existing:
-        current_app.logger.info(f'Analysing {len(analysis_results)} results.')
+        current_app.logger.info(f'Analysing {len(contributors)} results.')
 
     current_app.logger.info(f'Using {method} clustering')
     vectorized_data = []
-    for result in analysis_results:
+    contributors = []
+    for contributor in contributors:
+        result = contributor.analysis_result
         if 'punchcard' in result.intermediate_results:
             vectorized_data.append(result.intermediate_results['punchcard'])
+            contributors.append(contributor)
 
     # Cluster using DBSCAN algorithm
     if method == 'dbscan':
@@ -123,6 +136,13 @@ def analyse_punch_card(existing, method,
     unique, counts = np.unique(labels, return_counts=True)
     occurrences = dict(zip(unique, counts))
 
+    contributor_by_label = {}
+    for index, label in enumerate(labels):
+        if contributor_by_label.get(label) == None:
+            contributor_by_label[label] = []
+
+        contributor_by_label[label].append(contributors[index].login)
+
     # Prepare the plot dir for prototype plotting
     plot_dir = current_app.config['PLOT_DIR']
     plot_dir = os.path.join(plot_dir, 'analysis', 'analyse_punch', method)
@@ -154,6 +174,7 @@ def analyse_punch_card(existing, method,
         current_app.logger.info(f'DBSCAN with EPS: {eps} and {min_samples} min samples.')
     current_app.logger.info('Amount of entities in clusters. -1 is an outlier:')
     current_app.logger.info(pformat(occurrences))
+    current_app.logger.info(pformat(contributor_by_label))
     current_app.logger.info(f'{len(analysis_results)} contributers are relevant.')
 
     if method == 'dbscan':

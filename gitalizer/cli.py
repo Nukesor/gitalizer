@@ -220,7 +220,8 @@ def register_cli(app):  # pragma: no cover
     def analyse_punch(existing):
         """Analyse missing time stuff."""
         try:
-            for method in ['mean-shift', 'dbscan', 'affinity']:
+#            for method in ['mean-shift', 'dbscan', 'affinity']:
+            for method in ['affinity']:
                 if method == 'dbscan':
                     for min_samples in range(5, 10, 5):
                         for eps in range(140, 150, 2):

@@ -50,7 +50,7 @@ class CommitPunchcard():
         ax = fig.add_subplot(1, 1, 1)
 
         # Set title
-        ax.set_title(self.title, y=0.96).set_color(graph_color)
+        ax.set_title('', y=0.96).set_color(graph_color)
         ax.set_frame_on(False)
 
         ax.scatter(
