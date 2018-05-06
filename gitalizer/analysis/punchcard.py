@@ -71,7 +71,6 @@ def analyse_punch_card(existing, method,
         manager.run()
 
     # Only look at commits of the last year
-    time_span = datetime.now() - timedelta(days=365)
     analysis_results = session.query(AnalysisResult) \
         .filter(AnalysisResult.intermediate_results != None) \
         .filter(AnalysisResult.commit_count > 100) \

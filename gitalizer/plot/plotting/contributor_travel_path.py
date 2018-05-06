@@ -146,7 +146,7 @@ class TravelPath():
         current_location['end'] = datetime.now().date()
         travel_path.append(current_location)
 
-        selected_sets = []
+        home_location_candidates = []
         home_location = None
         found = False
         # Try to find the current home timezone:
@@ -154,21 +154,21 @@ class TravelPath():
             duration = location['end'] - location['start']
 
             # Try to find a set which intersects with the current set
-            for selected_set in selected_sets:
-                intersection = location['set'] & selected_set['set']
+            for candidate in home_location_candidates:
+                intersection = location['set'] & candidate['set']
                 # Found an intersection, set the new intersection and increment days
                 if len(intersection) > 0:
-                    selected_set['set'] = intersection
-                    selected_set['days'] += duration.days
+                    candidate['set'] = intersection
+                    candidate['days'] += duration.days
                     found = True
-                    if selected_set['days'] > home_location['days']:
-                        home_location = selected_set
+                    if candidate['days'] > home_location['days']:
+                        home_location = candidate
 
                     break
 
             if not found:
                 location['days'] = duration.days
-                selected_sets.append(location)
+                home_location_candidates.append(location)
             else:
                 found = False
 

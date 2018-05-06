@@ -1,7 +1,9 @@
 """Analyse the efficiency of the travel path comparison."""
 from copy import deepcopy
+from pprint import pformat
 from flask import current_app
-from sqlalchemy import or_, func
+from sqlalchemy import and_, or_, func
+from sqlalchemy.orm import joinedload
 from datetime import timedelta, datetime
 
 from gitalizer.helpers.parallel import new_session, create_chunks
@@ -15,7 +17,7 @@ from gitalizer.models import (
 )
 
 
-def analyse_travel_path():
+def analyse_travel_path(existing):
     """Analyze the efficiency of the missing time comparison."""
     session = new_session()
     current_app.logger.info(f'Start Scan.')
@@ -23,55 +25,136 @@ def analyse_travel_path():
     # Look at the last two years
     time_span = datetime.now() - timedelta(days=2*365)
 
-    results = session.query(Contributor, func.array_agg(Commit.sha)) \
-        .filter(Contributor.login == Contributor.login) \
-        .join(Email, Contributor.login == Email.contributor_login) \
-        .join(Commit, or_(
-            Commit.author_email_address == Email.email,
-            Commit.committer_email_address == Email.email,
+    if not existing:
+        results = session.query(Contributor, func.array_agg(Commit.sha)) \
+            .filter(Contributor.login == Contributor.login) \
+            .join(Email, Contributor.login == Email.contributor_login) \
+            .join(Commit, or_(
+                Commit.author_email_address == Email.email,
+                Commit.committer_email_address == Email.email,
+            )) \
+            .filter(Commit.commit_time >= time_span) \
+            .group_by(Contributor.login) \
+            .all()
+
+        current_app.logger.info(f'Scanning {len(results)} contributors.')
+
+        count = 0
+        big_contributors = []
+        for contributor, commits in results:
+            if len(commits) > 100 and len(commits) < 20000:
+                big_contributors.append((contributor, commits))
+
+            count += 1
+            if count % 5000 == 0:
+                current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
+
+        # Finished searching for contributors with enough commits.
+        current_app.logger.info(f'Analysing {len(big_contributors)} contributors.')
+
+        # Chunk the contributor list into chunks of 100
+        chunks = create_chunks(big_contributors, 100)
+
+        manager = ListManager('analyse_travel_path', chunks)
+        manager.start()
+        manager.run()
+
+    # Only look at commits of the last year
+    results = session.query(AnalysisResult) \
+        .filter(AnalysisResult.different_timezones != None) \
+        .filter(and_(
+            AnalysisResult.commit_count != None,
+            AnalysisResult.commit_count > 100,
+            AnalysisResult.commit_count < 20000,
         )) \
-        .filter(Commit.commit_time >= time_span) \
-        .group_by(Contributor.login) \
+        .options(joinedload('contributor')) \
         .all()
-
-    current_app.logger.info(f'Scanning {len(results)} contributors.')
-
-    count = 0
-    big_contributors = []
-    for contributor, commits in results:
-        if len(commits) > 100 and len(commits) < 20000:
-            big_contributors.append((contributor, commits))
-
-        count += 1
-        if count % 5000 == 0:
-            current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
-
-    # Finished searching for contributors with enough commits.
-    current_app.logger.info(f'Analysing {len(big_contributors)} contributors.')
-
-    # Chunk the contributor list into chunks of 100
-    chunks = create_chunks(big_contributors, 100)
-
-    manager = ListManager('analyse_travel_path', chunks)
-    manager.start()
-    manager.run()
-
-    results = session.query(AnalysisResult).all()
 
     changed = 0
     unchanged = 0
+    distribution = {}
     for result in results:
-        if result.different_timezones > 1:
+        amount = result.different_timezones
+        if amount > 1:
             changed += 1
         else:
             unchanged += 1
 
+        if distribution.get(amount) is None:
+            distribution[amount] = 1
+        else:
+            distribution[amount] += 1
+
+    correct = 0
+    considered_contributors = 0
+    for result in results:
+        contributor = result.contributor
+        home = result.intermediate_results['home']['set']
+
+        if contributor.location is None:
+            continue
+
+        if element_in_string(contributor.location, [
+                'Germany', 'Deutschland', 'France',
+                'Italy', 'Spain', 'Poland', 'Austria',
+        ]):
+            considered_contributors += 1
+            if 'Europe/Berlin' in home:
+                correct += 1
+
+        elif element_in_string(contributor.location, ['New Zealand']):
+            considered_contributors += 1
+            if 'Pacific/Auckland' in home:
+                correct += 1
+
+        elif element_in_string(contributor.location, ['UK', 'United Kingdom']):
+            considered_contributors += 1
+            if 'Europe/London' in home:
+                correct += 1
+
+        elif element_in_string(contributor.location, ['NY', 'New York']):
+            considered_contributors += 1
+            if 'America/New_York' in home:
+                correct += 1
+
+        elif element_in_string(contributor.location, ['Los Angeles']):
+            considered_contributors += 1
+            if 'America/Los_Angeles' in home:
+                correct += 1
+
+        elif element_in_string(contributor.location, ['Seattle', 'portland']):
+            considered_contributors += 1
+            if 'US/Pacific' in home:
+                correct += 1
+
+        elif element_in_string(contributor.location, ['Japan', '日本']):
+            considered_contributors += 1
+            if 'Japan' in home:
+                correct += 1
+
+        elif element_in_string(contributor.location, ['India']):
+            considered_contributors += 1
+            if 'Indian/Cocos' in home:
+                correct += 1
+
+
     current_app.logger.info(f'Looked at {len(results)} contributors.')
-    current_app.logger.info(f'{len(big_contributors)} are relevant.')
+    current_app.logger.info(f'{len(results)} are relevant.')
     current_app.logger.info(f'Detected a change in {changed} of those.')
     current_app.logger.info(f'Detected no change in {unchanged} of those.')
+    current_app.logger.info(f'Distribution of users by amount of different timezones:')
+    current_app.logger.info(pformat(distribution))
+    current_app.logger.info(f'Verified contributors {correct} of {considered_contributors}')
 
     return
+
+
+def element_in_string(string, word_list):
+    for word in word_list:
+        if word in string:
+            return True
+
+    return False
 
 
 def analyse_contributer_travel_path(contributors_commits):
@@ -114,7 +197,6 @@ def analyse_contributer_travel_path(contributors_commits):
                 for timezone_set in plotter.data:
                     del(timezone_set['start'])
                     del(timezone_set['end'])
-                    timezone_set['set'] = list(timezone_set['set'])
                     timezone_set['set'] = list(timezone_set['set'])
 
                 json_results['home'] = plotter.home_zone

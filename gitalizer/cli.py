@@ -207,10 +207,11 @@ def register_cli(app):  # pragma: no cover
 
     # ----- Analysis -------
     @app.cli.command()
-    def analyse_travel():
+    @click.option('--existing/-e', default=False)
+    def analyse_travel(existing):
         """Analyse missing time stuff."""
         try:
-            analyse_travel_path()
+            analyse_travel_path(existing)
         except KeyboardInterrupt:
             app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
