@@ -6,17 +6,6 @@ flake8-commas
 flake8-bugbear
 flake8-string-format
 
-# Testing
-pytest
-pytest-cov
-pytest-greendots
-pytest-flask
-pytest-watch
-hypothesis
-
 # Niceness
 ipython
 flask-shell-ipython
-
-# Tests
-freezegun
