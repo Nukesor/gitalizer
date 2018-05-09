@@ -1,5 +1,6 @@
 """Plot the timeline of additions and deletions."""
 from datetime import datetime
+from matplotlib import rcParams
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.dates as mdates
@@ -51,25 +52,22 @@ class MissingTimeComparison():
         """Create and specify figure."""
         ax = self.fig.add_subplot(len(self.results), 1, index+1)
 
-        # We only want to see years as xaxis labels .
-        years = mdates.YearLocator()
-        yearsFmt = mdates.DateFormatter('%Y')
-        ax.xaxis.set_major_locator(years)
-        ax.xaxis.set_major_formatter(yearsFmt)
-
         weeks = mdates.WeekdayLocator(byweekday=mdates.MO)
-        weeksFmt = mdates.DateFormatter('%W')
-        ax.xaxis.set_minor_locator(weeks)
-        ax.xaxis.set_minor_formatter(weeksFmt)
+        weeksFmt = mdates.DateFormatter('%Y-%W')
+        ax.xaxis.set_major_locator(weeks)
+        ax.xaxis.set_major_formatter(weeksFmt)
 
         return ax
 
     def plot(self):
         """Plot the figure."""
-        for index, _ in enumerate(self.results):
+        rcParams['axes.titlepad'] = 20
+        plt.rc('xtick', labelsize=18)
+        plt.rc('ytick', labelsize=18)
+        for index, plotter in self.results.items():
             ax = self.add_ax(index)
             ax.set_ylim([-10, 10])
-            ax = self.results[index].get_ax(parent_ax=ax)
+            ax = plotter.get_ax(parent_ax=ax)
 
             handles, labels = ax.get_legend_handles_labels()
             handles = [
@@ -82,16 +80,17 @@ class MissingTimeComparison():
                 'Work pattern exists',
                 'Work pattern anomaly',
             ]
-            ax.legend(handles, labels)
-            ax.set_title(self.user[index].login, fontsize=20)
+            ax.legend(handles, labels, prop={'size': 20})
+            ax.set_title(self.user[index].login, fontsize=30)
             ax.get_yaxis().set_ticks([])
-            ax.scatter(self.scatter_draw[0], self.scatter_draw[1])
+            ax.scatter(self.scatter_draw[0], self.scatter_draw[1], color='white')
+            plt.xticks(rotation=50)
 
+        self.fig.subplots_adjust(hspace=1.0)
         self.fig.set_figheight(5*len(self.results))
         self.fig.set_figwidth(40)
         self.fig.suptitle(self.title, fontsize=30)
 
-        plt.xticks(rotation=30)
         self.fig.savefig(self.path)
         plt.close(self.fig)
 

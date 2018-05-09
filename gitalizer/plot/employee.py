@@ -37,5 +37,5 @@ def plot_employee_missing_time(contributor, repositories, path):
     commits = get_user_commits_from_repositories(contributor, repositories, delta)
     title = f"{contributor.login}'s Missing times"
 
-    plotter = MissingTime(commits, path, title)
+    plotter = MissingTime(commits, path, title, delta=delta)
     plotter.run()

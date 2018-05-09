@@ -107,18 +107,25 @@ class CommitTimeline():
 class MissingTime():
     """Compute a timeline with missing time."""
 
-    def __init__(self, raw_data, path, title):
+    def __init__(self, raw_data, path, title, delta=None):
         """Create new missing time plotter."""
         self.path = path
         self.title = title
         self.raw_data = raw_data
         self.data = None
+        self.delta = delta
 
         self.entries = []
         self.entry_texts = []
         self.anomalies = []
         self.anomaly_texts = []
         self.current_entry = {}
+
+        if self.delta:
+            self.scatter_draw = [
+                [datetime.utcnow()-self.delta, datetime.utcnow()],
+                [0, 0],
+            ]
 
     def run(self):
         """Execute all steps."""
@@ -188,7 +195,7 @@ class MissingTime():
         self.data = data
 
     def find_prototype(self, data, last_prototype=None):
-        """Look at the first few days and get the current prototype."""
+        """Look at the first few weeks to find a new prototype."""
         # Create an entry for each fingerprint and count the occurrences of this entry
         counter = {}
         for _, row in data.iterrows():
@@ -383,7 +390,9 @@ class MissingTime():
         ]
         handles += new_handles
         labels += new_labels
-        ax.legend(handles, labels, prop={'size': 20})
+        ax.legend(handles, labels, prop={'size': 15})
+        if self.delta:
+            ax.scatter(self.scatter_draw[0], self.scatter_draw[1], color='white')
         fig = ax.get_figure()
         fig.set_figheight(20)
         fig.set_figwidth(40)

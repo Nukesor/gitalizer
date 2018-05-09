@@ -24,7 +24,6 @@ class CommitSimilarity():
     def run(self):
         """Execute all steps."""
         self.preprocess()
-        self.plot()
 
     def preprocess(self):
         """Prepare all data for plotting."""
