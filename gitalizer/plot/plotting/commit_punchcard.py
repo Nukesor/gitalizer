@@ -46,11 +46,12 @@ class CommitPunchcard():
         border_color = '#555555'
 
         fig = plt.figure(figsize=(20, 10), facecolor=background)
+
         fig.subplots_adjust(left=0.06, bottom=0.04, right=0.98, top=0.95)
         ax = fig.add_subplot(1, 1, 1)
 
         # Set title
-        ax.set_title('', y=0.96).set_color(graph_color)
+        ax.set_title(self.title, y=1.10, fontsize=25).set_color(graph_color)
         ax.set_frame_on(False)
 
         ax.scatter(
@@ -65,22 +66,25 @@ class CommitPunchcard():
         ax.plot([dist, 23.5], [dist, dist], c='#555555')
         ax.plot([dist, dist], [dist, 6.4], c='#555555')
 
+        # Set axis limit so we only see the wanted number range
         ax.set_xlim(-1, 24)
         ax.set_ylim(-0.9, 6.9)
+
+        # Set tick size
+        plt.rc('xtick', labelsize=30)
+        plt.rc('ytick', labelsize=30)
 
         # Format y ticks
         ax.set_yticks(range(7))
         for tx in ax.set_yticklabels(['Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun']):
             tx.set_color('#555555')
-            tx.set_size('x-small')
 
         # Format x ticks
         ax.set_xticks(range(24))
         for tx in ax.set_xticklabels(['%02d' % x for x in range(24)]):
             tx.set_color('#555555')
-            tx.set_size('x-small')
 
         ax.set_aspect('equal')
 
-        fig.savefig(self.path)
+        fig.savefig(self.path, bbox_inches='tight')
         plt.close(fig)

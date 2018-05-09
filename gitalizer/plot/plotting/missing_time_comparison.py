@@ -81,7 +81,7 @@ class MissingTimeComparison():
                 'Work pattern anomaly',
             ]
             ax.legend(handles, labels, prop={'size': 20})
-            ax.set_title(self.user[index].login, fontsize=30)
+            ax.set_title(self.user[index].login, y=0.96, fontsize=30)
             ax.get_yaxis().set_ticks([])
             ax.scatter(self.scatter_draw[0], self.scatter_draw[1], color='white')
             plt.xticks(rotation=50)
@@ -91,7 +91,7 @@ class MissingTimeComparison():
         self.fig.set_figwidth(40)
         self.fig.suptitle(self.title, fontsize=30)
 
-        self.fig.savefig(self.path)
+        self.fig.savefig(self.path, bbox_inches='tight')
         plt.close(self.fig)
 
         return

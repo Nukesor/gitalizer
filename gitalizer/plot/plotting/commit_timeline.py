@@ -56,16 +56,10 @@ class CommitTimeline():
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        # We only want to see years as xaxis labels .
-        years = mdates.YearLocator()
-        yearsFmt = mdates.DateFormatter('%Y')
-        ax.xaxis.set_major_locator(years)
-        ax.xaxis.set_major_formatter(yearsFmt)
-
         weeks = mdates.WeekdayLocator(byweekday=mdates.MO)
-        weeksFmt = mdates.DateFormatter('%W')
-        ax.xaxis.set_minor_locator(weeks)
-        ax.xaxis.set_minor_formatter(weeksFmt)
+        weeksFmt = mdates.DateFormatter('%Y-%W')
+        ax.xaxis.set_major_locator(weeks)
+        ax.xaxis.set_major_formatter(weeksFmt)
 
         colors = {
             'additions': 'green',
@@ -390,12 +384,24 @@ class MissingTime():
         ]
         handles += new_handles
         labels += new_labels
-        ax.legend(handles, labels, prop={'size': 15})
+
+        ax.legend(handles, labels, prop={'size': 20})
         if self.delta:
             ax.scatter(self.scatter_draw[0], self.scatter_draw[1], color='white')
+
+        # Set tick size
+        plt.rc('xtick', labelsize=20)
+        plt.rc('ytick', labelsize=20)
+
+        # Set ticks rotation
+        plt.xticks(rotation=90)
+
+        # Figure height and width
         fig = ax.get_figure()
         fig.set_figheight(20)
         fig.set_figwidth(40)
+
+        # Title
         fig.suptitle(self.title, fontsize=30)
 
         for text in self.anomaly_texts:
@@ -404,8 +410,7 @@ class MissingTime():
         for text in self.entry_texts:
             print(text)
 
-        plt.xticks(rotation=30)
-        fig.savefig(self.path)
+        fig.savefig(self.path, bbox_inches='tight')
         plt.close(fig)
 
         return
