@@ -47,6 +47,10 @@ class CommitPunchcard():
 
         fig = plt.figure(figsize=(20, 10), facecolor=background)
 
+        # Set tick size
+        plt.rc('xtick', labelsize=20)
+        plt.rc('ytick', labelsize=20)
+
         fig.subplots_adjust(left=0.06, bottom=0.04, right=0.98, top=0.95)
         ax = fig.add_subplot(1, 1, 1)
 
@@ -69,10 +73,6 @@ class CommitPunchcard():
         # Set axis limit so we only see the wanted number range
         ax.set_xlim(-1, 24)
         ax.set_ylim(-0.9, 6.9)
-
-        # Set tick size
-        plt.rc('xtick', labelsize=30)
-        plt.rc('ytick', labelsize=30)
 
         # Format y ticks
         ax.set_yticks(range(7))
