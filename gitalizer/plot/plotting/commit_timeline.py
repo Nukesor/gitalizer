@@ -188,7 +188,7 @@ class MissingTime():
 
         self.data = data
 
-    def find_prototype(self, data, last_prototype=None):
+    def find_prototype(self, data):
         """Look at the first few weeks to find a new prototype."""
         # Create an entry for each fingerprint and count the occurrences of this entry
         counter = {}

@@ -16,6 +16,25 @@ from gitalizer.models import (
     Email,
 )
 
+timezone_evaluations = [
+    {"search": ['Germany', 'Deutschland'], "timezone": 'Europe/Berlin'},
+    {"search": ['France'], "timezone": 'Europe/Paris'},
+    {"search": ['Italy'], "timezone": 'Europe/Rome'},
+    {"search": ['Spain'], "timezone": 'Europe/Madrid'},
+    {"search": ['Poland'], "timezone": 'Europe/Warsaw'},
+    {"search": ['Moscow'], "timezone": 'Europe/Moscow'},
+    {"search": ['UK', 'United Kingdom'], "timezone": 'Europe/London'},
+    {"search": ['New Zealand'], "timezone": 'Pacific/Auckland'},
+    {"search": ['NY', 'New York'], "timezone": 'America/New_York'},
+    {"search": ['Los Angeles'], "timezone": 'America/Los_Angeles'},
+    {"search": ['Japan', '日本'], "timezone": 'Japan'},
+    {"search": ['India'], "timezone": 'Indian/Cocos'},
+    {"search": ['Sidney'], "timezone": 'Australia/NSW'},
+    {"search": ['Adelaide'], "timezone": 'Australia/Adelaide'},
+    {"search": ['Jamaica'], "timezone": 'America/Jamaica'},
+    {"search": ['Mexico'], "timezone": 'Mexico/General'},
+]
+
 
 def analyse_travel_path(existing):
     """Analyze the efficiency of the missing time comparison."""
@@ -87,6 +106,7 @@ def analyse_travel_path(existing):
 
     correct = 0
     considered_contributors = 0
+    survey_results = {}
     for result in results:
         contributor = result.contributor
         home = result.intermediate_results['home']['set']
@@ -94,49 +114,25 @@ def analyse_travel_path(existing):
         if contributor.location is None:
             continue
 
-        if element_in_string(contributor.location, [
-                'Germany', 'Deutschland', 'France',
-                'Italy', 'Spain', 'Poland', 'Austria',
-        ]):
-            considered_contributors += 1
-            if 'Europe/Berlin' in home:
-                correct += 1
+        for item in timezone_evaluations:
+            if element_in_string(contributor.location, item['search']):
+                survey_string = ', '.join(item['search'])
+                if survey_string not in survey_results:
+                    survey_results[survey_string] = {}
+#                    survey_results[survey_string]['set'] = set(home)
+                    survey_results[survey_string]['amount'] = 0
+                    survey_results[survey_string]['correct'] = 0
+                    survey_results[survey_string]['timezone_amount'] = 0
 
-        elif element_in_string(contributor.location, ['New Zealand']):
-            considered_contributors += 1
-            if 'Pacific/Auckland' in home:
-                correct += 1
-
-        elif element_in_string(contributor.location, ['UK', 'United Kingdom']):
-            considered_contributors += 1
-            if 'Europe/London' in home:
-                correct += 1
-
-        elif element_in_string(contributor.location, ['NY', 'New York']):
-            considered_contributors += 1
-            if 'America/New_York' in home:
-                correct += 1
-
-        elif element_in_string(contributor.location, ['Los Angeles']):
-            considered_contributors += 1
-            if 'America/Los_Angeles' in home:
-                correct += 1
-
-        elif element_in_string(contributor.location, ['Seattle', 'portland']):
-            considered_contributors += 1
-            if 'US/Pacific' in home:
-                correct += 1
-
-        elif element_in_string(contributor.location, ['Japan', '日本']):
-            considered_contributors += 1
-            if 'Japan' in home:
-                correct += 1
-
-        elif element_in_string(contributor.location, ['India']):
-            considered_contributors += 1
-            if 'Indian/Cocos' in home:
-                correct += 1
-
+#                survey_results[survey_string]['set'] = survey_results[survey_string]['set'] | set(home)
+                survey_results[survey_string]['amount'] += 1
+                survey_results[survey_string]['timezone_amount'] += len(home)
+                survey_results[survey_string]['ratio'] = survey_results[survey_string]['timezone_amount'] / survey_results[survey_string]['amount']
+                considered_contributors += 1
+                if item['timezone'] in home:
+                    correct += 1
+                    survey_results[survey_string]['correct'] += 1
+                break
 
     current_app.logger.info(f'Looked at {len(results)} contributors.')
     current_app.logger.info(f'{len(results)} are relevant.')
@@ -144,14 +140,19 @@ def analyse_travel_path(existing):
     current_app.logger.info(f'Detected no change in {unchanged} of those.')
     current_app.logger.info(f'Distribution of users by amount of different timezones:')
     current_app.logger.info(pformat(distribution))
-    current_app.logger.info(f'Verified contributors {correct} of {considered_contributors}')
+    current_app.logger.info(pformat(survey_results))
+    current_app.logger.info(f'Verified contributors {correct} of {considered_contributors}: {correct/considered_contributors}')
+
+    for key, result in survey_results.items():
+        print(f"{key};{result['amount']};{result['correct']};{result['ratio']}")
 
     return
 
 
 def element_in_string(string, word_list):
+    """Check if there is one of the strings in the word list inside the string."""
     for word in word_list:
-        if word in string:
+        if word.lower() in string.lower().split(' '):
             return True
 
     return False
