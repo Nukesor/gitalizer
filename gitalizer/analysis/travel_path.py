@@ -22,17 +22,17 @@ timezone_evaluations = [
     {"search": ['Italy'], "timezone": 'Europe/Rome'},
     {"search": ['Spain'], "timezone": 'Europe/Madrid'},
     {"search": ['Poland'], "timezone": 'Europe/Warsaw'},
-    {"search": ['Moscow'], "timezone": 'Europe/Moscow'},
     {"search": ['UK', 'United Kingdom'], "timezone": 'Europe/London'},
     {"search": ['New Zealand'], "timezone": 'Pacific/Auckland'},
-    {"search": ['NY', 'New York'], "timezone": 'America/New_York'},
+    {"search": ['NYC', 'NY', 'New York'], "timezone": 'America/New_York'},
     {"search": ['Los Angeles'], "timezone": 'America/Los_Angeles'},
-    {"search": ['Japan', '日本'], "timezone": 'Japan'},
-    {"search": ['India'], "timezone": 'Indian/Cocos'},
+    {"search": ['Tokyo'], "timezone": 'Pacific/Palau'},
+    {"search": ['India'], "timezone": 'Asia/Colombo'},
     {"search": ['Sidney'], "timezone": 'Australia/NSW'},
     {"search": ['Adelaide'], "timezone": 'Australia/Adelaide'},
     {"search": ['Jamaica'], "timezone": 'America/Jamaica'},
     {"search": ['Mexico'], "timezone": 'Mexico/General'},
+    {"search": ['San Francisco'], "timezone": 'US/Pacific'},
 ]
 
 
@@ -104,12 +104,22 @@ def analyse_travel_path(existing):
         else:
             distribution[amount] += 1
 
+    ignored_timezones = set([
+        'GB', 'WET', 'MET', 'CET', 'EET',
+        'NZ', 'MST7MDT', 'PST8PDT', 'CST6CDT', 'W-SU',
+        'ROK', 'EET', 'NZ-CHAT', 'GB-Eire', 'ROC',
+        'EST5EDT', 'EET', 'PRC',
+    ])
+    for i in range(0, 16):
+        ignored_timezones.add(f'GMT-{i}')
+        ignored_timezones.add(f'GMT+{i}')
+
     correct = 0
     considered_contributors = 0
     survey_results = {}
     for result in results:
         contributor = result.contributor
-        home = result.intermediate_results['home']['set']
+        home = set(result.intermediate_results['home']['set'])
 
         if contributor.location is None:
             continue
@@ -123,12 +133,15 @@ def analyse_travel_path(existing):
                     survey_results[survey_string]['amount'] = 0
                     survey_results[survey_string]['correct'] = 0
                     survey_results[survey_string]['timezone_amount'] = 0
+                    survey_results[survey_string]['match'] = item['timezone']
 
-#                survey_results[survey_string]['set'] = survey_results[survey_string]['set'] | set(home)
+#                survey_results[survey_string]['set'] = survey_results[survey_string]['set'] | home
                 survey_results[survey_string]['amount'] += 1
-                survey_results[survey_string]['timezone_amount'] += len(home)
+                survey_results[survey_string]['timezone_amount'] += len(home - ignored_timezones)
                 survey_results[survey_string]['ratio'] = survey_results[survey_string]['timezone_amount'] / survey_results[survey_string]['amount']
                 considered_contributors += 1
+                if 'roflcopter' == survey_string:
+                    print(home)
                 if item['timezone'] in home:
                     correct += 1
                     survey_results[survey_string]['correct'] += 1
@@ -143,8 +156,9 @@ def analyse_travel_path(existing):
     current_app.logger.info(pformat(survey_results))
     current_app.logger.info(f'Verified contributors {correct} of {considered_contributors}: {correct/considered_contributors}')
 
+    print(f"Strings query;Considered contributors;Expected timezone;Home location in subset;Mean size of subset")
     for key, result in survey_results.items():
-        print(f"{key};{result['amount']};{result['correct']};{result['ratio']}")
+        print(f"{key};{result['amount']};{result['match']};{result['correct']};{result['ratio']:.2f}")
 
     return
 
@@ -152,8 +166,15 @@ def analyse_travel_path(existing):
 def element_in_string(string, word_list):
     """Check if there is one of the strings in the word list inside the string."""
     for word in word_list:
+        # Split by space and check for direct hits.
+        # This prevents false positives such as 'NY' to 'nyaaa'.
         if word.lower() in string.lower().split(' '):
             return True
+
+        # If we have something like 'San Fransisco' we cannot split by space.
+        if ' ' in word:
+            if word.lower() in string.lower():
+                return True
 
     return False
 
