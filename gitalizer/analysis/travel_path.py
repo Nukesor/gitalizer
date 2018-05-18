@@ -117,9 +117,15 @@ def analyse_travel_path(existing):
     correct = 0
     considered_contributors = 0
     survey_results = {}
+    detected_timezones = {}
     for result in results:
         contributor = result.contributor
         home = set(result.intermediate_results['home']['set'])
+
+        if detected_timezones[result.detected_timezones] is not None:
+            if result.detected_timezones not in detected_timezones:
+                detected_timezones[result.detected_timezones] = 0
+            detected_timezones[result.detected_timezones] += 1
 
         if contributor.location is None:
             continue
@@ -129,19 +135,24 @@ def analyse_travel_path(existing):
                 survey_string = ', '.join(item['search'])
                 if survey_string not in survey_results:
                     survey_results[survey_string] = {}
-#                    survey_results[survey_string]['set'] = set(home)
+                    survey_results[survey_string]['set'] = set(home)
                     survey_results[survey_string]['amount'] = 0
                     survey_results[survey_string]['correct'] = 0
                     survey_results[survey_string]['timezone_amount'] = 0
                     survey_results[survey_string]['match'] = item['timezone']
+                    survey_results[survey_string]['full_set'] = set(item['full_set'])
 
-#                survey_results[survey_string]['set'] = survey_results[survey_string]['set'] | home
+                survey_results[survey_string]['set'] = survey_results[survey_string]['set'] | home
                 survey_results[survey_string]['amount'] += 1
                 survey_results[survey_string]['timezone_amount'] += len(home - ignored_timezones)
                 survey_results[survey_string]['ratio'] = survey_results[survey_string]['timezone_amount'] / survey_results[survey_string]['amount']
+                survey_results[survey_string]['full_set'] = survey_results[survey_string]['full_set'] | set(item['full_set'])
                 considered_contributors += 1
+
+                # Debug stuff
                 if 'roflcopter' == survey_string:
                     print(home)
+
                 if item['timezone'] in home:
                     correct += 1
                     survey_results[survey_string]['correct'] += 1
@@ -153,12 +164,13 @@ def analyse_travel_path(existing):
     current_app.logger.info(f'Detected no change in {unchanged} of those.')
     current_app.logger.info(f'Distribution of users by amount of different timezones:')
     current_app.logger.info(pformat(distribution))
-    current_app.logger.info(pformat(survey_results))
+    current_app.logger.info(f'Distribution of users by amount of different timezones:')
+    current_app.logger.info(pformat(detected_timezones))
     current_app.logger.info(f'Verified contributors {correct} of {considered_contributors}: {correct/considered_contributors}')
 
-    print(f"Strings query;Considered contributors;Expected timezone;Home location in subset;Mean size of subset")
+    print(f"Strings query;Considered contributors;Expected timezone;Home location in subset;Mean size of subset;Max size of subset")
     for key, result in survey_results.items():
-        print(f"{key};{result['amount']};{result['match']};{result['correct']};{result['ratio']:.2f}")
+        print(f"{key};{result['amount']};{result['match']};{result['correct']};{result['ratio']:.2f}{len(result['full_set'])}")
 
     return
 
@@ -220,12 +232,14 @@ def analyse_contributer_travel_path(contributors_commits):
                     del(timezone_set['start'])
                     del(timezone_set['end'])
                     timezone_set['set'] = list(timezone_set['set'])
+                    timezone_set['full_set'] = list(timezone_set['full_set'])
 
                 json_results['home'] = plotter.home_zone
                 json_results['travel'] = plotter.data
                 result.intermediate_results = json_results
 
-                result.different_timezones = len(plotter.data)
+                result.timezone_switches = len(plotter.data)
+                result.different_timezones = plotter.different_timezones
                 result.last_change = datetime.now()
                 result.commit_count = len(commits)
                 session.add(result)

@@ -57,7 +57,7 @@ class CommitTimeline():
         ax = fig.add_subplot(111)
 
         weeks = mdates.WeekdayLocator(byweekday=mdates.MO)
-        weeksFmt = mdates.DateFormatter('%Y-%W')
+        weeksFmt = mdates.DateFormatter('%Y-%m-%d')
         ax.xaxis.set_major_locator(weeks)
         ax.xaxis.set_major_formatter(weeksFmt)
 

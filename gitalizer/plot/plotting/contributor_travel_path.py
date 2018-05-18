@@ -61,6 +61,7 @@ class TravelPath():
             if current_location is None:
                 current_location = {
                     'set': set([z[0] for z in zones]),
+                    'full_set': set([z[0] for z in zones]),
                     'start': commit_time.date(),
                     'end': commit_time.date(),
                 }
@@ -89,6 +90,7 @@ class TravelPath():
                     change_at_day = commit.commit_time.date()
                     location_candidate = {
                         'set': set([z[0] for z in zones]),
+                        'full_set': set([z[0] for z in zones]),
                         'start': commit_time.date(),
                         'end': commit_time.date(),
                     }
@@ -127,6 +129,7 @@ class TravelPath():
                     # Update current_timezone
                     current_location['set'] = intersection
                     current_location['end'] = commit_time.date()
+                    current_location['full_set'] = current_location['full_set'] | location_candidate['set']
 
                     # Reset candidate and last_valid_location occurrence
                     last_valid_location = commit_time.date()
@@ -160,6 +163,7 @@ class TravelPath():
                 if len(intersection) > 0:
                     candidate['set'] = intersection
                     candidate['days'] += duration.days
+                    candidate['full_set'] = location['full_set'] | candidate['full_set']
                     found = True
                     if candidate['days'] > home_location['days']:
                         home_location = candidate
@@ -175,8 +179,9 @@ class TravelPath():
             if not home_location:
                 home_location = location
 
-        self.home_zone = home_location
         self.data = travel_path
+        self.home_zone = home_location
+        self.different_timezones = len(home_location_candidates)
 
     def get_geo_data(self):
         """Get Geo data from natural earth."""
