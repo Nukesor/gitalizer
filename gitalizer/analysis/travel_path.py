@@ -80,7 +80,7 @@ def analyse_travel_path(existing):
 
     # Only look at commits of the last year
     results = session.query(AnalysisResult) \
-        .filter(AnalysisResult.different_timezones != None) \
+        .filter(AnalysisResult.timezone_switches != None) \
         .filter(and_(
             AnalysisResult.commit_count != None,
             AnalysisResult.commit_count > 100,
@@ -93,7 +93,7 @@ def analyse_travel_path(existing):
     unchanged = 0
     distribution = {}
     for result in results:
-        amount = result.different_timezones
+        amount = result.timezone_switches
         if amount > 1:
             changed += 1
         else:
@@ -121,11 +121,15 @@ def analyse_travel_path(existing):
     for result in results:
         contributor = result.contributor
         home = set(result.intermediate_results['home']['set'])
+        if 'full_set' in result.intermediate_results['home']:
+            full_set = set(result.intermediate_results['home']['full_set'])
+        else:
+            full_set = set()
 
-        if detected_timezones[result.detected_timezones] is not None:
-            if result.detected_timezones not in detected_timezones:
-                detected_timezones[result.detected_timezones] = 0
-            detected_timezones[result.detected_timezones] += 1
+        if result.different_timezones is not None:
+            if result.different_timezones not in detected_timezones:
+                detected_timezones[result.different_timezones] = 0
+            detected_timezones[result.different_timezones] += 1
 
         if contributor.location is None:
             continue
@@ -140,14 +144,16 @@ def analyse_travel_path(existing):
                     survey_results[survey_string]['correct'] = 0
                     survey_results[survey_string]['timezone_amount'] = 0
                     survey_results[survey_string]['match'] = item['timezone']
-                    survey_results[survey_string]['full_set'] = set(item['full_set'])
+                    survey_results[survey_string]['full_set'] = full_set
 
                 survey_results[survey_string]['set'] = survey_results[survey_string]['set'] | home
                 survey_results[survey_string]['amount'] += 1
                 survey_results[survey_string]['timezone_amount'] += len(home - ignored_timezones)
                 survey_results[survey_string]['ratio'] = survey_results[survey_string]['timezone_amount'] / survey_results[survey_string]['amount']
-                survey_results[survey_string]['full_set'] = survey_results[survey_string]['full_set'] | set(item['full_set'])
                 considered_contributors += 1
+
+                if 'full_set' in item:
+                    survey_results[survey_string]['full_set'] = survey_results[survey_string]['full_set'] | full_set
 
                 # Debug stuff
                 if 'roflcopter' == survey_string:
@@ -164,13 +170,13 @@ def analyse_travel_path(existing):
     current_app.logger.info(f'Detected no change in {unchanged} of those.')
     current_app.logger.info(f'Distribution of users by amount of different timezones:')
     current_app.logger.info(pformat(distribution))
-    current_app.logger.info(f'Distribution of users by amount of different timezones:')
+    current_app.logger.info(f'Distribution of users by amount of detected timezones:')
     current_app.logger.info(pformat(detected_timezones))
     current_app.logger.info(f'Verified contributors {correct} of {considered_contributors}: {correct/considered_contributors}')
 
     print(f"Strings query;Considered contributors;Expected timezone;Home location in subset;Mean size of subset;Max size of subset")
     for key, result in survey_results.items():
-        print(f"{key};{result['amount']};{result['match']};{result['correct']};{result['ratio']:.2f}{len(result['full_set'])}")
+        print(f"{key};{result['amount']};{result['match']};{result['correct']};{result['ratio']:.2f};{len(result['full_set'])}")
 
     return
 
@@ -216,6 +222,7 @@ def analyse_contributer_travel_path(contributors_commits):
                 result.intermediate_results = json_results
 
             if result.different_timezones is None \
+                    or result.timezone_switches is None \
                     or commits_changed \
                     or json_results.get('travel') is None \
                     or json_results.get('home') is None:
