@@ -24,7 +24,7 @@ pendulum~=1.4
 pytzdata~=2018.3
 
 # Location handling
-cartopy~=0.15
+cartopy~=0.16
 pycountry~=18.2
 geopy
 
