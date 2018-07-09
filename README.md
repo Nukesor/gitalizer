@@ -1,4 +1,4 @@
-# Gitalyzer
+# Gitalizer
 
 This program is a combination of a Github data aggregator and a basic analysis tool.
 The purpose of this program is to show the possible dangers of performing data mining on git meta data.
