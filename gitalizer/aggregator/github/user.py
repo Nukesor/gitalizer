@@ -1,11 +1,11 @@
 """Data collection from Github."""
 import traceback
-from flask import current_app
 from datetime import datetime
 from github.GithubException import GithubException
 
+from gitalizer.helper import get_config
 from gitalizer.models import Repository, Contributor
-from gitalizer.extensions import github, sentry, db
+from gitalizer.extensions import github, sentry, db, logger
 from gitalizer.aggregator.github import call_github_function, get_github_object
 from gitalizer.helpers.parallel import new_session
 from gitalizer.helpers.parallel.manager import Manager
@@ -39,14 +39,18 @@ def get_friends_by_name(name: str):
     manager.start()
     manager.run()
 
-    for login in user_logins:
-        contributor = db.session.query(Contributor) \
-            .filter(Contributor.login.ilike(login)) \
-            .one()
-        if not contributor.too_big:
-            contributor.last_full_scan = datetime.utcnow()
-            db.session.add(contributor)
-    db.session.commit()
+    try:
+        session = db.new_session()
+        for login in user_logins:
+            contributor = session.query(Contributor) \
+                .filter(Contributor.login.ilike(login)) \
+                .one()
+            if not contributor.too_big:
+                contributor.last_full_scan = datetime.utcnow()
+                session.add(contributor)
+        session.commit()
+    finally:
+        session.close()
 
 
 def get_user_by_login(login: str):
@@ -57,12 +61,16 @@ def get_user_by_login(login: str):
     manager.start()
     manager.run()
 
-    contributor = db.session.query(Contributor) \
-        .filter(Contributor.login.ilike(login)) \
-        .one()
-    contributor.last_full_scan = datetime.utcnow()
-    db.session.add(contributor)
-    db.session.commit()
+    try:
+        session = db.new_session()
+        contributor = session.query(Contributor) \
+            .filter(Contributor.login.ilike(login)) \
+            .one()
+        contributor.last_full_scan = datetime.utcnow()
+        session.add(contributor)
+        session.commit()
+    finally:
+        session.close()
 
 
 def get_user_repos(user_login: str, skip=True):
@@ -90,10 +98,10 @@ def get_user_repos(user_login: str, skip=True):
 
             # Debug messages to see that the repositories are still collected.
             if owned_repos % 100 == 0:
-                current_app.logger.info(f'{owned_repos} owned repos for user {user_login}.')
+                logger.info(f'{owned_repos} owned repos for user {user_login}.')
 
             # The user is too big. Just drop him.
-            if skip and owned_repos > current_app.config['GITHUB_USER_SKIP_COUNT']:
+            if skip and owned_repos > get_config().GITHUB_USER_SKIP_COUNT:
                 user_too_big = True
 
         # Prefetch all starred repositories
@@ -103,10 +111,10 @@ def get_user_repos(user_login: str, skip=True):
             call_github_function(starred, '_grow')
             # Debug messages to see that the repositories are still collected.
             if starred_repos % 100 == 0:
-                current_app.logger.info(f'{starred_repos} starred repos for user {user_login}.')
+                logger.info(f'{starred_repos} starred repos for user {user_login}.')
 
             # The user is too big. Just drop him.
-            if skip and starred_repos > current_app.config['GITHUB_USER_SKIP_COUNT']:
+            if skip and starred_repos > get_config().GITHUB_USER_SKIP_COUNT:
                 user_too_big = True
 
         # User has too many repositories. Flag him and return
@@ -188,7 +196,6 @@ def get_user_data(user_data: tuple):
     try:
         contributor = user_data[0]
         login = contributor.login
-        commits = user_data[1]
 
         session = new_session()
         contributor = Contributor.get_contributor(login, session, True)

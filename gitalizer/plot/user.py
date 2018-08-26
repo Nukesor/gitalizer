@@ -3,7 +3,6 @@ import os
 from sqlalchemy import or_
 from datetime import timedelta
 
-from gitalizer.extensions import db
 from gitalizer.models.email import Email
 from gitalizer.models.commit import Commit
 from gitalizer.models.contributor import Contributor
@@ -17,9 +16,9 @@ from .plotting import (
 )
 
 
-def plot_user_commit_timeline(contributor, path):
+def plot_user_commit_timeline(contributor, path, session):
     """Get all commits of repositories of an user."""
-    commits = get_user_commits(contributor)
+    commits = get_user_commits(contributor, session)
     title = f"{contributor.login}'s commit size history."
     path = os.path.join(path, 'commit_timeline')
 
@@ -27,14 +26,14 @@ def plot_user_commit_timeline(contributor, path):
     plotter.run()
 
 
-def plot_user_repositories_changes(contributor, path):
+def plot_user_repositories_changes(contributor, path, session):
     """Box plot the contributions to a specific repository."""
     path = os.path.join(path, 'repo_changes')
     if not os.path.exists(path):
         os.makedirs(path)
-    repositories = get_user_repositories(contributor)
+    repositories = get_user_repositories(contributor, session)
     for repository in repositories:
-        commits = db.session.query(Commit) \
+        commits = session.query(Commit) \
             .filter(Commit.repository == repository) \
             .join(Email, or_(
                 Email.email == Commit.author_email_address,
@@ -55,10 +54,10 @@ def plot_user_repositories_changes(contributor, path):
         plot_repository_changes(commits, plot_path, title)
 
 
-def plot_user_punchcard(contributor, path):
+def plot_user_punchcard(contributor, path, session):
     """Get all commits of repositories of an user."""
     delta = timedelta(days=364)
-    commits = get_user_commits(contributor, delta)
+    commits = get_user_commits(contributor, session, delta)
 
     path = os.path.join(path, 'punchcard')
 
@@ -68,11 +67,11 @@ def plot_user_punchcard(contributor, path):
     plotter.run()
 
 
-def plot_user_travel_path(contributor, path):
+def plot_user_travel_path(contributor, path, session):
     """Visualize the user utcoffset changes."""
     delta = timedelta(days=2*364)
-    commits = get_user_commits(contributor, delta)
+    commits = get_user_commits(contributor, session, delta)
     path = os.path.join(path, 'travel_path')
 
-    plotter = TravelPath(commits, path)
+    plotter = TravelPath(commits, path, session)
     plotter.run()

@@ -8,9 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from datetime import timedelta, datetime
 from pycountry import countries as pycountries
-from pprint import pprint
 
-from gitalizer.extensions import db
 from gitalizer.models import Commit, TimezoneInterval
 from gitalizer.timezone import (
     timezone_country,
@@ -22,9 +20,10 @@ from gitalizer.timezone import (
 class TravelPath():
     """Travel path display."""
 
-    def __init__(self, commits: Commit, path):
+    def __init__(self, commits: Commit, path, session):
         """Create a new instance."""
         self.path = path
+        self.session = session
         self.raw_data = commits
         self.data = None
         self.home_zone = None
@@ -51,7 +50,7 @@ class TravelPath():
             if commit_timezone is None:
                 continue
 
-            zones = db.session.query(TimezoneInterval.timezone) \
+            zones = self.session.query(TimezoneInterval.timezone) \
                 .filter(TimezoneInterval.start <= commit_time) \
                 .filter(TimezoneInterval.end > commit_time) \
                 .filter(TimezoneInterval.utcoffset == commit_timezone) \

@@ -5,9 +5,9 @@ from datetime import datetime
 from github import GithubException
 from raven import breadcrumbs
 from pygit2 import GitError
-from flask import current_app
+from gitalizer.helper import get_config
 
-from gitalizer.extensions import github, sentry
+from gitalizer.extensions import github, sentry, logger
 from gitalizer.models.repository import Repository
 from gitalizer.helpers.parallel import new_session
 from gitalizer.helpers.parallel.manager import Manager
@@ -24,9 +24,9 @@ def get_github_repository_by_owner_name(owner: str, name: str):
     """Get a repository by it's owner and name."""
     full_name = f'{owner}/{name}'
     response = get_github_repository(full_name)
-    print(response['message'])
+    logger.info(response['message'])
     if 'error' in response:
-        print(response['error'])
+        logger.error(response['error'])
 
 
 def get_github_repository_users(full_name: str):
@@ -64,7 +64,7 @@ def get_github_repository(full_name: str):
 
         if repository.broken:
             return {'message': f'Skip broken repo {github_repo.ssh_url}'}
-        elif github_repo.size > current_app.config['MAX_REPOSITORY_SIZE']:
+        elif github_repo.size > get_config().MAX_REPOSITORY_SIZE:
             repository.too_big = True
             session.add(repository)
             session.commit()
@@ -125,10 +125,6 @@ def get_github_repository(full_name: str):
         pass
 
     except (GitError, UnicodeDecodeError) as e:
-#        if repository:
-#            repository.broken = True
-#            session.add(repository)
-#            session.commit()
         response = error_message('Error in get_repository:\n')
         pass
 

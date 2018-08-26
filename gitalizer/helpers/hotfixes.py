@@ -1,9 +1,10 @@
 """Clean stuff from db, which occured through bugs."""
-from flask import current_app
 from datetime import datetime, timedelta
 from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload
-from gitalizer.extensions import db
+
+from gitalizer.helper import get_config
+from gitalizer.extensions import db, logger
 from gitalizer.models import (
     Repository,
     Commit,
@@ -17,28 +18,32 @@ from gitalizer.helpers.parallel.list_manager import ListManager
 
 def clean_db():
     """Clean stuff."""
-    current_app.logger.info("Removing commits from fork repos.")
-    all_repositories = db.session.query(Repository) \
-        .filter(Repository.fork.is_(True)) \
-        .filter(Repository.commits != None) \
-        .options(joinedload(Repository.commits)) \
-        .all()
+    logger.info("Removing commits from fork repos.")
+    session = db.new_session()
+    try:
+        all_repositories = session.query(Repository) \
+            .filter(Repository.fork.is_(True)) \
+            .filter(Repository.commits != None) \
+            .options(joinedload(Repository.commits)) \
+            .all()
 
-    current_app.logger.info(f'Found {len(all_repositories)}')
-    repositories_count = 0
-    for repository in all_repositories:
-        repository.commits = []
-        db.session.add(repository)
-        repositories_count += 1
-        if repositories_count % 100 == 0:
-            current_app.logger.info(f'Removed {repositories_count}')
-            db.session.commit()
+        logger.info(f'Found {len(all_repositories)}')
+        repositories_count = 0
+        for repository in all_repositories:
+            repository.commits = []
+            session.add(repository)
+            repositories_count += 1
+            if repositories_count % 100 == 0:
+                logger.info(f'Removed {repositories_count}')
+                session.commit()
 
-    current_app.logger.info("Remove unattached commits")
-    db.session.query(Commit) \
-        .filter(Commit.repositories == None) \
-        .delete()
-    db.session.commit()
+        logger.info("Remove unattached commits")
+        session.query(Commit) \
+            .filter(Commit.repositories == None) \
+            .delete()
+        session.commit()
+    finally:
+        session.close()
 
 
 def complete_data():
@@ -49,8 +54,8 @@ def complete_data():
 
 def complete_repos():
     """Complete unfinished repsitories."""
-    current_app.logger.info("Get unfinished or out of date repositories.")
-    timeout_threshold = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
+    logger.info("Get unfinished or out of date repositories.")
+    timeout_threshold = datetime.utcnow() - get_config().REPOSITORY_RESCAN_TIMEOUT
     session = new_session()
 
     repos = session.query(Repository) \
@@ -62,7 +67,7 @@ def complete_repos():
             Repository.updated_at <= timeout_threshold,
         )) \
         .all()
-    current_app.logger.info(f'Found {len(repos)}')
+    logger.info(f'Found {len(repos)}')
 
     full_names = [r.full_name for r in repos]
     repos_to_scan = set(full_names)
@@ -77,7 +82,7 @@ def complete_repos():
 def complete_contributor():
     """Complete contributor."""
     session = new_session()
-    current_app.logger.info(f'Start Scan.')
+    logger.info(f'Start Scan.')
 
     # Look at the last two years
     time_span = datetime.now() - timedelta(days=2*365)
@@ -96,7 +101,7 @@ def complete_contributor():
         .group_by(Contributor.login) \
         .all()
 
-    current_app.logger.info(f'Scanning {len(results)} contributors.')
+    logger.info(f'Scanning {len(results)} contributors.')
 
     count = 0
     big_contributors = []
@@ -106,8 +111,7 @@ def complete_contributor():
 
         count += 1
         if count % 5000 == 0:
-            current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
-
+            logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
 
     manager = ListManager('github_user', big_contributors)
     manager.start()

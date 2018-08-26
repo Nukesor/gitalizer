@@ -1,11 +1,11 @@
 """Analyse the efficiency of the travel path comparison."""
 from copy import deepcopy
 from pprint import pformat
-from flask import current_app
 from sqlalchemy import and_, or_, func
 from sqlalchemy.orm import joinedload
 from datetime import timedelta, datetime
 
+from gitalizer.extensions import logger
 from gitalizer.helpers.parallel import new_session, create_chunks
 from gitalizer.plot.plotting import TravelPath
 from gitalizer.helpers.parallel.list_manager import ListManager
@@ -39,7 +39,7 @@ timezone_evaluations = [
 def analyse_travel_path(existing):
     """Analyze the efficiency of the missing time comparison."""
     session = new_session()
-    current_app.logger.info(f'Start Scan.')
+    logger.info(f'Start Scan.')
 
     # Look at the last two years
     time_span = datetime.now() - timedelta(days=2*365)
@@ -56,7 +56,7 @@ def analyse_travel_path(existing):
             .group_by(Contributor.login) \
             .all()
 
-        current_app.logger.info(f'Scanning {len(results)} contributors.')
+        logger.info(f'Scanning {len(results)} contributors.')
 
         count = 0
         big_contributors = []
@@ -66,10 +66,10 @@ def analyse_travel_path(existing):
 
             count += 1
             if count % 5000 == 0:
-                current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
+                logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
 
         # Finished searching for contributors with enough commits.
-        current_app.logger.info(f'Analysing {len(big_contributors)} contributors.')
+        logger.info(f'Analysing {len(big_contributors)} contributors.')
 
         # Chunk the contributor list into chunks of 100
         chunks = create_chunks(big_contributors, 100)
@@ -164,15 +164,15 @@ def analyse_travel_path(existing):
                     survey_results[survey_string]['correct'] += 1
                 break
 
-    current_app.logger.info(f'Looked at {len(results)} contributors.')
-    current_app.logger.info(f'{len(results)} are relevant.')
-    current_app.logger.info(f'Detected a change in {changed} of those.')
-    current_app.logger.info(f'Detected no change in {unchanged} of those.')
-    current_app.logger.info(f'Distribution of users by amount of different timezones:')
-    current_app.logger.info(pformat(distribution))
-    current_app.logger.info(f'Distribution of users by amount of detected timezones:')
-    current_app.logger.info(pformat(detected_timezones))
-    current_app.logger.info(f'Verified contributors {correct} of {considered_contributors}: {correct/considered_contributors}')
+    logger.info(f'Looked at {len(results)} contributors.')
+    logger.info(f'{len(results)} are relevant.')
+    logger.info(f'Detected a change in {changed} of those.')
+    logger.info(f'Detected no change in {unchanged} of those.')
+    logger.info(f'Distribution of users by amount of different timezones:')
+    logger.info(pformat(distribution))
+    logger.info(f'Distribution of users by amount of detected timezones:')
+    logger.info(pformat(detected_timezones))
+    logger.info(f'Verified contributors {correct} of {considered_contributors}: {correct/considered_contributors}')
 
     print(f"Strings query;Considered contributors;Expected timezone;Home location in subset;Mean size of subset;Max size of subset")
     for key, result in survey_results.items():

@@ -1,9 +1,7 @@
-"""This module extends the `flask` command with various `click` subcommands."""
+"""This module creates a commandline interface command with various `click` subcommands."""
 
 import sys
 import click
-import urllib.parse
-from flask import url_for
 from sqlalchemy_utils.functions import (
     database_exists,
     create_database,
@@ -48,28 +46,6 @@ from gitalizer.analysis import (
 def register_cli(app):  # pragma: no cover
     """Register a few CLI functions."""
     @app.cli.command()
-    def url_map():
-        """Print the URL map."""
-        output = []
-        for rule in app.url_map.iter_rules():
-
-            options = {}
-            for arg in rule.arguments:
-                options[arg] = "[{0}]".format(arg)
-
-            methods = ','.join(rule.methods)
-            url = url_for(rule.endpoint, **options)
-            line = urllib.parse.unquote("{endpoint:50s} {methods:20s} {url}".format(
-                endpoint=rule.endpoint,
-                methods=methods,
-                url=url),
-            )
-            output.append(line)
-
-        for line in sorted(output):
-            click.echo(line)
-
-    @app.cli.command()
     def initdb():
         """Initialize the database.
 
@@ -91,9 +67,11 @@ def register_cli(app):  # pragma: no cover
         """Drop and recreate all utc offset timeinterval database entries."""
         db.create_all()
 
-        db.session.query(TimezoneInterval).delete()
-        create_timezone_database()
-        db.session.commit()
+        session = db.new_session()
+        session.query(TimezoneInterval).delete()
+        create_timezone_database(session)
+        session.commit()
+        session.close()
 
     @app.cli.command()
     @click.argument('login')
@@ -250,14 +228,16 @@ def register_cli(app):  # pragma: no cover
     def test():
         """Command for testing stuff. Look at the code first."""
         try:
+            session = db.new_session()
             from gitalizer.models import Contributor
             from gitalizer.plot.user import plot_user_travel_path
-            contributor = db.session.query(Contributor) \
+            contributor = session.query(Contributor) \
                 .filter(Contributor.login.ilike('Nukesor')) \
                 .one_or_none()
 
-            plot_user_travel_path(contributor, './')
+            plot_user_travel_path(contributor, './', session)
         except KeyboardInterrupt:
+            session.close()
             app.logger.info("CTRL-C Exiting Gracefully")
             sys.exit(1)
 
@@ -289,26 +269,30 @@ def register_cli(app):  # pragma: no cover
     @app.cli.command()
     @click.argument('full_name')
     def delete_repository(full_name):
-        """Profile the get of a specific function."""
-        repository = db.session.query(Repository) \
-            .filter(Repository.full_name == full_name) \
-            .one()
+        """Delete a specific repository."""
+        session = db.new_session()
+        try:
+            repository = session.query(Repository) \
+                .filter(Repository.full_name == full_name) \
+                .one()
 
-        commit_shas = db.session.query(Commit.sha) \
-            .join(
-                commit_repository,
-                commit_repository.c.repository_clone_url == repository.clone_url,
-            ) \
-            .filter(commit_repository.c.commit_sha == Commit.sha) \
-            .all()
+            commit_shas = session.query(Commit.sha) \
+                .join(
+                    commit_repository,
+                    commit_repository.c.repository_clone_url == repository.clone_url,
+                ) \
+                .filter(commit_repository.c.commit_sha == Commit.sha) \
+                .all()
 
-        commit_shas = [c[0] for c in commit_shas]
-        if commit_shas:
-            db.session.query(Commit) \
-                .filter(Commit.sha.in_(commit_shas)) \
-                .delete(synchronize_session=False)
+            commit_shas = [c[0] for c in commit_shas]
+            if commit_shas:
+                session.query(Commit) \
+                    .filter(Commit.sha.in_(commit_shas)) \
+                    .delete(synchronize_session=False)
 
-        db.session.query(Repository) \
-            .filter(Repository.full_name == full_name) \
-            .delete()
-        db.session.commit()
+            session.query(Repository) \
+                .filter(Repository.full_name == full_name) \
+                .delete()
+            session.commit()
+        finally:
+            session.close()

@@ -1,19 +1,20 @@
 """Simple wrapper around sentry that allows for lazy initilization."""
-from raven.contrib.flask import Sentry as OriginSentry
+from raven import Client
 
 
 class Sentry(object):
-    """Sentry wrapper class that allows for lazy initilization.
+    """Sentry wrapper class that allows this app to work without a sentry token.
 
-    The part about the lazy initilization is important for using Flask with
-    application factorties.
+    If no token is specified in the config, the messages used for logging are simply not called.
     """
+
     initialized = False
 
-    def init_app(self, app):
-        """Lazy initializer which takes an `app` and sets up sentry."""
-        self.initialized = True
-        self.sentry = OriginSentry(app, dsn=app.config['SENTRY_TOKEN'])
+    def __init__(self, config):
+        """Construct new sentry wrapper."""
+        if config.SENTRY_TOKEN is not None:
+            self.initialized = True
+            self.sentry = Client(config.SENTRY_TOKEN)
 
     def captureMessage(self, *args, **kwargs):
         """Capture message with sentry."""

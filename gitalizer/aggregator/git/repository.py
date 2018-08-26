@@ -2,13 +2,14 @@
 import os
 import shutil
 import pygit2
-from flask import current_app
 from pygit2 import Repository, clone_repository
+
+from gitalizer.helper import get_config
 
 
 def get_git_repository(url: str, owner: str, name: str):
     """Clone or update a repository."""
-    base_dir = current_app.config['GIT_CLONE_PATH']
+    base_dir = get_config().GIT_CLONE_PATH
     clone_dir = os.path.join(base_dir, owner, name)
 
     if os.path.exists(clone_dir):
@@ -16,10 +17,10 @@ def get_git_repository(url: str, owner: str, name: str):
 
     callbacks = None
     if 'https://' not in url:
-        keypair = pygit2.Keypair(current_app.config['SSH_USER'],
-                                 current_app.config['PUBLIC_KEY'],
-                                 current_app.config['PRIVATE_KEY'],
-                                 current_app.config['SSH_PASSWORD'])
+        keypair = pygit2.Keypair(get_config().SSH_USER,
+                                 get_config().PUBLIC_KEY,
+                                 get_config().PRIVATE_KEY,
+                                 get_config().SSH_PASSWORD)
         callbacks = pygit2.RemoteCallbacks(credentials=keypair)
 
     os.makedirs(clone_dir)
@@ -31,7 +32,7 @@ def get_git_repository(url: str, owner: str, name: str):
 
 def delete_git_repository(owner: str, name: str):
     """Delete a git repository."""
-    base_dir = current_app.config['GIT_CLONE_PATH']
+    base_dir = get_config().GIT_CLONE_PATH
     clone_dir = os.path.join(base_dir, owner, name)
     if os.path.exists(clone_dir):
         shutil.rmtree(clone_dir)

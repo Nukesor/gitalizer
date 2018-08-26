@@ -1,13 +1,12 @@
 """Representation of a git repository contributor."""
 
-from flask import current_app
 from datetime import datetime, timezone
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
-from sqlalchemy.dialects.postgresql import UUID
 
-from gitalizer.extensions import db
+from gitalizer.helper import get_config
+from gitalizer.extensions import db, logger
 
 
 contributor_repository = db.Table(
@@ -100,7 +99,7 @@ class Contributor(db.Model):
                     session.commit()
                 return contributor
             except IntegrityError as e:
-                print(f'Got an Contributor IntegrityError, Try {_try} of {tries}')
+                logger.error(f'Got an Contributor IntegrityError, Try {_try} of {tries}')
                 session.rollback()
                 _try += 1
                 exception = e
@@ -117,7 +116,7 @@ class Contributor(db.Model):
         if no_repositories or self.last_full_scan is None:
             return True
 
-        timeout = datetime.now(timezone.utc) - current_app.config['CONTRIBUTER_RESCAN_TIMEOUT']
+        timeout = datetime.now(timezone.utc) - get_config().CONTRIBUTER_RESCAN_TIMEOUT
         up_to_date = self.last_full_scan and self.last_full_scan >= timeout
 
         if not up_to_date:

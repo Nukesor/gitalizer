@@ -1,7 +1,8 @@
 """Module for multiprocessing management."""
 import multiprocessing
-from flask import current_app
 
+from gitalizer.extensions import logger
+from gitalizer.helper import get_config
 from gitalizer.helpers.parallel.task import Task
 from gitalizer.helpers.parallel.worker import Worker
 
@@ -21,9 +22,9 @@ class Manager():
         self.result_queue = multiprocessing.Queue()
         self.results = []
         if task_type == 'github_contributor':
-            self.consumer_count = current_app.config['GIT_USER_SCAN_THREADS']
+            self.consumer_count = get_config()['GIT_USER_SCAN_THREADS']
         elif task_type == 'github_repository':
-            self.consumer_count = current_app.config['GIT_COMMIT_SCAN_THREADS']
+            self.consumer_count = get_config()['GIT_COMMIT_SCAN_THREADS']
 
     def start(self):
         """Initialize workers and add initial tasks."""
@@ -52,24 +53,24 @@ class Manager():
         """All tasks are added. Process worker responses and wait for worker to finish."""
         # Start the sub manager
         if self.sub_manager is not None:
-            current_app.logger.info('Start sub manager.')
+            logger.info('Start sub manager.')
 
         # Poison pill for user scanner
-        current_app.logger.info('Add poison pills.')
+        logger.info('Add poison pills.')
         for _ in range(self.consumer_count+1):
             self.task_queue.put(None)
 
-        current_app.logger.info(f'Processing {len(self.tasks)} tasks')
+        logger.info(f'Processing {len(self.tasks)} tasks')
         finished_tasks = 0
         while finished_tasks < len(self.tasks):
-            current_app.logger.info(f'Waiting: {finished_tasks} of {len(self.tasks)}')
+            logger.info(f'Waiting: {finished_tasks} of {len(self.tasks)}')
             result = self.result_queue.get()
             self.results.append(result)
 
-            current_app.logger.info(result['message'])
+            logger.info(result['message'])
             if 'error' in result:
-                current_app.logger.info('Encountered an error:')
-                current_app.logger.info(result['error'])
+                logger.info('Encountered an error:')
+                logger.info(result['error'])
             elif self.sub_manager is not None:
                 self.sub_manager.add_tasks(result['tasks'])
             finished_tasks += 1

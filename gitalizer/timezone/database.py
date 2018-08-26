@@ -4,11 +4,10 @@ import pendulum
 from pendulum import timezones
 from pendulum.tz.loader import Loader
 
-from gitalizer.extensions import db
 from gitalizer.models import TimezoneInterval
 
 
-def create_timezone_database():
+def create_timezone_database(session):
     """Create new utc offset history for all timezones."""
     timezone_intervals = []
     for name in timezones:
@@ -22,9 +21,9 @@ def create_timezone_database():
             interval['start'],
             interval['end'],
         )
-        db.session.add(new)
+        session.add(new)
 
-    db.session.commit()
+    session.commit()
 
 
 def create_timezone(name: str):

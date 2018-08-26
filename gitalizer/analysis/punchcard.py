@@ -10,11 +10,12 @@ from sklearn.cluster import (
     estimate_bandwidth,
 )
 
-from flask import current_app
 from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload
 from datetime import timedelta, datetime
 
+from gitalizer.helper import get_config
+from gitalizer.extensions import logger
 from gitalizer.helpers.parallel import new_session, create_chunks
 from gitalizer.plot.plotting import CommitPunchcard
 from gitalizer.helpers.parallel.list_manager import ListManager
@@ -30,7 +31,7 @@ def analyse_punch_card(existing, method,
                        eps=150, min_samples=5):
     """Analyze the efficiency of the missing time comparison."""
     session = new_session()
-    current_app.logger.info(f'Start Scan.')
+    logger.info(f'Start Scan.')
 
     # If the only_existing parameter is given, we only work with
     # the existing intermediate AnalysisResults.
@@ -48,7 +49,7 @@ def analyse_punch_card(existing, method,
             .group_by(Contributor.login) \
             .all()
 
-        current_app.logger.info(f'Scanning {len(results)} contributors.')
+        logger.info(f'Scanning {len(results)} contributors.')
 
         count = 0
         big_contributors = []
@@ -58,10 +59,10 @@ def analyse_punch_card(existing, method,
 
             count += 1
             if count % 50000 == 0:
-                current_app.logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
+                logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
 
         # Finished searching for contributors with enough commits.
-        current_app.logger.info(f'Analysing {len(big_contributors)} contributors.')
+        logger.info(f'Analysing {len(big_contributors)} contributors.')
 
         # Chunk the contributor list into chunks of 100
         chunks = create_chunks(big_contributors, 100)
@@ -79,9 +80,9 @@ def analyse_punch_card(existing, method,
         .all()
 
     if existing:
-        current_app.logger.info(f'Analysing {len(analysis_results)} results.')
+        logger.info(f'Analysing {len(analysis_results)} results.')
 
-    current_app.logger.info(f'Using {method} clustering')
+    logger.info(f'Using {method} clustering')
     vectorized_data = []
     contributors = []
     for result in analysis_results:
@@ -105,14 +106,14 @@ def analyse_punch_card(existing, method,
     elif method == 'mean-shift':
         quantile = 0.1
         n_samples = -1
-        current_app.logger.info(f'Computing bandwidth.')
+        logger.info(f'Computing bandwidth.')
         bandwidth = estimate_bandwidth(
             vectorized_data,
             quantile=quantile,
             n_samples=n_samples,
             n_jobs=-1,
         )
-        current_app.logger.info(f'Bandwidth computed.')
+        logger.info(f'Bandwidth computed.')
 
         cluster_result = MeanShift(
             bandwidth=bandwidth,
@@ -138,19 +139,19 @@ def analyse_punch_card(existing, method,
         contributor_by_label[label].append(contributors[index].login)
 
     # Prepare the plot dir for prototype plotting
-    plot_dir = current_app.config['PLOT_DIR']
+    plot_dir = get_config().PLOT_DIR
     plot_dir = os.path.join(plot_dir, 'analysis', 'analyse_punch', method)
 
     if not os.path.exists(plot_dir):
         os.makedirs(plot_dir)
 
-    current_app.logger.info(f'Found {len(occurrences)}')
+    logger.info(f'Found {len(occurrences)}')
     # Get the mean-center prototypes for each label and plot them
     prototypes = get_mean_center_prototypes(cluster_result,
                                             vectorized_data,
                                             min_samples)
 
-    current_app.logger.info(f'Found {len(prototypes)} valid clusters')
+    logger.info(f'Found {len(prototypes)} valid clusters')
     for label, prototype in prototypes.items():
         if method == 'dbscan':
             name = f'{metric}-{min_samples}-{eps}-{label}'
@@ -165,15 +166,15 @@ def analyse_punch_card(existing, method,
         plotter.plot()
 
     if method == 'dbscan':
-        current_app.logger.info(f'DBSCAN with EPS: {eps} and {min_samples} min samples.')
-    current_app.logger.info('Amount of entities in clusters. -1 is an outlier:')
-    current_app.logger.info(pformat(occurrences))
-    current_app.logger.info(pformat(contributor_by_label))
-    current_app.logger.info(f'{len(analysis_results)} contributers are relevant.')
+        logger.info(f'DBSCAN with EPS: {eps} and {min_samples} min samples.')
+    logger.info('Amount of entities in clusters. -1 is an outlier:')
+    logger.info(pformat(occurrences))
+    logger.info(pformat(contributor_by_label))
+    logger.info(f'{len(analysis_results)} contributers are relevant.')
 
     if method == 'dbscan':
         core_samples = cluster_result.core_sample_indices_
-        current_app.logger.info(f'Core samples: {len(core_samples)}')
+        logger.info(f'Core samples: {len(core_samples)}')
 
     return
 

@@ -1,50 +1,44 @@
-"""This package contains the whole gitalizer with all of its models, views and other modules.
+"""This package initializes the whole app with all of its modules.
 
 This particular file additionally contains the applications factory.
 """
 
 import os
 import sys
-from flask import Flask
-from gitalizer.helpers.logger import init_logging
 import matplotlib
+from gitalizer.helper import get_config
+from gitalizer.extensions import logger, db, sentry, github
 matplotlib.use("Agg")
 
 
-def create_app(config_name='develop'):
-    """Flask app factory function.
-
-    It takes a `config_name` of the specific configuration to use for this instantiation.
-    """
-    app = Flask(__name__, static_folder=None)
-
-    from gitalizer.config import configs
-    app.config.from_object(configs[config_name])
-    init_logging(app)
-
-    # Initialize extensions
-    from gitalizer.extensions import db, github, sentry, migrate
-    db.init_app(app)
-    github.init_app(app)
-    if app.config['SENTRY']:
-        sentry.init_app(app)
-    migrate.init_app(app, db)
-
+def create_app():
+    """Create a new app."""
+    config = get_config()
     # Check if the git clone dir can be created/accessed
-    git_clone_dir = app.config['GIT_CLONE_PATH']
+    git_clone_dir = config.GIT_CLONE_PATH
     if not os.path.exists(git_clone_dir):
         try:
             os.makedirs(git_clone_dir)
         except PermissionError:
-            print(f"Gitalizer needs to have permissions to create the directory specified in 'GIT_CLONE_PATH': {git_clone_dir}")
+            logger.error(f"Gitalizer needs to have permissions to create the directory specified in 'GIT_CLONE_PATH': {git_clone_dir}")
             sys.exit(1)
     else:
         if not os.access(git_clone_dir, os.W_OK):
-            print(f"Gitalizer needs to have permissions to write to the directory specified in 'GIT_CLONE_PATH': {git_clone_dir}")
+            logger.error(f"Gitalizer needs to have permissions to write to the directory specified in 'GIT_CLONE_PATH': {git_clone_dir}")
             sys.exit(1)
 
-    # Initialize custom commands
-    from gitalizer.cli import register_cli
-    register_cli(app)
+    # Import models to load them into the declarative base of the current db engine
+    from gitalizer.models import *
 
-    return app
+    return App(db, github, logger, sentry)
+
+
+class App:
+    """A class representing the app."""
+
+    def __init__(self, db, github, logger, sentry):
+        """Create a new app."""
+        self.db = db
+        self.github = github
+        self.logger = logger
+        self.sentry = sentry

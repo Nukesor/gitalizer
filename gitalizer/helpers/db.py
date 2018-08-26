@@ -2,14 +2,13 @@
 from sqlalchemy import or_
 from datetime import timedelta, datetime
 
-from gitalizer.extensions import db
 from gitalizer.models.email import Email
 from gitalizer.models.commit import Commit, commit_repository
 from gitalizer.models.repository import Repository
 from gitalizer.models.contributor import Contributor, contributor_repository
 
 
-def get_user_repositories(contributor):
+def get_user_repositories(contributor, session):
     """Get all commits of repositories of an user."""
     repositories = session.query(Repository) \
         .join(
@@ -22,11 +21,8 @@ def get_user_repositories(contributor):
     return repositories
 
 
-def get_user_commits(contributor, delta=None, session=None):
+def get_user_commits(contributor, session=None, delta=None):
     """Get ALL commits of a contributor in a given timespan."""
-    if session is None:
-        session = db.session
-
     if delta is None:
         delta = timedelta(days=99*365)
 
@@ -45,7 +41,7 @@ def get_user_commits(contributor, delta=None, session=None):
     return commits
 
 
-def get_user_commits_from_repositories(contributor, repositories, delta=None):
+def get_user_commits_from_repositories(contributor, repositories, session, delta=None):
     """Get ALL commits of a contributor in a given timespan."""
     if delta is None:
         delta = timedelta(days=99*365)
@@ -53,7 +49,7 @@ def get_user_commits_from_repositories(contributor, repositories, delta=None):
 
     full_names = [r.full_name for r in repositories]
 
-    commits = db.session.query(Commit) \
+    commits = session.query(Commit) \
         .filter(Commit.commit_time >= time_span) \
         .join(Email, or_(
             Email.email == Commit.author_email_address,

@@ -7,8 +7,6 @@ This program is not written to be used in a malicious way! Please just don't do 
 I rather want people to understand, that somebody else might use it this way and that they might even be already doing it.
 
 The original idea was to add a web interface on top of everything, but there wasn't enough time in the scope of my thesis for this.
-Thereby don't be surprised to find a basic flask layer on the bottom of everything.
-But I still like the idea of serving result sets via API and dynamically rendering everything in the browser.
 
 
 ## Installation:
@@ -25,7 +23,7 @@ But I still like the idea of serving result sets via API and dynamically renderi
 
 ## Run stuff
 
-If you want to run commands from the commandlines, execute `source ./venv/bin/activate && source ./bin/env.sh`.
-These commands let you enter the virtual environment and tell flask where to look for the entry point for the app.
+If you want to run commands from the commandlines, execute `source ./venv/bin/activate`.
+These commands let you enter the virtual environment.
 
-Afterwards you can check what commands are available with simply executing `flask`.
+Afterwards you can check what commands are available with simply executing `gitalizer`.

@@ -44,7 +44,7 @@ class Config(object):
     PLOT_DIR = './plots'
     LOG_DIR = './logs'
 
-    # Flask-SQLAlchemy options (see http://flask-sqlalchemy.pocoo.org/2.1/config/)
+    # SQLAlchemy options
     SQLALCHEMY_DATABASE_URI = 'postgres://localhost/gitalizer'
     SQLALCHEMY_ECHO = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False

@@ -3,13 +3,15 @@
 These extensions are instantiated here but they won't be initialized until the
 factory function is called.
 """
-from flask_sqlalchemy import SQLAlchemy
+from gitalizer.helpers import get_config
+from gitalizer.helpers.postgresql import DB
 from gitalizer.helpers.github import Github
 from gitalizer.helpers.sentry import Sentry
-from flask_migrate import Migrate
+from gitalizer.helpers.logger import init_logging
 
+config = get_config()
 
-db = SQLAlchemy()
-github = Github()
-sentry = Sentry()
-migrate = Migrate()
+db = DB(config)
+github = Github(config)
+sentry = Sentry(config)
+logger = init_logging(config)

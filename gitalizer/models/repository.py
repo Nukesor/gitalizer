@@ -1,11 +1,11 @@
 """Representation of a git repository."""
 
 from datetime import datetime
-from flask import current_app
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
+from gitalizer.helper import get_config
 from gitalizer.extensions import db
 from gitalizer.models.commit import commit_repository
 from gitalizer.models.contributor import contributor_repository
@@ -82,7 +82,7 @@ class Repository(db.Model):
 
         If that is the case, we want to skip it.
         """
-        timeout_threshold = datetime.utcnow() - current_app.config['REPOSITORY_RESCAN_TIMEOUT']
+        timeout_threshold = datetime.utcnow() - get_config().REPOSITORY_RESCAN_TIMEOUT
         up_to_date = self.completely_scanned and self.updated_at >= timeout_threshold
 
         if self.fork or self.broken or self.too_big or up_to_date:

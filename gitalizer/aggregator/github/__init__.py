@@ -4,11 +4,10 @@ from github.GithubException import RateLimitExceededException, GithubException
 import time
 from socket import timeout
 from random import randrange
-from flask import current_app
 from raven import breadcrumbs
 from datetime import datetime, timedelta
 
-from gitalizer.extensions import github
+from gitalizer.extensions import github, logger
 
 
 def call_github_function(github_object: object, function_name: str,
@@ -36,8 +35,8 @@ def call_github_function(github_object: object, function_name: str,
             delta = resettime - datetime.utcnow()
             delta += timedelta(minutes=2)
             total_minutes = int(delta.total_seconds() / 60)
-            current_app.logger.info('Hit the rate limit.')
-            current_app.logger.info(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
+            logger.info('Hit the rate limit.')
+            logger.info(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
             time.sleep(delta.total_seconds())
 
             _try += 1
@@ -51,8 +50,8 @@ def call_github_function(github_object: object, function_name: str,
                 # Otherwise abuse detection
             if e.status == 403:
                 seconds = randrange(180, 480)
-                current_app.logger.info('Github abuse detection.')
-                current_app.logger.info(f'Waiting for {seconds} seconds')
+                logger.info('Github abuse detection.')
+                logger.info(f'Waiting for {seconds} seconds')
                 time.sleep(seconds)
 
             breadcrumbs.record(
@@ -64,7 +63,7 @@ def call_github_function(github_object: object, function_name: str,
             exception = e
             pass
         except timeout as e:
-            current_app.logger.info('Hit socket timeout waiting 10 secs.')
+            logger.info('Hit socket timeout waiting 10 secs.')
             breadcrumbs.record(data={'action': 'Socket timeout hit'},
                                category='info')
 
@@ -97,8 +96,8 @@ def get_github_object(github_object: object, object_name: str):
             delta = resettime - datetime.now()
             delta += timedelta(minutes=2)
             total_minutes = int(delta.total_seconds() / 60)
-            current_app.logger.info('Hit the rate limit.')
-            current_app.logger.info(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
+            logger.info('Hit the rate limit.')
+            logger.info(f'Reset at {resettime}. Waiting for {total_minutes} minutes.')
 
             time.sleep(delta.total_seconds())
 
@@ -113,8 +112,8 @@ def get_github_object(github_object: object, object_name: str):
                 # Otherwise abuse detection
             if e.status == 403:
                 seconds = randrange(180, 480)
-                current_app.logger.info('Github abuse detection.')
-                current_app.logger.info(f'Waiting for {seconds} seconds')
+                logger.info('Github abuse detection.')
+                logger.info(f'Waiting for {seconds} seconds')
                 time.sleep(seconds)
 
             breadcrumbs.record(
@@ -126,7 +125,7 @@ def get_github_object(github_object: object, object_name: str):
             exception = e
             pass
         except timeout as e:
-            current_app.logger.info('Hit socket timeout waiting 10 secs.')
+            logger.info('Hit socket timeout waiting 10 secs.')
             breadcrumbs.record(data={'action': 'Socket timeout hit'},
                                category='info')
 
