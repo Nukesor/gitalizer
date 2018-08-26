@@ -22,7 +22,6 @@ from gitalizer.models import (
     commit_repository,
     Repository,
     TimezoneInterval,
-    User,
 )
 from gitalizer.helpers.hotfixes import (
     clean_db,

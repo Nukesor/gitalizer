@@ -23,9 +23,8 @@ def create_app(config_name='develop'):
     init_logging(app)
 
     # Initialize extensions
-    from gitalizer.extensions import db, passlib, github, sentry, migrate
+    from gitalizer.extensions import db, github, sentry, migrate
     db.init_app(app)
-    passlib.init_app(app)
     github.init_app(app)
     if app.config['SENTRY']:
         sentry.init_app(app)
@@ -43,14 +42,6 @@ def create_app(config_name='develop'):
         if not os.access(git_clone_dir, os.W_OK):
             print(f"Gitalizer needs to have permissions to write to the directory specified in 'GIT_CLONE_PATH': {git_clone_dir}")
             sys.exit(1)
-
-    # Initialize handlers
-    from gitalizer.handlers import register_handlers
-    register_handlers(app)
-
-    # Initialize blueprints
-    from gitalizer.api import api
-    app.register_blueprint(api)
 
     # Initialize custom commands
     from gitalizer.cli import register_cli

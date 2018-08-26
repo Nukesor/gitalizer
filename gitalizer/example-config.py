@@ -49,8 +49,6 @@ class Config(object):
     SQLALCHEMY_ECHO = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    PASSLIB_SCHEMES = ["argon2"]
-
     CORS_ALLOW_ORIGIN = '*'
     CORS_ALLOW_METHODS = '*'
     CORS_ALLOW_HEADERS = '*'
