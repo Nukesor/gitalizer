@@ -11,7 +11,7 @@ from gitalizer.helpers.parallel.manager import Manager
 from gitalizer.aggregator.github.user import check_fork
 
 
-def get_github_organizations():
+def get_organization_memberships():
     """Refresh all user organizations."""
     session = new_session()
 
@@ -19,7 +19,7 @@ def get_github_organizations():
     now = datetime.now(tz)
     contributors = session.query(Contributor).all()
     for contributor in contributors:
-        if contributor.last_check and contributor.last_check > now - timedelta(days=2):
+        if contributor.last_full_scan and contributor.last_full_scan > now - timedelta(days=2):
             continue
         logger.info(f'Checking {contributor.login}. {github.github.rate_limiting[0]} remaining.')
 
@@ -30,7 +30,7 @@ def get_github_organizations():
         for org in github_orgs:
             organization = Organization.get_organization(org.login, org.url, session)
             contributor.organizations.append(organization)
-        contributor.last_check = datetime.utcnow()
+        contributor.last_full_scan = datetime.utcnow()
         session.add(contributor)
         session.commit()
 

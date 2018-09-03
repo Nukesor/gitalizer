@@ -179,7 +179,7 @@ def get_user_repos(user_login: str, skip=True):
         }
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
-        sentry.sentry.captureException()
+        sentry.captureException()
         response = {
             'message': f'Error while getting repos for {user_login}:\n',
             'error': traceback.format_exc(),
@@ -216,7 +216,7 @@ def get_user_data(user_data: tuple):
 
     except BaseException as e:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
-        sentry.sentry.captureException()
+        sentry.captureException()
         response = {
             'message': f'Error while getting repos for {login}:\n',
             'error': traceback.format_exc(),

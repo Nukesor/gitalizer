@@ -30,5 +30,5 @@ class Worker(multiprocessing.Process):
             except KeyboardInterrupt:
                 break
             except BaseException:
-                sentry.sentry.captureException()
+                sentry.captureException()
         return

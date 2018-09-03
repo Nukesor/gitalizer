@@ -10,7 +10,7 @@ from gitalizer.aggregator.github.repository import (
 
 
 @click.group()
-def repository(owner, repository):
+def repository():
     """Scan repositories."""
     pass
 
@@ -29,8 +29,7 @@ def from_github(owner, repository):
 
 
 @click.command()
-@click.argument('owner')
-@click.argument('repository')
+@click.argument('full_name')
 def from_github_for_users(full_name):
     """Scan all users of a github repository."""
     try:

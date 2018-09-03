@@ -6,12 +6,12 @@ from gitalizer.extensions import logger
 
 from gitalizer.aggregator.github.organization import (
     get_github_organization,
-    get_github_organizations,
+    get_organization_memberships,
 )
 
 
 @click.group()
-def organization(owner, repository):
+def organization():
     """Scan repositories."""
     pass
 
@@ -44,9 +44,10 @@ def user_membership():
     """Get all organizations for all known users (users in current database).
 
     This operation only scans the membership of users and doesn't scan any repositories.
+    It is not yet multi processed.
     """
     try:
-        get_github_organizations()
+        get_organization_memberships()
     except KeyboardInterrupt:
         logger.info("CTRL-C Exiting Gracefully")
         sys.exit(1)

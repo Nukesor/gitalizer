@@ -7,6 +7,7 @@ from gitalizer.extensions import logger
 from gitalizer.helpers.db.maintenance import (
     clean_db,
     complete_data,
+    update_data,
 )
 
 
@@ -31,9 +32,23 @@ def clean():
 
 
 @click.command()
-@click.option('--update-all', default=False, help='Scan EVERYTHING again.')
-def update():
+def complete():
     """Complete missing data from previous runs.
+
+    This includes:
+        - Complete all unfinished repositories
+    """
+    try:
+        complete_data()
+    except KeyboardInterrupt:
+        logger.info("CTRL-C Exiting Gracefully")
+        sys.exit(1)
+
+
+@click.command()
+@click.option('--update-all', default=False, help='Scan EVERYTHING again.')
+def update(update_all):
+    """Update data from previous runs.
 
     If the `--update-all` flag is provided, everything will be scanned again.
     For instance, without the flag, only contributors with more than 100 commits will be scanned.
@@ -43,7 +58,7 @@ def update():
         - Update all contributors
     """
     try:
-        complete_data()
+        update_data(update_all)
     except KeyboardInterrupt:
         logger.info("CTRL-C Exiting Gracefully")
         sys.exit(1)
@@ -51,3 +66,4 @@ def update():
 
 maintenance.add_command(clean)
 maintenance.add_command(complete)
+maintenance.add_command(update)

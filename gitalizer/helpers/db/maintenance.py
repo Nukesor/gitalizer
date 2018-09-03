@@ -4,7 +4,7 @@ from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload
 
 from gitalizer.helpers import get_config
-from gitalizer.extensions import db, logger
+from gitalizer.extensions import logger
 from gitalizer.models import (
     Repository,
     Commit,
@@ -19,7 +19,7 @@ from gitalizer.helpers.parallel.list_manager import ListManager
 def clean_db():
     """Clean stuff."""
     logger.info("Removing commits from fork repos.")
-    session = db.new_session()
+    session = new_session()
     try:
         all_repositories = session.query(Repository) \
             .filter(Repository.fork.is_(True)) \
@@ -83,7 +83,7 @@ def update_data(update_all=False):
     update_contributors(update_all)
 
 
-def update_contributors():
+def update_contributors(update_all):
     """Complete contributors."""
     session = new_session()
     logger.info(f'Start Scan.')
@@ -107,16 +107,20 @@ def update_contributors():
 
     logger.info(f'Scanning {len(results)} contributors.')
 
-    count = 0
-    big_contributors = []
-    for contributor, commits in results:
-        if len(commits) > 100 and len(commits) < 20000:
-            big_contributors.append((contributor, commits))
+    if update_all:
+        contributors_to_scan = results
+        logger.info(f'Scanning {len(contributors_to_scan)} contributors')
+    else:
+        count = 0
+        contributors_to_scan = []
+        for contributor, commits in results:
+            if len(commits) > 100 and len(commits) < 20000:
+                contributors_to_scan.append((contributor, commits))
 
-        count += 1
-        if count % 5000 == 0:
-            logger.info(f'Found {count} contributors ({len(big_contributors)} big)')
+            count += 1
+            if count % 5000 == 0:
+                logger.info(f'Found {count} contributors ({len(contributors_to_scan)} big)')
 
-    manager = ListManager('github_user', big_contributors)
+    manager = ListManager('github_user', contributors_to_scan)
     manager.start()
     manager.run()
