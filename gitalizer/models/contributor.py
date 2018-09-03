@@ -5,7 +5,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
-from gitalizer.helper import get_config
+from gitalizer.helpers import get_config
 from gitalizer.extensions import db, logger
 
 

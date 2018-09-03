@@ -1,36 +1,21 @@
-# App
+# Base
 alembic~=0.8
-requests~=2.12
-pwgen~=0.7
 SQLAlchemy~=1.1.4
 sqlalchemy-utils~=0.32
 psycopg2-binary
-retry~=0.9.2
+
+# Aggregator
+pygithub~=1.35'
+pygit2~=0.27
+gitpython~=2.1
+pytz~=2018.3
 
 # Logging
 raven
-blinker
 
 # Time handling
 pendulum~=1.4
 pytzdata~=2018.3
 
 # Location handling
-cartopy~=0.16
-pycountry~=18.2
 geopy
-
-# Aggregator
-pygithub~=1.35
-pygit2~=0.27
-gitpython~=2.1
-pytz~=2018.3
-
-# Machine learning
-scikit-learn~=0.19
-
-# Visualization
-numpy~=1.7
-pandas~=0.21
-seaborn~=0.8
-cython~=0.28

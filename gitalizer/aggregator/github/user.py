@@ -3,7 +3,7 @@ import traceback
 from datetime import datetime
 from github.GithubException import GithubException
 
-from gitalizer.helper import get_config
+from gitalizer.helpers import get_config
 from gitalizer.models import Repository, Contributor
 from gitalizer.extensions import github, sentry, db, logger
 from gitalizer.aggregator.github import call_github_function, get_github_object

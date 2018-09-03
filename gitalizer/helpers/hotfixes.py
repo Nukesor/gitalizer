@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload
 
-from gitalizer.helper import get_config
+from gitalizer.helpers import get_config
 from gitalizer.extensions import db, logger
 from gitalizer.models import (
     Repository,

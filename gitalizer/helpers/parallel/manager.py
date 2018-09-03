@@ -2,7 +2,7 @@
 import multiprocessing
 
 from gitalizer.extensions import logger
-from gitalizer.helper import get_config
+from gitalizer.helpers import get_config
 from gitalizer.helpers.parallel.task import Task
 from gitalizer.helpers.parallel.worker import Worker
 

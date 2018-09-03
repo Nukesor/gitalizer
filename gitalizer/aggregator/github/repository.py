@@ -5,7 +5,7 @@ from datetime import datetime
 from github import GithubException
 from raven import breadcrumbs
 from pygit2 import GitError
-from gitalizer.helper import get_config
+from gitalizer.helpers import get_config
 
 from gitalizer.extensions import github, sentry, logger
 from gitalizer.models.repository import Repository

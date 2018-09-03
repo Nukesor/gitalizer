@@ -2,11 +2,7 @@
 
 import sys
 import click
-from sqlalchemy_utils.functions import (
-    database_exists,
-    create_database,
-    drop_database,
-)
+
 
 from gitalizer.extensions import db
 from gitalizer.plot import (
@@ -14,12 +10,10 @@ from gitalizer.plot import (
     plot_employee,
     plot_comparison as plot_comparison_func,
 )
-from gitalizer.timezone.database import create_timezone_database
 from gitalizer.models import (
     Commit,
     commit_repository,
     Repository,
-    TimezoneInterval,
 )
 from gitalizer.helpers.hotfixes import (
     clean_db,
@@ -45,34 +39,6 @@ from gitalizer.analysis import (
 
 def register_cli(app):  # pragma: no cover
     """Register a few CLI functions."""
-    @app.cli.command()
-    def initdb():
-        """Initialize the database.
-
-        This will drop and recreate the actual database if it already exists.
-        The database name from the config is used
-        variable is used for this.
-        """
-        # If there is an existing DB, make sure to drop it and start completely fresh.
-        db_url = db.engine.url
-        if database_exists(db_url):
-            drop_database(db_url)
-        create_database(db_url)
-
-        db.create_all()
-        db.session.commit()
-
-    @app.cli.command()
-    def rebuild_time_db():
-        """Drop and recreate all utc offset timeinterval database entries."""
-        db.create_all()
-
-        session = db.new_session()
-        session.query(TimezoneInterval).delete()
-        create_timezone_database(session)
-        session.commit()
-        session.close()
-
     @app.cli.command()
     @click.argument('login')
     def get_user(login):

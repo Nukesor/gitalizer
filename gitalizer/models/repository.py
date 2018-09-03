@@ -5,7 +5,7 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
-from gitalizer.helper import get_config
+from gitalizer.helpers import get_config
 from gitalizer.extensions import db
 from gitalizer.models.commit import commit_repository
 from gitalizer.models.contributor import contributor_repository

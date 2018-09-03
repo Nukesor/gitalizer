@@ -4,7 +4,7 @@ import shutil
 import pygit2
 from pygit2 import Repository, clone_repository
 
-from gitalizer.helper import get_config
+from gitalizer.helpers import get_config
 
 
 def get_git_repository(url: str, owner: str, name: str):
