@@ -37,7 +37,7 @@ class DB(object):
     def get_session(self):
         """Create a new session."""
         session = sessionmaker(bind=self.engine)()
-        return session()
+        return session
 
 #    def Table(self, *args, **kwargs):
 #        """Creating a sqlalchemy table with the current db metadata."""

@@ -33,8 +33,10 @@ def initdb():
         drop_database(db_url)
     create_database(db_url)
 
-    real_db.create_all()
-    real_db.session.commit()
+    real_db.Model.metadata.create_all()
+    session = real_db.session
+    create_timezone_database(session)
+    session.commit()
 
 
 @db.command()

@@ -48,7 +48,6 @@ def clean_db():
 
 def complete_data():
     """Complete missing entities."""
-    complete_contributor()
     complete_repos()
 
 
@@ -79,8 +78,13 @@ def complete_repos():
     session.close()
 
 
-def complete_contributor():
-    """Complete contributor."""
+def update_data(update_all=False):
+    """Update existing udata."""
+    update_contributors(update_all)
+
+
+def update_contributors():
+    """Complete contributors."""
     session = new_session()
     logger.info(f'Start Scan.')
 
@@ -111,7 +115,7 @@ def complete_contributor():
 
         count += 1
         if count % 5000 == 0:
-            logger.info(f'Scanned {count} contributors ({len(big_contributors)} big)')
+            logger.info(f'Found {count} contributors ({len(big_contributors)} big)')
 
     manager = ListManager('github_user', big_contributors)
     manager.start()

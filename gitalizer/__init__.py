@@ -15,6 +15,17 @@ from gitalizer.models import * # noqa
 from gitalizer.cli import cli # noqa
 
 
+class App:
+    """A class representing the app."""
+
+    def __init__(self, db, github, logger, sentry):
+        """Create a new app."""
+        self.db = db
+        self.github = github
+        self.logger = logger
+        self.sentry = sentry
+
+
 def create_app():
     """Create a new app."""
     config = get_config()
@@ -34,12 +45,4 @@ def create_app():
     return App(db, github, logger, sentry)
 
 
-class App:
-    """A class representing the app."""
-
-    def __init__(self, db, github, logger, sentry):
-        """Create a new app."""
-        self.db = db
-        self.github = github
-        self.logger = logger
-        self.sentry = sentry
+app = create_app()

@@ -15,7 +15,7 @@ from gitalizer.helpers.parallel.messages import (
 )
 
 
-def get_friends_by_name(name: str):
+def get_user_with_followers(name: str):
     """Get all relevant Information about all friends of a specific user.."""
     user = call_github_function(github.github, 'get_user', [name])
     followers = call_github_function(user, 'get_followers')
@@ -53,7 +53,7 @@ def get_friends_by_name(name: str):
         session.close()
 
 
-def get_user_by_login(login: str):
+def get_user(login: str):
     """Get a user by his login name."""
     user = call_github_function(github.github, 'get_user', [login])
     sub_manager = Manager('github_repository', [])
