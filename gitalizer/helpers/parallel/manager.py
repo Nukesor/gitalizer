@@ -18,13 +18,14 @@ class Manager():
         self.sub_manager = sub_manager
         self.started = False
 
+        config = get_config()
         self.task_queue = multiprocessing.JoinableQueue()
         self.result_queue = multiprocessing.Queue()
         self.results = []
         if task_type == 'github_contributor':
-            self.consumer_count = get_config()['GIT_USER_SCAN_THREADS']
+            self.consumer_count = config.GIT_USER_SCAN_THREADS
         elif task_type == 'github_repository':
-            self.consumer_count = get_config()['GIT_COMMIT_SCAN_THREADS']
+            self.consumer_count = config.GIT_COMMIT_SCAN_THREADS
 
     def start(self):
         """Initialize workers and add initial tasks."""
