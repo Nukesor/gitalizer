@@ -1,16 +1,19 @@
 # Gitalizer
 
 Gitalizer was created in the scope of my bachelor's thesis [Privacy implications of exposing Git metadata](https://github.com/Nukesor/thesis/blob/master/thesis/thesis.pdf).
-The goal of this project is to explore the possible malicious usages of metadata that is collected during the common Git usage.
+The goal of this project is to explore the possible malicious usages of metadata that is collected during common Git usage.
 
 This program is a combination of the Git/Github data aggregator `Gitalizer` and the analysis tool [Gitalysis](https://github.com/Nukesor/gitalysi://github.com/Nukesor/gitalysis).
 
-Gitalysis can manage to track the location of a targeted git user via their open source contributions. 
-Gitalysis can detect holiday and sick leave in your commit pattern as well as other anomalies.
-It is capable of creating punchcards in the old Github style, which provide insight into the sleeping and working rhythm of a person.
+Gitalysis can be capable of:
+- Tracking the location of a targeted git user via their open source contributions.
+- Detect holiday and sick leave in your commit pattern as well as other anomalies.
+- Draw punchcards in the old Github style, which provide insight into the sleeping and working rhythm of a person.
 
 It needs to be said again, that this project happened during the course of 5 months whilst writing my bachelor thesis.
 I'm not all that familiar with modern data mining techniques and im very certain, that an experienced data scientist could extract quite sensitive information from this data.
+
+The aggregation code of Gitalizer is quite stable and capable collecting several million commits in the course of a day.
 
 This program is not written to be used in a malicious way! Please just don't do it.
 I rather want people to understand, that somebody else might use it this way and that they might even be already doing it.
@@ -18,9 +21,14 @@ I want you to understand, that even simple metadata such as git commit timestamp
 
 ## Results:
 
-Home location and travel path analysis:
+Image from home location and travel path analysis:
 <p align="center">
     <img src="https://raw.githubusercontent.com/Nukesor/images/master/gitalizer_map.png">
+</p>
+
+Holiday/sick leave and other anomaly analysis:
+<p align="center">
+    <img src="https://raw.githubusercontent.com/Nukesor/images/master/gitalizer_holiday.png">
 </p>
 
 Sleep rhythm and working hour analysis:
@@ -74,12 +82,12 @@ or by installing it manually:
 - `gitalizer delete repository [full_name]` Delete a repository with all it's commit
 
 **Maintenance** stuff:
-- `gitalizer maintenance complete` Complete repositories which haven't been scanned completely due to an error or manual stopping.
+- `gitalizer maintenance complete` Complete repositories which haven't been completely scanned, either due to an error or manual stopping.
 - `gitalizer maintenance update` Rescan all repositories and users.
 - `gitalizer maintenance clean` Remove duplicated commits. This is mostly probably deprecated functionality, since these problems shouldn't occur any longer, but it is left for possible future development problems.
 
 
 
-# More features:
+# Interesting features:
 - Flag contributors and repositories as explicitly scanned to avoid constant data growth during rescans.
 - More deletion methods for other entities.
