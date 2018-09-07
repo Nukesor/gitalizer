@@ -3,7 +3,7 @@ import traceback
 from datetime import datetime
 from github.GithubException import GithubException
 
-from gitalizer.helpers import get_config
+from gitalizer.helpers.config import config
 from gitalizer.models import Repository, Contributor
 from gitalizer.extensions import github, sentry, db, logger
 from gitalizer.aggregator.github import call_github_function, get_github_object
@@ -40,7 +40,7 @@ def get_user_with_followers(name: str):
     manager.run()
 
     try:
-        session = db.new_session()
+        session = new_session()
         for login in user_logins:
             contributor = session.query(Contributor) \
                 .filter(Contributor.login.ilike(login)) \
@@ -62,7 +62,7 @@ def get_user(login: str):
     manager.run()
 
     try:
-        session = db.new_session()
+        session = db.get_session()
         contributor = session.query(Contributor) \
             .filter(Contributor.login.ilike(login)) \
             .one()
@@ -101,7 +101,7 @@ def get_user_repos(user_login: str, skip=True):
                 logger.info(f'{owned_repos} owned repos for user {user_login}.')
 
             # The user is too big. Just drop him.
-            if skip and owned_repos > get_config().GITHUB_USER_SKIP_COUNT:
+            if skip and owned_repos > int(config['github']['max_repositories_for_user']):
                 user_too_big = True
 
         # Prefetch all starred repositories
@@ -114,7 +114,7 @@ def get_user_repos(user_login: str, skip=True):
                 logger.info(f'{starred_repos} starred repos for user {user_login}.')
 
             # The user is too big. Just drop him.
-            if skip and starred_repos > get_config().GITHUB_USER_SKIP_COUNT:
+            if skip and starred_repos > int(config['github']['max_repositories_for_user']):
                 user_too_big = True
 
         # User has too many repositories. Flag him and return

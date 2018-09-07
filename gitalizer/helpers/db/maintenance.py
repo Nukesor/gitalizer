@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload
 
-from gitalizer.helpers import get_config
+from gitalizer.helpers.config import config
 from gitalizer.extensions import logger
 from gitalizer.models import (
     Repository,
@@ -54,7 +54,8 @@ def complete_data():
 def complete_repos():
     """Complete unfinished repsitories."""
     logger.info("Get unfinished or out of date repositories.")
-    timeout_threshold = datetime.utcnow() - get_config().REPOSITORY_RESCAN_TIMEOUT
+    rescan_interval = int(config['aggregator']['repository_rescan_interval'])
+    rescan_threshold = datetime.utcnow() - timedelta(seconds=rescan_interval)
     session = new_session()
 
     repos = session.query(Repository) \
@@ -63,7 +64,7 @@ def complete_repos():
         .filter(Repository.too_big.is_(False)) \
         .filter(or_(
             Repository.completely_scanned.is_(False),
-            Repository.updated_at <= timeout_threshold,
+            Repository.updated_at <= rescan_threshold,
         )) \
         .all()
     logger.info(f'Found {len(repos)}')

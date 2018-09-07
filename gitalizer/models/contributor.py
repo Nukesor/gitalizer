@@ -1,11 +1,11 @@
 """Representation of a git repository contributor."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
-from gitalizer.helpers import get_config
+from gitalizer.helpers.config import config
 from gitalizer.extensions import db, logger
 
 
@@ -116,8 +116,9 @@ class Contributor(db.Model):
         if no_repositories or self.last_full_scan is None:
             return True
 
-        timeout = datetime.now(timezone.utc) - get_config().CONTRIBUTER_RESCAN_TIMEOUT
-        up_to_date = self.last_full_scan and self.last_full_scan >= timeout
+        rescan_interval = int(config['aggregator']['contributor_rescan_interval'])
+        rescan_threshold = datetime.utcnow(timezone.utc) - timedelta(seconds=rescan_interval)
+        up_to_date = self.last_full_scan and self.last_full_scan >= rescan_threshold
 
         if not up_to_date:
             return True

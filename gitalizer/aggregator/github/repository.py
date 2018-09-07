@@ -5,7 +5,7 @@ from datetime import datetime
 from github import GithubException
 from raven import breadcrumbs
 from pygit2 import GitError
-from gitalizer.helpers import get_config
+from gitalizer.helpers.config import config
 
 from gitalizer.extensions import github, sentry, logger
 from gitalizer.models.repository import Repository
@@ -64,7 +64,7 @@ def get_github_repository(full_name: str):
 
         if repository.broken:
             return {'message': f'Skip broken repo {github_repo.ssh_url}'}
-        elif github_repo.size > get_config().MAX_REPOSITORY_SIZE:
+        elif github_repo.size > int(config['aggregator']['max_repository_size']):
             repository.too_big = True
             session.add(repository)
             session.commit()

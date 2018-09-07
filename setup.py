@@ -5,7 +5,7 @@ setup(
     name='gitalizer',
     author='Arne Beer',
     author_email='privat@arne.beer',
-    version='0.1.0',
+    version='0.1.1',
     description='A git/github repository data collector for Git to analyse privacy implications of exposing Git metadata',
     keywords='git aggregator metadata github',
     url='http://github.com/nukesor/gitalizer',
@@ -32,6 +32,9 @@ setup(
 
         # Location handling
         'geopy',
+
+        # Cli
+        'click',
     ],
     classifiers=[
         'License :: OSI Approved :: MIT License',

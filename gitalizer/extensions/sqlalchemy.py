@@ -11,7 +11,10 @@ class DB(object):
 
     def __init__(self, config):
         """Lazy initializer which takes an `app` and sets up sentry."""
-        self.engine = create_engine(config.SQLALCHEMY_DATABASE_URI)
+        self.engine = create_engine(
+            config['database']['uri'],
+            echo=config['database'].getboolean('echo'),
+        )
         self.Model = declarative_base(bind=self.engine)
 
         query_class = Query

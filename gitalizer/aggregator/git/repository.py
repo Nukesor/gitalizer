@@ -4,12 +4,12 @@ import shutil
 import pygit2
 from pygit2 import Repository, clone_repository
 
-from gitalizer.helpers import get_config
+from gitalizer.helpers.config import config
 
 
 def get_git_repository(url: str, owner: str, name: str):
     """Clone or update a repository."""
-    base_dir = get_config().GIT_CLONE_PATH
+    base_dir = config['cloning']['temporary_clone_path']
     clone_dir = os.path.join(base_dir, owner, name)
 
     if os.path.exists(clone_dir):
@@ -17,10 +17,10 @@ def get_git_repository(url: str, owner: str, name: str):
 
     callbacks = None
     if 'https://' not in url:
-        keypair = pygit2.Keypair(get_config().SSH_USER,
-                                 get_config().PUBLIC_KEY,
-                                 get_config().PRIVATE_KEY,
-                                 get_config().SSH_PASSWORD)
+        keypair = pygit2.Keypair(config['cloning']['ssh_user'],
+                                 config['cloning']['public_key'],
+                                 config['cloning']['private_key'],
+                                 config['cloning']['ssh_password'])
         callbacks = pygit2.RemoteCallbacks(credentials=keypair)
 
     os.makedirs(clone_dir)
@@ -32,7 +32,7 @@ def get_git_repository(url: str, owner: str, name: str):
 
 def delete_git_repository(owner: str, name: str):
     """Delete a git repository."""
-    base_dir = get_config().GIT_CLONE_PATH
+    base_dir = config['cloning']['temporary_clone_path']
     clone_dir = os.path.join(base_dir, owner, name)
     if os.path.exists(clone_dir):
         shutil.rmtree(clone_dir)

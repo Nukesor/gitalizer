@@ -24,8 +24,7 @@ def initdb():
     """Initialize the database.
 
     This will drop and recreate the actual database if it already exists.
-    The database name from the config is used
-    variable is used for this.
+    The database name from the config is used for this.
     """
     # If there is an existing DB, make sure to drop it and start completely fresh.
     db_url = real_db.engine.url
@@ -44,7 +43,7 @@ def build_time_db():
     """Drop and recreate all utc offset timeinterval database entries."""
     real_db.create_all()
 
-    session = real_db.new_session()
+    session = real_db.get_session()
     session.query(TimezoneInterval).delete()
     create_timezone_database(session)
     session.commit()

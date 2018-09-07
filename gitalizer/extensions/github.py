@@ -7,10 +7,10 @@ class Github(object):
 
     def __init__(self, config):
         """Initialize github."""
-        if config.GITHUB_TOKEN:
-            user = config.GITHUB_TOKEN
+        if config['github']['github_token']:
+            user = config['github']['github_token']
             password = None
         else:
-            user = config.GITHUB_USER
-            password = config.GITHUB_PASSWORD
+            user = config['github']['github_user']
+            password = config['github']['github_password']
         self.github = ActualGithub(user, password)

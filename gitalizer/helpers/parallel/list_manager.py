@@ -2,7 +2,7 @@
 import multiprocessing
 
 from gitalizer.extensions import logger
-from gitalizer.helpers import get_config
+from gitalizer.helpers.config import config
 from gitalizer.helpers.parallel.task import Task
 from gitalizer.helpers.parallel.worker import Worker
 
@@ -21,7 +21,7 @@ class ListManager():
         self.task_queue = multiprocessing.JoinableQueue()
         self.result_queue = multiprocessing.Queue()
         self.results = []
-        self.consumer_count = get_config().GIT_COMMIT_SCAN_THREADS
+        self.consumer_count = config['aggregator']['git_commit_scan_threads']
 
     def start(self):
         """Initialize workers and add initial tasks."""

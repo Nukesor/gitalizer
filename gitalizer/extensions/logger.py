@@ -10,7 +10,7 @@ def init_logging(config):
     """Create log directory and initialize logger."""
     # Create log directory, if it doesn't exist
     logger = logging.getLogger('gitalizer')
-    log_dir = config.LOG_DIR
+    log_dir = config['develop']['log_dir']
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 

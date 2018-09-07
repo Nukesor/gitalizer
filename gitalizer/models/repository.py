@@ -1,11 +1,11 @@
 """Representation of a git repository."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
-from gitalizer.helpers import get_config
+from gitalizer.helpers.config import config
 from gitalizer.extensions import db
 from gitalizer.models.commit import commit_repository
 from gitalizer.models.contributor import contributor_repository
@@ -82,8 +82,9 @@ class Repository(db.Model):
 
         If that is the case, we want to skip it.
         """
-        timeout_threshold = datetime.utcnow() - get_config().REPOSITORY_RESCAN_TIMEOUT
-        up_to_date = self.completely_scanned and self.updated_at >= timeout_threshold
+        rescan_interval = int(config['aggregator']['repository_rescan_interval'])
+        rescan_threshold = datetime.utcnow() - timedelta(seconds=rescan_interval)
+        up_to_date = self.completely_scanned and self.updated_at >= rescan_threshold
 
         if self.fork or self.broken or self.too_big or up_to_date:
             return False

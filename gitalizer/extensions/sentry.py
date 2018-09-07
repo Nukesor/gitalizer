@@ -1,4 +1,5 @@
 """Simple wrapper around sentry that allows for lazy initilization."""
+from pygit2 import GitError
 from raven import Client
 
 
@@ -12,9 +13,16 @@ class Sentry(object):
 
     def __init__(self, config):
         """Construct new sentry wrapper."""
-        if config.SENTRY_TOKEN is not None:
+        if config['develop']['sentry_token'] is not None \
+                and config['develop'].getboolean('sentry_enabled'):
             self.initialized = True
-            self.sentry = Client(config.SENTRY_TOKEN)
+            self.sentry = Client(
+                config['develop']['sentry_token'],
+                ignore_exceptions=[
+                    KeyboardInterrupt,
+                    GitError,
+                ],
+            )
 
     def captureMessage(self, *args, **kwargs):
         """Capture message with sentry."""

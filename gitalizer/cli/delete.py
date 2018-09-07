@@ -19,7 +19,7 @@ def delete():
 @click.argument('full_name')
 def repository(full_name):
     """Delete a specific repository."""
-    session = db.new_session()
+    session = db.get_session()
     try:
         repository = session.query(Repository) \
             .filter(Repository.full_name == full_name) \

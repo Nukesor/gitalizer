@@ -5,7 +5,7 @@ This particular file additionally contains the applications factory.
 
 import os
 import sys
-from gitalizer.helpers import get_config
+from gitalizer.helpers.config import config
 from gitalizer.extensions import logger, db, sentry, github
 
 # Import models to load them into the declarative base of the current db engine
@@ -28,9 +28,8 @@ class App:
 
 def create_app():
     """Create a new app."""
-    config = get_config()
     # Check if the git clone dir can be created/accessed
-    git_clone_dir = config.GIT_CLONE_PATH
+    git_clone_dir = config['cloning']['temporary_clone_path']
     if not os.path.exists(git_clone_dir):
         try:
             os.makedirs(git_clone_dir)
