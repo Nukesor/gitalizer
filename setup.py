@@ -5,7 +5,7 @@ setup(
     name='gitalizer',
     author='Arne Beer',
     author_email='privat@arne.beer',
-    version='0.1.2',
+    version='0.1.3',
     description='A git/github repository data collector for Git to analyse privacy implications of exposing Git metadata',
     keywords='git aggregator metadata github',
     url='http://github.com/nukesor/gitalizer',
