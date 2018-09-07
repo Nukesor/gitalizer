@@ -27,7 +27,7 @@ setup(
         'raven',
 
         # Time handling
-        'pendulum~=1.4',
+        'pendulum~=1.5',
         'pytzdata~=2018.3',
 
         # Location handling

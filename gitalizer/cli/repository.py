@@ -17,8 +17,8 @@ def repository():
 
 @click.command()
 @click.argument('owner')
-@click.argument('repository')
-def from_github(owner, repository):
+@click.argument('name')
+def from_github(owner, name):
     """Get a github repository by owner and name."""
     try:
         logger.info(f'\n\nGet {repository} from user {owner}')
