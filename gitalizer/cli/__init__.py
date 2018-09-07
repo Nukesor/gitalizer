@@ -1,4 +1,4 @@
-"""Base command for gitalizer."""
+"""Cli for gitalizer."""
 import click
 from .db import db
 from .delete import delete
