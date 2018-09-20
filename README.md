@@ -38,7 +38,7 @@ Sleep rhythm and working hour analysis:
 
 ## Installation:
 
-First of all several dependencies are needed. These are mostly required for analysis:
+If you want to use Gitalysis, you need to install several dependencies:
 1. proj
 2. geos
 3. agg
@@ -89,5 +89,7 @@ or by installing it manually:
 
 
 # Interesting features:
+In general there are many missing features, but the basic framework for further work exists and extending it should be quite easy.
+
 - Flag contributors and repositories as explicitly scanned to avoid constant data growth during rescans.
 - More deletion methods for other entities.

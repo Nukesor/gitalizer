@@ -101,7 +101,7 @@ def get_user_repos(user_login: str, skip=True):
                 logger.info(f'{owned_repos} owned repos for user {user_login}.')
 
             # The user is too big. Just drop him.
-            if skip and owned_repos > int(config['github']['max_repositories_for_user']):
+            if skip and owned_repos > int(config['aggregator']['max_repositories_for_user']):
                 user_too_big = True
 
         # Prefetch all starred repositories
@@ -114,7 +114,7 @@ def get_user_repos(user_login: str, skip=True):
                 logger.info(f'{starred_repos} starred repos for user {user_login}.')
 
             # The user is too big. Just drop him.
-            if skip and starred_repos > int(config['github']['max_repositories_for_user']):
+            if skip and starred_repos > int(config['aggregator']['max_repositories_for_user']):
                 user_too_big = True
 
         # User has too many repositories. Flag him and return

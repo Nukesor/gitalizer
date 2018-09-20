@@ -117,7 +117,7 @@ class Contributor(db.Model):
             return True
 
         rescan_interval = int(config['aggregator']['contributor_rescan_interval'])
-        rescan_threshold = datetime.utcnow(timezone.utc) - timedelta(seconds=rescan_interval)
+        rescan_threshold = datetime.now(timezone.utc) - timedelta(seconds=rescan_interval)
         up_to_date = self.last_full_scan and self.last_full_scan >= rescan_threshold
 
         if not up_to_date:
