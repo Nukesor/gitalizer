@@ -17,10 +17,10 @@ def get_git_repository(url: str, owner: str, name: str):
 
     callbacks = None
     if 'https://' not in url:
-        keypair = pygit2.Keypair(config['cloning']['ssh_user'],
-                                 config['cloning']['public_key'],
-                                 config['cloning']['private_key'],
-                                 config['cloning']['ssh_password'])
+        keypair = pygit2.Keypair(username=config['cloning']['ssh_user'],
+                                 pubkey=config['cloning']['public_key'],
+                                 privkey=config['cloning']['private_key'],
+                                 passphrase=config['cloning']['ssh_password'])
         callbacks = pygit2.RemoteCallbacks(credentials=keypair)
 
     os.makedirs(clone_dir)

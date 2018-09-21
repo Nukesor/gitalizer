@@ -124,11 +124,11 @@ def get_github_repository(full_name: str):
 
         pass
 
-    except (GitError, UnicodeDecodeError) as e:
+    except (GitError, UnicodeDecodeError):
         response = error_message('Error in get_repository:\n')
         pass
 
-    except BaseException as e:
+    except BaseException:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         sentry.captureException()
         response = error_message('Error in get_repository:\n')
