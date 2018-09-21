@@ -170,14 +170,14 @@ def get_user_repos(user_login: str, skip=True):
 
         session.commit()
 
-        rate = github.github.get_rate_limit().rate
+        rate = github.github.get_rate_limit().core
         message = f'Got repositories for {user.login}. '
         message += f'{user.login}. {rate.remaining} of 5000 remaining.'
         response = {
             'message': message,
             'tasks': list(repos_to_scan),
         }
-    except BaseException as e:
+    except BaseException:
         # Catch any exception and print it, as we won't get any information due to threading otherwise.
         sentry.captureException()
         response = {

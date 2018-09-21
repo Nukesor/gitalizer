@@ -12,23 +12,22 @@ setup(
     license='MIT',
     install_requires=[
         # Base
-        'alembic~=0.8',
-        'SQLAlchemy~=1.1.4',
-        'sqlalchemy-utils~=0.32',
+        'alembic~=1.0',
+        'SQLAlchemy~=1.2',
+        'sqlalchemy-utils~=0.33',
         'psycopg2-binary',
 
         # Aggregator
-        'pygithub~=1.35',
+        'pygithub~=1.43',
         'pygit2~=0.27',
-        'gitpython~=2.1',
-        'pytz~=2018.3',
+        'pytz~=2018.5',
 
         # Logging
         'raven',
 
         # Time handling
         'pendulum~=1.5',
-        'pytzdata~=2018.3',
+        'pytzdata~=2018.5',
 
         # Location handling
         'geopy',

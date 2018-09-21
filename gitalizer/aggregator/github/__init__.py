@@ -11,7 +11,7 @@ from gitalizer.extensions import github, logger
 
 
 def call_github_function(github_object: object, function_name: str,
-                         args: list=None, kwargs: dict=None):
+                         args: list = None, kwargs: dict = None):
     """Call a pygithub object member function.
 
     We need to handle those calls in case we get rate limited.
@@ -29,7 +29,7 @@ def call_github_function(github_object: object, function_name: str,
             return retrieved_object
         except RateLimitExceededException as e:
             # Wait until the rate limiting is reset
-            resettime = github.github.get_rate_limit().rate.reset
+            resettime = github.github.get_rate_limit().core.reset
             if resettime < datetime.now():
                 resettime = datetime.now()
             delta = resettime - datetime.utcnow()
@@ -90,7 +90,7 @@ def get_github_object(github_object: object, object_name: str):
             return retrieved_object
         except RateLimitExceededException as e:
             # Wait until the rate limiting is reset
-            resettime = github.github.get_rate_limit().rate.reset
+            resettime = github.github.get_rate_limit().core.reset
             if resettime < datetime.now():
                 resettime = datetime.now()
             delta = resettime - datetime.now()

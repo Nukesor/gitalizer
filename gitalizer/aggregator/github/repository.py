@@ -90,7 +90,7 @@ def get_github_repository(full_name: str):
         )
 
         repository = session.query(Repository).get(github_repo.ssh_url)
-        rate = github.github.get_rate_limit().rate
+        rate = github.github.get_rate_limit().core
         time = rate.reset.strftime("%H:%M")
         current_time = datetime.now().strftime('%H:%M')
 

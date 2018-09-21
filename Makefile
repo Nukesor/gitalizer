@@ -2,6 +2,11 @@
 
 default: dev-install
 
+setup:
+	virtualenv -p python venv
+	venv/bin/pip install --upgrade pip
+	venv/bin/python setup.py develop
+
 dev-install:
 	python setup.py develop
 
